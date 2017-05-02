@@ -1,0 +1,37 @@
+/* 
+  an example from llreve:
+  http://formal.iti.kit.edu/projects/improve/reve/
+*/
+int f1(int i, int j)
+{
+  int r;
+  r = 0;
+
+  if (i == 0) {
+    r = j;
+  } else {
+    r = f1(i - 1, j + 1);
+  }
+
+  return r;
+}
+
+int f2(int i, int j)
+{
+  int r;
+  r = 0;
+
+  if (i == 0) {
+    r = j;
+  } else {
+    if (i == 1) {
+      r = j + 1;
+    } else { if (i == 2) {
+      r = j;
+    } else {
+      r = f2(i - 1, j + 1);
+    }}
+  }
+
+  return r;
+}

@@ -1,0 +1,12 @@
+int fastfib(int x){
+  int i,p=1,q=0;
+  if(x==0)p=0;
+  else if(x==1)p=1;
+  else{
+    for(i=1;i<x;i++){
+      p=p+q;
+      q=p-q;
+    }
+  }
+  return(p);
+}

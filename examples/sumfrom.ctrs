@@ -1,0 +1,32 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sum               ;
+  sum1              ;
+  u                 ;
+  v                 ;
+  !INTEGER          ;
+
+RULES
+  sum(n, m)  -> 0                  <-- [n < m]        ;
+  sum(n, m)  -> n + sum(n - 1, m)  <-- [n >= m]       ;
+  sum1(n, m) -> u(n,m,0)                              ;
+  u(x,i,z)   -> u(x, i + 1, z + i) <-- [i <= x]       ;
+  u(x,i,z)   -> z                  <-- [not (i <= x)] ;
+
+QUERY user-equivalence sum(x,y) -><- sum1(x,y) [true]
+
+END OF FILE
+
+This example compares a recursive and iterative definition of the
+function (n,m) -> sum_{i=m}^n i.  This problem is NOT easy; Ctrl
+cannot handle it automatically (as the natural expansion to attempt
+gives a non-termintaing rule, and Ctrl will not attempt to create
+rules of the form x + y -> ...).
+
+However, it is worth noting the very similar example in the
+student/ directory (sumfrom00.ctrs).  This example *can* easily be
+handled automatically, although perhaps not in the expected way.
+

@@ -1,0 +1,51 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+SIGNATURE
+
+  sumfrom ;
+  w ;
+  return : Int => result;
+  error : result;
+
+
+  sum2: Int * Int => result;
+  u_1: Int * Int * Int => result;
+  error: result;
+  u_2: Int * Int * Int => result;
+  u_3: Int * Int * Int => result;
+  u_4: Int * Int * Int => result;
+  u_5: Int * Int * Int => result;
+  u_6: Int * Int * Int => result;
+  return: Int => result;
+
+RULES
+
+  sumfrom(m, n)   -> return(0)               [m > n];
+  sumfrom(m, n)   -> w(n, sumfrom(m, n - 1)) [m <= n] ;
+  w(m, return(n)) -> return(m + n)                ;
+  w(m, error) -> error                            ;
+
+
+  sum2(a_1, b_1) -> u_1(a_1, b_1, 0);
+  u_1(a_1, b_1, c_2) -> u_2(a_1, b_1, c_2)  [(a_1 < b_1)];
+  u_2(a_1, b_1, c_2) -> u_3(a_1, b_1, (c_2 + b_1))  [(b_1 >= a_1)];
+  u_3(a_1, b_1, c_2) -> u_4(a_1, (b_1 - 1), c_2);
+  u_4(a_1, b_1, c_2) -> u_5(a_1, b_1, c_2);
+  u_5(a_1, b_1, c_2) -> u_2(a_1, b_1, c_2);
+  u_2(a_1, b_1, c_2) -> u_6(a_1, b_1, c_2)  [(b_1 < a_1)];
+  u_1(a_1, b_1, c_2) -> u_6(a_1, b_1, c_2)  [(a_1 >= b_1)];
+  u_6(a_1, b_1, c_2) -> return(c_2);
+
+QUERY  do-simplify [sumfrom sum2] and equivalence sumfrom(x,y) -><- sum2(x,y) [x # y]
+
+
+END OF FILE
+
+This student has written a summation which fails if x = y in the input.
+Thus we have added an additional test to avoid this case.
+
+Note also the "b = b--;" in the original code; we have every reason to
+reject this program for ambiguity, but have chosen to ignore the warning
+and accept a natural interpretation.
+

@@ -1,0 +1,1145 @@
+(* Copyright 2014 Cynthia Kop
+ * GNU Lesser General Public License
+ *
+ * This file is part of CTRL.
+ * 
+ * CTRL is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ * 
+ * CTRL is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with CTRL. If not, see <http://www.gnu.org/licenses/>.
+ *)
+
+(*** OPENS *******************************************************************)
+
+open Ctrs;;
+open Util;;
+open Io;;
+open Rewriting;;
+
+(*** TYPES *******************************************************************)
+
+type answer = YES | MAYBE;;
+type definition = Variable.t * Term.t;;
+type rule = Term.t * Term.t * Term.t * (definition list);;
+type equation = rule;;
+  (* Our constraints have the following form:
+   * phi_1 /\ ... /\ phi_n /\ x_1 = s_1 /\ ... /\ x_m = s_m, where for
+   * each i: s_i does not contain the variables x_{i+1}, ..., x_m
+   * Moreover, each x_{i+1} > x_i, so no variable occurs more than
+   * once.
+   * The phi_1 /\ ... /\ phi_n part is saved as the constraint; the
+   * rest appears in the condition list.
+ *)
+
+(*** VARIABLES ***************************************************************)
+
+let internal_rules : rule list ref = ref [];;
+let internal_alphabet : Alphabet.t option ref = ref None;;
+let internal_funnames : string list ref = ref [];;
+let internal_environment : Environment.t option ref = ref None;;
+
+(*** FUNCTIONS ***************************************************************)
+
+let rules () = !internal_rules;;
+let alphabet () = Option.the !internal_alphabet;;
+let environment () = Option.the !internal_environment;;
+let funnamess () = !internal_funnames;;
+let smt () = Rewriter.smt_solver (Rewriter.get_current ());;
+
+(*** FIDDLING WITH CONSTRAINTS ***)
+
+let rec create_logical fgetter name args =
+  let a = alphabet () in
+  try Term.make_function a (environment ()) (fgetter a) args
+  with Not_found ->
+    if name <> "imply" then
+      failwith ("Internal " ^ name ^ " symbol is not set, cannot " ^
+                "apply inductive theorem proving technique!")
+    else (
+      let (a, b) = (List.hd args, List.hd (List.tl args)) in
+      create_not (create_and a (create_not b))
+    )
+
+and create_top () = create_logical Alphabet.get_top_symbol "truth" []
+and create_not s = create_logical Alphabet.get_not_symbol "not" [s]
+and create_equal s t = create_logical Alphabet.get_equal_symbol "equal" [s;t]
+and create_and s t = create_logical Alphabet.get_and_symbol "and" [s;t]
+and create_imply s t = create_logical Alphabet.get_imply_symbol "imply" [s;t]
+
+(** Creates a conjunction of possibly more than one part *)
+let create_conjunction lst =
+  let rec make_constraint = function
+    | [] -> create_top ()
+    | a :: [] -> a
+    | a :: tail -> create_and (make_constraint tail) a
+  in
+  make_constraint (List.rev lst)
+;;
+
+(** Gets all non-trivial parts of a conjunction, omitting duplicates *)
+let get_conjunction_parts term =
+  let topsymbol = Alphabet.get_top_symbol (alphabet ()) in
+  let andsymbol = Alphabet.get_and_symbol (alphabet ()) in
+  let rec get_parts term =
+    let fop = Term.root term in
+    match fop with
+      | None -> [term]
+      | Some f -> (
+        if f = topsymbol then []
+        else if f = andsymbol then List.flat_map get_parts (Term.args term)
+        else [term]
+      )
+  in
+  List.unique (get_parts term)
+;;
+
+(**
+ * Turns a formula phi and a list of equations [(x1, s1); ... ; (xn, sn)]
+ * into the list [phi; x1 = s1; ... ; xn = sn]
+ *)
+let make_constraint_list phi eqs =
+  let make_term (x, s) = create_equal (Term.make_var x) s in
+  if eqs = [] then [phi]
+  else if Term.root phi = Some (Alphabet.get_top_symbol (alphabet ()))
+  then List.map make_term eqs
+  else phi :: (List.map make_term eqs)
+;;
+
+(**
+ * If eqs is [(x1,s1),...,(xn,sn)], creates the constraint:
+ * phi /\ x1 = s1 /\ ... /\ xn = sn
+ *)
+let constraint_with_equations phi eqs =
+  create_conjunction (make_constraint_list phi eqs)
+;;
+
+(**
+ * This function updates a given list of constraints to a single
+ * logical term representing their conjunction.
+ *)
+let rec singlify_constraint cs =
+  let f a b = failwith "Use of unsupported constraint." in
+  let g a = f a a in
+  let h a = a in
+  let get_logical c =
+    try Constraint.run f f g g g h c
+    with Failure msg -> failwith ("get_logical; " ^ msg)
+  in
+  match cs with
+    | [] -> create_top ()
+    | c :: [] -> get_logical c
+    | head :: tail -> create_and (get_logical head) (singlify_constraint tail)
+;;
+
+(**
+ * This function returns (x, s) if the given term has the form x = s
+ * (except x in the return value is a variable rather than a term),
+ * otherwise None.
+ *)
+let get_definition term =
+  let getvar s = List.hd (Term.vars s) in
+  let is_equal f = (f = Alphabet.get_equal_symbol (alphabet ())) in
+  if Term.is_var term then Some (getvar term, create_top ())
+  else if not (is_equal (Option.the (Term.root term))) then None
+  else (
+    let args = Term.args term in
+    let (a, b) = (List.hd args, List.hd (List.tl args)) in
+    if Term.is_var a then Some (getvar a, b)
+    else None
+  )
+;;
+
+(**
+ * This function splits a logical constraint of the form phi_1 /\ ...
+ * /\ phi_n /\ x_1 = s_1 /\ ... /\ x_m = s_m into the parts phi_1 /\
+ * ... /\ phi_n, and a list (x_1,s_1),...,(x_n,s_n).
+ *)
+let split_constraint phi =
+  let parts = List.rev (get_conjunction_parts phi) in
+  let varparts = List.map Term.vars parts in
+  let rec split sofar vparts = function
+    | [] -> ([], sofar)
+    | constr :: tail as lst -> (
+      match get_definition constr with
+        | None -> (lst, sofar)
+        | Some (x, s) ->
+          let occurs l = List.mem x l in
+          if List.filter occurs vparts <> [] then (lst, sofar)
+          else split ((x, s) :: sofar) (List.tl vparts) tail
+    )
+  in
+  let (phiparts, defparts) = split [] varparts parts in
+  (create_conjunction (List.rev phiparts), defparts)
+;;
+
+(**
+ * This function splits the given definition list in two (splitting
+ * [(x1,s1),...,(xn,sn)] into [(x1,s1),...,(xi,si)] and [(x_{i+1},
+ * s_{i+1}),...,(xn,sn)]; the second part is the largest tail such
+ * that p xj holds for all elements xj
+ *)
+let split_definition_list p lst =
+  let rec split sofar = function
+    | [] -> ([], sofar)
+    | (x, s) :: tail ->
+      if p x then split ((x, s) :: sofar) tail
+      else (List.rev ((x, s) :: tail), sofar)
+  in
+  split [] (List.rev lst)
+;;
+
+(**
+ * This function splits the given definition list into a part that
+ * defines only variables not occuring in phi
+ *)
+let split_new_definitions phi lst =
+  let vars = Term.vars phi in
+  let used x = List.mem x vars in
+  split_definition_list used lst
+;;
+
+(*
+
+(**
+ * This function splits a logical constraint of the form phi_1 /\ ...
+ * /\ phi_n /\ x_1 = s_1 /\ ... /\ x_m = s_m into a part that ends
+ * with x_i = s_i, and a list (x_{i+1},s_{i+1}), ..., (x_m,s_m),
+ * where x_i are variables for which p x_i holds, and which do not
+ * occur in any of the phi_j.
+ *)
+let split_constraint p phi =
+  let noneqvars term = match get_definition term with
+    | None -> Term.vars term
+    | Some _ -> []
+  in
+  let vars = List.flat_map noneqvars ter
+
+  let cord term = match get_definition term with
+    | None -> Left term
+    | Some eq -> Right eq
+  in
+  let split = List.map cord parts in
+  None
+;;
+
+(**
+ * This function splits a logical constraint in a pair (c', lst)
+ * where lst contains all definitions of c, and c' is the rest of
+ * the constraint.  Not tail-recursive.
+ *)
+let split_constraint c =
+  let parts = get_conjunction_parts c in
+  let is_top f = (f = Alphabet.get_top_symbol (alphabet ())) in
+  let is_equal f = (f = Alphabet.get_equal_symbol (alphabet ())) in
+  let getvar s = List.hd (Term.vars s) in
+  let split term =
+    if Term.is_var term then ([], [(getvar term, create_top ())])
+    else if not (is_equal (Option.the (Term.root term))) then ([term], [])
+    else (
+      let args = Term.args term in
+      let (a, b) = (List.hd args, List.hd (List.tl args)) in
+      if Term.is_var a then ([], [(getvar a, b)])
+      else if Term.is_var b then ([], [(getvar b, a)])
+      else ([term], [])
+    )
+  in
+  let splitparts = List.map split parts in
+  let constrparts = List.flat_map fst splitparts in
+  let defparts = List.flat_map snd splitparts in
+  (create_conjunction constrparts, defparts)
+;;
+
+(**
+ * This function turns all rules in the list into rules with
+ * definition lists, as these are more convenient to use in this
+ * module.
+ *)
+let rec split_rule_constraints = function
+  | [] -> []
+  | head :: tail ->
+    let lhs = Rule.lhs head in
+    let rhs = Rule.rhs head in
+    let c = singlify_constraint (Rule.constraints head) in
+    let (mainconstraint, defs) = split_constraint c in
+    (lhs, rhs, mainconstraint, defs) :: split_rule_constraints tail
+;;
+
+(*** INITIALISATION ***)
+
+(**
+ * This function starts up inductive theorem proving for the
+ * given TRS: we get the rules from [trs], move them to their own
+ * environment, turn them calculation-free, make them only have one
+ * constraint each, and store the alphabet and resulting environment
+ * and rules in the global variables.
+ *)
+let initialise trs =
+  let a = Trs.get_alphabet trs in
+  let e = Environment.empty 100 in
+  let update_environment (rule, oldenv) =
+    try Rule.environment_transfer rule oldenv e (Alphabet.fun_names a)
+    with Failure msg ->
+      failwith ("Environment error with rule " ^
+        (Rule.to_stringm a oldenv rule) ^ ": " ^ msg)
+  in
+  internal_alphabet := Some a ;
+  internal_environment := Some e ;
+  let rules = List.map update_environment (Trs.get_rules trs) in
+  let rules = List.map (Rule.full_calculation_free a e) rules in
+  internal_rules := split_rule_constraints rules
+;;
+
+(**
+ * Returns a string representation of the constraint corresponding
+ * to phi /\ equalities
+ *)
+let to_string_constraints phi equalities env alf =
+  let phstr = Printer.to_string_term phi env alf in
+  let print_equality (x, s) =
+    (Environment.find_var_name x env) ^ " = " ^
+    (Printer.to_string_term s env alf)
+  in
+  let eqstr = List.join print_equality " /\\ " equalities in
+  if equalities = [] then phstr
+  else if Term.root phi = Some (Alphabet.get_top_symbol alf) then eqstr
+  else phstr ^ " /\\ " ^ eqstr
+;;
+
+(** Prints the normal rules, and extra rules, with numbers *)
+let print_all_rules extra_rules =
+  let makeid pre i rule = (pre ^ (string_of_int (i+1)), rule) in
+  let arules = List.mapi (makeid "") (rules ()) in
+  let brules = List.mapi (makeid "X") extra_rules in
+  let allrules = List.append arules brules in
+  let alf = alphabet () in
+  let env = environment () in
+  let print_rule (index, (lhs, rhs, constr, eqs)) =
+    [index ^ ") " ;
+     Printer.to_string_term lhs env alf ;
+     " -> " ;
+     Printer.to_string_term rhs env alf ;
+     to_string_constraints constr eqs env alf 
+    ]
+  in
+  Printer.print_list print_rule
+    [Printer.R;Printer.R;Printer.C;Printer.L;Printer.L] allrules ;
+  Printer.flush ()
+;;
+
+(** Returns whether !rules united with extra_rules is terminating *)
+let terminating extra_rules =
+  Printf.printf "Termination proof required for:\n" ;
+  print_all_rules extra_rules ;
+  Printf.printf "For now, we'll just assume that termination is satisfied!\n\n" ;
+  true
+;;
+
+(** Returns whether term is reduction-complete under !rules *)
+let reduction_complete term relrules =
+  let t = Printer.to_string_term term (environment ()) (alphabet ()) in
+  Printf.printf "Reduction-completeness proof required for: %s.\n" t ;
+  Printf.printf "For now, we'll just assume that this is satisfied!\n\n" ;
+  true
+;;
+
+(**
+ * Checks standardness and termination, returning f <errormess> if
+ * one of them does not hold, or g () if both hold.  Note that both
+ * properties are required for this technique to be applicable.
+*)
+let precheck f g trs =
+  if not (Completenesschecker.check_constructor_standard trs) then
+    f ("Inductive Theorem Proving can only be used for " ^
+      "standard LCTRSs where constructor symbols of logical " ^
+      "sorts must be values.\n")
+  else if not (terminating []) then
+    f ("Inductive Theorem Proving can only be used for " ^
+      "terminating LCTRSs, and we could not automatically " ^
+      "prove termination.\n")
+  else g ()
+;;
+
+(*** HANDY HELPING FUNCTIONS ***)
+
+(** Removes unnecessary parts of an And clause *)
+let prettify_constraint form =
+  let parts = get_conjunction_parts form in
+  create_conjunction parts
+;;
+
+(** Turns our internal rules into real rules *)
+let make_rule (left, right, form, defs) =
+  let cs = constraint_with_equations form defs in
+  Rule.create left right [Constraint.logical_constraint cs]
+;;
+
+(**
+ * Checks whether a formula is definitely satisfiable in combination
+ * with a list of definitions.
+ *)
+let satisfiable formula eqs =
+  let forms = make_constraint_list formula eqs in
+  Smtsolver.satisfiable forms (smt ()) (environment ())
+;;
+
+(**
+ * Checks whether a formula is definitely unsatisfiable in
+ * combination with a list of definitions.
+ * This is different from not (satisfiable formula eqs) because both
+ * satisfiable and unsatisfiable return false if the smt-solver does
+ * not know.
+ *)
+let unsatisfiable formula eqs =
+  let forms = make_constraint_list formula eqs in
+  Smtsolver.unsatisfiable forms (smt ()) (environment ())
+;;
+
+(** Checks whether a formula / definition combination is valid *)
+let valid formula eqs =
+  let forms = make_constraint_list formula eqs in
+  Smtsolver.valid forms (smt ()) (environment ())
+;;
+
+(*
+(**
+ * If validity of phi => exists[vars] psi can be checked without
+ * actually doing an existential quantification, then this does the
+ * check in question, and returns Some answer; if it cannot be
+ * checked so trivially, then None is returned.
+ * This is a helping function for existential_implication.
+ *)
+let trivial_existential_implication vars phi psi =
+  if vars = [] then Some (valid (create_imply phi psi))
+  else (
+    let parts = get_conjunction_parts psi in
+    let varsfree term = List.intersect (Term.vars term) vars = [] in
+    let safe = List.filter varsfree parts in
+    let unsafe = List.diff parts safe in
+    let psisafe = create_conjunction safe in
+      (* if unsafe consists only of definitions, then phi => Ex[vars] psi
+         is equivalent to phi => psisafe *)
+    let make_pair term =
+      if Term.is_var term then (term, create_top ())
+      else (
+        let f = Option.the (Term.root term) in
+        if f <> (Alphabet.get_equal_symbol (alphabet ())) then
+          failwith "not trivial!"
+        else (
+          let args = Term.args term in
+          let (a, b) = (List.hd args, List.hd (List.tl args)) in
+          if varsfree a then (b, a)
+          else (a, b)
+        )
+      )
+    in
+    try
+      let unequal (a, b) = (a <> b) in
+      let notlvar (a, b) = not (Term.is_var a) in
+      let badright (a, b) = not (varsfree b) in
+      let pairs = List.map make_pair unsafe in
+      let unsafe_pairs = List.filter unequal pairs in
+      if (List.filter notlvar unsafe_pairs) <> [] then None
+      else if (List.filter badright unsafe_pairs) <> [] then None
+      else ( (* all equalities of the form x = s, with s free of vars *)
+        let vs = List.map fst unsafe_pairs in
+        if (List.length vs) <> (List.length (List.unique vs)) then None
+        else Some (valid (create_imply phi psisafe))
+      )
+    with _ -> None
+  )
+;;
+
+(** Checks whether phi => exists[vars] psi is valid *)
+let existential_implication vars phi psi =
+  match trivial_existential_implication vars phi psi with
+    | Some answer -> answer
+    | None -> (
+      let varname x = Environment.find_var_name x (environment ()) in
+      let rec exists = function
+        | [] -> ""
+        | a :: [] -> (varname a) ^ ". "
+        | a :: tail -> (varname a) ^ "," ^ (exists tail)
+      in
+      Printf.printf
+        "\nIs the following constraint VALID?\n  (%s) => %s%s\n\n> "
+        (Printer.to_string_term phi (environment ()) (alphabet ()))
+        ("Ex " ^ (exists vars))
+        (Printer.to_string_term psi (environment ()) (alphabet ())) ;
+      let line = read_line () in
+      Printf.printf "\n" ;
+      if line = "" then false
+      else (String.get line 0) = 'y' || (String.get line 0) = 'Y'
+    )
+;;
+*)
+
+(*******************************************************************)
+(* the following functions supply the main functionality for       *)
+(* inductive theorem proving (rules like simplify and expand)      *)
+(*******************************************************************)
+
+(**
+ * returns whether all variables which occur in terms either do not
+ * occur in the domain of gamma, or are mapped to logical terms
+ * (that is, variables or values)
+ *)
+let suitable_substitution gamma terms =
+  let vars = List.flat_map Term.vars terms in
+  let test_variable x =
+    if not (Substitution.mem x gamma) then true
+    else (
+      let value = Substitution.find x gamma in
+      Term.check_logical_term (alphabet ()) value = None
+    )
+  in
+  let rec all_good = function
+    | [] -> true
+    | x :: rest -> if test_variable x then all_good rest else false
+  in
+  all_good vars
+;;
+
+(* Suppose x = C[y1,...,yn] occurs in psi, en gamma(x) =
+ * C[s1,...,sn] in phi, and for all yi: if yi in Dom(gamma), then
+ * gamma(yi) = si.
+ * Then this function adds mappings gamma(yi) = si for all yi
+ * Note: phi and psi are definition lists.
+ *)
+let extend_domain_with_guess phi psi gamma =
+  (* find a map varmap which contains pairs (x,y) such that gamma(x) =
+     Var y *)
+  let vartovar (x, s) = Term.is_var s in
+  let getvar s = List.hd (Term.vars s) in
+  let makevars (x, s) = (x, getvar s) in
+  let candidates = List.filter vartovar (Substitution.to_list gamma) in
+  let varmap = List.map makevars candidates in
+  (* for each variable x with gamma(x) = y, find lists [s1,...,sn] and
+     [t1,...,tm] such that x = s1, ..., x = sn and y = t1, ..., y = tm;
+     let pairmap be the list of tuples (x, [s1,...,sn], y, [t1,...,tm])
+  *)
+  let test x (y, s) =
+    if x = y then [s]
+    else if s = Term.Var x then [Term.make_var y]
+    else []
+  in
+  let var_equality x = List.flat_map (test x) in
+  let get_equalities (x, y) = (x, var_equality x psi, y, var_equality y phi) in
+  let pairmap = List.map get_equalities varmap in
+  (* filter out useless cases, and consider all possible pairings of
+     two matching constraints; we let pairings be a list of tuples
+     (x, y, lst) where lst is a list containing all entries (si,tj) *)
+  let entry (x, lst1, y, lst2) = (x, y, List.product lst1 lst2) in
+  let nonempty (_, _, lst) = lst <> [] in
+  let pairings = List.filter nonempty (List.map entry pairmap) in
+  (* for every entry (x, y, [vec{(s,t)}], find all pairs (si, tj)
+     such that tj is an instance of si gamma, and let substpairings
+     be the list with elements (x, y, [delta1,...,deltak]), where the
+     deltai are the corresponding substitutions *)
+  let correspond (s,t) =
+    try [Elogic.match_term t s]
+    with Elogic.Not_matchable -> []
+  in
+  let update_entry (x, y, lst) = (x, y, List.flat_map correspond lst) in
+  let substpairings = List.map update_entry pairings in
+  (* we are no longer interested in x and y; we now consider all
+     substitutions deltai, and if they are combinable with gamma,
+     we extend gamma to include them!
+  *)
+  let substitutions = List.flat_map (fun (_,_,lst) -> lst) substpairings in
+  let badentry z t =
+    (Substitution.mem z gamma) && (Substitution.find z gamma <> t)
+  in
+  let mergable gamma delta = not (Substitution.exists badentry delta) in
+  let foldfun gamma delta =
+    if mergable gamma delta then Substitution.union gamma delta
+    else gamma
+  in
+  List.fold_left foldfun gamma substitutions
+;;
+
+(** Adds a mapping x:=y in gamma, with y fresh *)
+let extend_domain_with_var gamma x env funnames =
+  let replace_var x =
+    let y = Environment.fresh_var env in
+    let _ = Environment.create_var_name y funnames env in
+    Environment.add_sort y (Environment.find_sort x env) env ;
+    y
+  in
+  if Substitution.mem x gamma then gamma
+  else let y = replace_var x in Substitution.add x (Term.make_var y) gamma
+;;
+
+(**
+ * creates a fresh variable y for all variables x occurring in psi
+ * which are not yet in the domain of gamma, and extends gamma with
+ * x:=y
+ *)
+let extend_domain_with_term gamma term env funnames =
+  let replace_in gamma x = extend_domain_with_var gamma x env funnames in
+  List.fold_left replace_in gamma (Term.vars term)
+;;
+
+(**
+ * This extends the domain of gamma with mappings to fresh variables
+ * for all variables occurring in psi and defs r which do not yet
+ * occur in the domain of gamma.
+ * Moreover, defs is split into a "definition" part and a "constraint"
+ * part; the return value is: (updated gamma, psi with constraints
+ * from the definitions apended, definition part of defs).
+ *)
+let extend_domain_with_fresh gamma psi defs =
+  let env = environment () in
+  let funnames = Alphabet.fun_names (alphabet ()) in
+  (* some functions to parse the definition list *)
+  let rec find_occurrence x = function
+    | [] -> None
+    | (y, s) :: tail ->
+      if x = y then Some s else find_occurrence x tail
+  in
+  (* main functionality, iterates over the definition list *)
+  let rec split_definitions gamma psi realdefs = function
+    | [] -> (gamma, psi, realdefs)
+    | (x, s) :: tail ->
+      (* make sure all variables in s are instantiated *)
+      let gamma = extend_domain_with_term gamma s env funnames in
+      (* as for x, if we already know it, we just make x = s a constraint *)
+      if (Substitution.mem x gamma) || (List.mem x (Term.vars s)) then
+        let p = create_and psi (create_equal (Term.make_var x) s) in
+        split_definitions gamma p realdefs tail
+      (* if x is so far unmapped, we may just keep x = s as a definition *)
+      else match find_occurrence x tail with
+        | Some t ->
+          (* definition which occurs multiple times: (x, s) and (x, t):
+             we merely need to add s = t, and deal with x when we get
+             to (x,t)! *)
+          let p = create_and psi (create_equal s t) in
+          split_definitions gamma p realdefs tail
+        | None ->
+          (* x is fresh; we can safely keep this purely as a definition! *)
+          let gamma = extend_domain_with_var gamma x env funnames in
+          split_definitions gamma psi ((x, s) :: realdefs) tail
+  in
+  (* start the work! *)
+  let (sub, constr, realdefs) = split_definitions gamma psi [] defs in
+  (sub, constr, List.rev realdefs)
+;;
+
+(** checks whether the deletion rule is applicable *)
+let try_deletion (s, t, phi, eqs) =
+  if s = t then true
+  else unsatisfiable phi eqs
+;;
+
+(**
+ * applies eq-deletion to the given goal as much as possible; returns
+ * None if this is not possible, otherwise returns an updated goal
+ *)
+let try_eqdelete (s, t, phi, defs) =
+  let is_logical term = Term.check_logical_term (alphabet ()) term = None in
+  let rec unequal_in_context a b =
+    if Term.is_var a then (
+      if (a = b) then []
+      else if is_logical b then [(a,b)]
+      else raise Elogic.Not_matchable
+    )
+    else if Term.is_var b then (
+      if is_logical a then [(a,b)]
+      else raise Elogic.Not_matchable
+    )
+    else (
+      let (f, ss) = (Term.root a, Term.args a) in
+      let (g, tt) = (Term.root b, Term.args b) in
+      if f <> g then raise Elogic.Not_matchable
+      else (
+        let merged = List.combine ss tt in
+        List.flat_map (uncurry unequal_in_context) merged
+      )
+    )
+  in
+  try
+    let lst = unequal_in_context s t in
+    let eqlst = List.map (uncurry create_equal) lst in
+    let psi = create_not (create_conjunction eqlst) in
+    Some (s, t, create_and phi psi, defs)
+  with _ -> None
+;;
+
+(** Swaps the left- and right-hand side of a goal. *)
+let try_swap (lhs, rhs, phi, defs) = (rhs, lhs, phi, defs);;
+
+(**
+ * attempts to simplify the goal on the given position with the given
+ * rule; returns None if this is impossible, or Some newgoal if it
+ * can be done!
+ * Note: we do not currently check whether the constraint for the
+ * equation is satisfiable!
+ *)
+let try_simplify goal rule pos : equation option =
+  let (s, t, phi, gdefs) = goal in
+  let (l, r, psi, rdefs) = rule in
+  let psiterms = psi :: List.map snd rdefs in
+
+  (* we must match the subterm of s at position pos with l *)
+  let subterm = Term.subterm pos s in
+  
+  (* we'll try to match - if that fails, we can immediately abort
+     (we will also throw a matching failure if the only substitution
+     we obtain is not suitable)
+  *)
+  try
+    let gamma = Elogic.match_term subterm l in
+    let gamma = extend_domain_with_guess gdefs rdefs gamma in
+    if not (suitable_substitution gamma psiterms) then
+      raise Elogic.Not_matchable ;
+      (* note that suitable substitution not only checks whether all
+         variables in psiterms are mapped to logical terms, but also
+         that they are mapped at all, which implies that they occur
+         in Var(s,t,phi,gdefs) *)
+    let (gamma, largerpsi, smallerdefs) =
+      extend_domain_with_fresh gamma psi rdefs in
+    let psigamma = Substitution.apply_term gamma largerpsi in
+    let phifull = constraint_with_equations phi gdefs in
+    if not (valid (create_imply phifull psigamma) []) then
+      raise Elogic.Not_matchable ;
+    (* We have a match! Create the right-hand side. *)
+    let rgamma = Substitution.apply_term gamma r in
+    let ss = Term.replace pos rgamma s in
+    let (psiconstr, psidefs) = split_constraint psigamma in
+    let newconstraint = prettify_constraint (create_and phi psiconstr) in
+    let subdef (x, s) =
+      let y = List.hd (Term.vars (Substitution.find x gamma)) in
+      let t = Substitution.apply_term gamma s in
+      (y, t)
+    in
+    let newdefs = List.map subdef smallerdefs in
+    Some (ss, t, newconstraint, List.concat [gdefs;psidefs;newdefs])
+  with Elogic.Not_matchable -> None
+;;
+
+(**
+ * Attempts to apply the expansion rule on the goal on the given position;
+ * if this fails, None is returned, otherwise a list of new goals together
+ * with the resulting rule.
+ *
+ * TODO: this is entirely too weak: it should INSTANTIATE left-hand sides
+ * of goals to make them match the rules!
+ *)
+let try_expand goal pos : ((equation list) * rule) option =
+  let (s, t, phi, gdefs) = goal in
+  let subterm = Term.subterm pos s in
+  let try_rule (l, r, psi, rdefs) =
+    let gamma = Elogic.match_term subterm l in
+    let psiextend = constraint_with_equations psi rdefs in
+    if not (suitable_substitution gamma [psiextend]) then None else
+    let env = environment () in
+    let funnames = Alphabet.fun_names (alphabet ()) in
+    let gamma = extend_domain_with_term gamma psiextend env funnames in
+    let rgamma = Substitution.apply_term gamma r in
+    let psigamma = Substitution.apply_term gamma psiextend in
+    let (newpsi, newdefs) = split_constraint psigamma in
+    let newleft = Term.replace pos rgamma s in
+    let newgoal = prettify_constraint (create_and phi newpsi) in
+    Some (newleft, t, newgoal, List.append gdefs newdefs)
+  in
+  let matchesub (l, _, _, _) = Elogic.matches subterm l in
+  let applicable = List.filter matchesub (rules ()) in
+  if not (reduction_complete subterm applicable) then None
+  else (
+    let newgoals = List.map try_rule applicable in
+    if List.filter Option.is_none newgoals <> [] then None else
+    let newgoals = List.map Option.the newgoals in
+    Some (newgoals, goal)
+  )
+;;
+
+(*******************************************************************)
+(* the following functions are used for automatic inductive        *)
+(* theorem proving                                                 *)
+(*******************************************************************)
+
+(**
+ * This returns either None, if the given goal cannot be simplified
+ * at all, or Some (newgoal, usedruleid, usedposition, swapped) if it
+ * can be simplified ("swapped" is a boolean indicating that the goal
+ * has been swapped before this simplification was done.
+ *)
+let best_simplification goal extra_rules =
+  let (lhs, rhs, phi, gdefs) = goal in
+  (* find all positions, sorted such that deeper positions come first *)
+  let rec comp p q =
+    if Position.is_root p then
+      ( if Position.is_root q then 0 else 1 )
+    else if Position.is_root q then -1
+    else (
+      let (hp, tp) = Position.split_first p in
+      let (hq, tq) = Position.split_first q in
+      if hp > hq then 1
+      else if hp < hq then -1
+      else comp tp tq
+    )
+  in
+  let swappedgoal = try_swap goal in
+  let left_positions = List.sort comp (Term.pos lhs) in
+  let right_positions = List.sort comp (Term.pos rhs) in
+  let positions =
+    List.append (List.map (fun x -> (false, x)) left_positions)
+                (List.map (fun x -> (true, x)) right_positions) in
+  (* get all the rules that we might be applying, in the order that
+     we're going to try them *)
+  let makeid pre i rule = (pre ^ (string_of_int (i+1)), rule) in
+  let arules = List.mapi (makeid "") (rules ()) in
+  let brules = List.mapi (makeid "X") extra_rules in
+  let allrules = List.rev_append brules arules in
+  (* try finding a rule / position combination that works! *)
+  let rec try_rule rule = function
+    | [] -> None
+    | (swapped, pos) :: tail -> (
+      let g = ( if swapped then swappedgoal else goal ) in
+      match try_simplify g rule pos with
+        | None -> try_rule rule tail
+        | Some eq -> Some (eq, swapped, pos)
+      )
+  in
+  let rec try_all_rules = function
+    | [] -> None
+    | (ruleid, rule) :: tail -> (
+      match try_rule rule positions with
+        | None -> try_all_rules tail
+        | Some (eq, swapped, pos) -> Some (eq, swapped, pos, ruleid)
+      )
+  in
+  try_all_rules allrules
+;;
+
+(*******************************************************************)
+(* the following functions are used for dynamic inductive theorem  *)
+(* proving                                                         *)
+(*******************************************************************)
+
+(* prints the current goal (an equation) *)
+let print_goal goal =
+  let rule = make_rule goal in
+  Printf.printf "GOAL:  " ;
+  Printer.print_rule rule (environment ()) " = " " " ;
+  Printer.print_newline() ;
+  Printer.flush ()
+;;
+
+(* returns a string representation of the given position *)
+let to_string_position pos =
+  let lst = List.map (fun i -> i + 1) (Position.to_list pos) in
+  "[" ^ (List.join string_of_int "." lst) ^ "]"
+;;
+
+(* parses the given string representation into a position *)
+let from_string_position txt =
+  let pos = (
+    if txt = "" then txt
+    else if String.get txt 0 <> '[' then txt
+    else if String.get txt ((String.length txt) - 1) <> ']' then txt
+    else String.sub txt 1 ((String.length txt) - 1)
+  ) in
+  try
+    let parts = String.split ~d:"\\." pos in
+    let iparts = List.map int_of_string parts in
+    let lower = List.map (fun i -> i - 1) iparts in
+    Position.of_list lower
+  with _ -> failwith ("Illegal position: " ^ pos ^
+    " (should be a list of positive integers, separated by periods)")
+;;
+
+(* handles the "abort" command, which quits the user-assisted
+   derivation attempt
+*)
+let user_abort goal remainder extra_rules continue = MAYBE;;
+
+(* handles the "skip" command, which puts the current goal at the
+   end of the goal list
+*)
+let user_skip goal remainder extra_rules continue =
+  match remainder with
+    | [] ->
+      Printf.printf "This is the only goal.\n\n" ;
+      continue (goal :: remainder) extra_rules
+    | head :: tail ->
+      continue (List.append remainder [goal]) extra_rules
+;;
+
+(* handles the "rules" command, which prints all the rules *)
+let user_rules goal remainder extra_rules continue =
+  print_all_rules extra_rules ;
+  Printf.printf "\n" ;
+  continue (goal :: remainder) extra_rules
+;;
+
+(* handles queries for the available commands *)
+let user_commands cmds goal remainder extra_rules continue =
+  let commands = List.map fst cmds in
+  Printf.printf "Available commands:\n%s\n\n" (String.itemize 80 commands) ;
+  continue (goal :: remainder) extra_rules
+;;
+
+(* handles the "swap" command *)
+let user_swap goal remainder extra_rules continue =
+  continue ((try_swap goal) :: remainder) extra_rules
+;;
+
+(* handles the "deletion" command *)
+let user_deletion goal remainder extra_rules continue =
+  if try_deletion goal then continue remainder extra_rules
+  else (
+    Printf.printf "Deletion is not applicable.\n\n" ;
+    continue (goal :: remainder) extra_rules
+  )
+;;
+
+(* handles the "eq-deletion" command *)
+let user_eqdeletion goal remainder extra_rules continue =
+  match try_eqdelete goal with
+    | None ->
+      Printf.printf "Eq-deletion is not applicable.\n\n" ;
+      continue (goal::remainder) extra_rules
+    | Some newgoal -> continue (newgoal::remainder) extra_rules
+;;
+
+(* handles the "simplify" command *)
+let user_simplify arguments goal remainder extra_rules continue =
+  let get_rule num =
+    let (n, group) = (
+      try
+        let start = String.get num 0 in
+        let rest = String.sub num 1 ((String.length num) - 1) in
+        if start = 'X' then (int_of_string rest, extra_rules)
+        else (int_of_string num, rules ())
+      with _ -> failwith ("Illegal rule index " ^ num ^ ": should " ^
+        "by a positive integer or X followed by a positive integer.")
+    ) in
+    try List.nth group (n-1)
+    with _ -> failwith ("Unused rule index: " ^ num)
+  in
+  let parse_args = function
+    | rule :: [] -> (get_rule rule, Position.root)
+    | rule :: pos :: [] -> (get_rule rule, from_string_position pos)
+    | _ -> failwith ("Simplify requires one or two arguments: " ^
+      "the number of the rule to be used, and possibly a " ^
+      "position (this defaults to the top position, and should be " ^
+      "a list of integers (0-based!) separated by periods.)")
+  in
+  let neweq = (
+    try
+      let (rule, pos) = parse_args arguments in
+      match try_simplify goal rule pos with
+        | None ->
+          Printf.printf "The rule cannot be applied at this position.\n\n" ;
+          goal :: remainder
+        | Some newgoal -> newgoal :: remainder
+    with Failure msg ->
+      let msg = ( if msg = "nth" then "no such subterm!" else msg ) in
+      Printf.printf "%s\n\n" msg ;
+      goal :: remainder
+  ) in
+  continue neweq extra_rules
+;;
+
+(* handles the "expansion" command *)
+let user_expansion arguments goal remainder extra_rules continue =
+  let parse_args = function
+    | [] -> Position.root
+    | pos :: [] -> from_string_position pos
+  in
+  let (neweqs, newrules) = (
+    try
+      let pos = parse_args arguments in
+      match try_expand goal pos with
+        | None ->
+          Printf.printf "%s" ("Expansion cannot be be applied at " ^
+            "this position (most likely, the position is not " ^
+            "reduction complete).\n\n") ;
+          ([goal], extra_rules)
+        | Some (goals, rule) -> (goals, rule :: extra_rules)
+    with Failure msg ->
+      Printf.printf "%s\n\n" msg ;
+      ([goal], extra_rules)
+  ) in
+  continue (List.append neweqs remainder) newrules
+;;
+
+(* handles the "auto" command *)
+let user_auto goal remainder extra_rules continue =
+  (* check whether we are done without any further simplification *)
+  let can_finish steps goal =
+    if try_deletion goal then Some ("delete" :: steps)
+    else match try_eqdelete goal with
+      | None -> None
+      | Some newgoal ->
+        if try_deletion newgoal then
+          Some ("delete" :: "eq-delete" :: steps)
+        else None
+  in
+  (* returns whether p is at a greater independent position than q,
+     ordered lexicographically; if p is a prefix or suffix of q, this
+     returns false! *)
+  let rec greater_position p q =
+    if (p = Position.root) || (q = Position.root) then false
+    else (
+      let (hp, tp) = Position.split_first p in
+      let (hq, tq) = Position.split_first q in
+      if hp > hq then true
+      else if hp < hq then false
+      else greater_position tp tq
+    )
+  in
+  (* returns all possible simplifications, together with a boolean
+     indicating whether we have swapped to obtain this, a position
+     where the simplification occurred, and all steps needed to
+     obtain this *)
+  let rec simplifications (goal, swapped, pos, steps) =
+    let (lhs, _, _, _) = goal in
+    let positions = Term.pos lhs in
+    let validpos q = not (greater_position pos q) in
+    let positions = List.filter validpos positions in
+    let makeid pre i rule = (pre ^ (string_of_int (i+1)), rule) in
+    let arules = List.mapi (makeid "") (rules ()) in
+    let brules = List.mapi (makeid "X") extra_rules in
+    let allrules = List.append arules brules in
+    let combinations = List.product positions allrules in
+    let attempt_simplify (position, (ruleid, rule)) =
+      match try_simplify goal rule position with
+        | None -> []
+        | Some eq ->
+          let description = "simplify " ^ ruleid ^ " " ^
+            (to_string_position position)
+          in
+          [(eq, swapped, position, description::steps)]
+    in
+    let answer = List.flat_map attempt_simplify combinations in
+    if swapped then answer
+    else List.append answer
+      (simplifications (try_swap goal, true, pos, "swap"::steps))
+  in
+
+  (* checks whether any element of the given list is solved, returns
+     Left steps if so, otherwise returns Right [list of simplifications
+     of list elements] *)
+  let update_list lst =
+    let attempt_finish (goal, _, _, steps) = can_finish steps goal in
+    let flist = List.map attempt_finish lst in
+    let solved = List.filter (fun x -> x <> None) flist in
+    match solved with
+      | (Some hd) :: tl -> Left hd
+      | [] -> Right (List.flat_map simplifications lst)
+  in
+
+  (* calls update_list recursively (breadth-first recursion *)
+  let rec recurse depth lst =
+    match update_list lst with
+    | Left steps ->
+      Printf.printf "Goal is removed using %s.\n\n"
+        (List.join id ", " (List.rev steps)) ;
+      continue remainder extra_rules
+    | Right l ->
+      if depth >= 3 then (
+        Printf.printf "Could not remove the goal easily.\n\n" ;
+        continue (goal::remainder) extra_rules
+      )
+      else recurse (depth + 1) l
+  in
+
+  (* set it all in motion! *)
+  recurse 0 [(goal, false, Position.root, [])]
+;;
+
+(* handles the "autosimp" command *)
+let user_autosimplify goal remainder extra_rules continue =
+  (* main functionality *)
+  match best_simplification goal extra_rules with
+    | None ->
+      Printf.printf "No simplification can be applied to this equation.\n\n" ;
+      continue (goal ::remainder) extra_rules
+    | Some (eq, swapped, pos, id) ->
+      Printf.printf "We %sapply: simplify %s %s\n\n"
+        (if swapped then "swap the sides and then " else "") id
+        (to_string_position pos) ;
+      continue (eq::remainder) extra_rules
+;;
+
+(* handles the user giving an illegal command *)
+let user_illegal name goal remainder extra_rules continue =
+  Printf.printf "Illegal action: %s\n\n" name ;
+  continue (goal :: remainder) extra_rules
+;;
+
+(* main function to handle a user-assisted derivation! *)
+let rec user_assisted_derivation equations extra_rules undo =
+  let get_action () =
+    Printf.printf "> " ;
+    let line = read_line () in
+    Printf.printf "\n" ;
+    let parts = String.split line in
+    match parts with
+      | [] -> ("empty", [])
+      | command :: args -> (command, args)
+  in
+  let user_undo g r e c =
+    match undo with
+      | [] -> Printf.printf "Nothing left to undo.\n\n" ;
+        user_assisted_derivation equations extra_rules undo
+      | (eqs, rls) :: tail -> user_assisted_derivation eqs rls tail
+  in
+  match equations with
+    | [] -> YES
+    | goal :: remainder ->
+      print_goal goal ;
+      let (action, arguments) = get_action () in
+      let commands = [("abort",     user_abort)      ;
+                      ("exit",      user_abort)      ;
+                      ("skip",      user_skip)       ;
+                      ("rules",     user_rules)      ;
+                      ("swap",      user_swap)       ;
+                      ("delete",    user_deletion)   ;
+                      ("eq-delete", user_eqdeletion) ;
+                      ("expand",    user_expansion arguments) ;
+                      ("simplify",  user_simplify arguments) ;
+                      ("auto",      user_auto)       ;
+                      ("autosimp",  user_autosimplify) ;
+                      ("undo",      user_undo)       ;
+                     ] in
+      let pre = List.map (fun name -> (name, user_commands commands))
+                         ["list"; "empty"; "help"; "commands"] in
+      let commands = List.append pre commands in
+      let f = (
+        try List.assoc action commands
+        with Not_found -> user_illegal action
+      ) in
+      let continuefunc eq er =
+        let didnothing = (eq = equations) && (er = extra_rules) in
+        let undo = (
+          if didnothing then undo
+          else (goal :: remainder, extra_rules) :: undo
+        ) in
+        user_assisted_derivation eq er undo
+      in
+      f goal remainder extra_rules continuefunc
+;;
+*)
+
+(* here we initiate a derivation which will be user-driven *)
+let assist trs eqs =
+  failwith "Not implemented.\n"
+  (*
+  initialise trs ;
+  precheck failwith (fun _ -> ()) trs ;
+  user_assisted_derivation (split_rule_constraints eqs) [] [] *)
+;;
+
+let equivalent = assist;;
+  (* Temporary! *)
+

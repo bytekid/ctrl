@@ -1,0 +1,43 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE fib, fastfib, u : Int * Int * Int * Int * Int => Unit, v, w, return, !INTEGER ;
+
+RULES
+  fib(x)        -> return(0)                  [x <= 0]             ;
+  fib(1)        -> return(1)                                       ;
+  fib(x)        -> w(fib(x - 1), fib(x - 2))  [x - 2 >= 0]         ;
+  w(return(x), return(y)) -> return(x + y)                         ;
+  fastfib(n)      -> u(n, 1, 0, rnd1, rnd2)                        ;
+  u(n,fi,fp,fn,i) -> return(0)                      [n <= 0]       ;
+  u(n,fi,fp,fn,i) -> v(n,fi,fp,fn,1)                [not (n <= 0)] ;
+  v(n,fi,fp,fn,i) -> v(n,fi + fp,fi,fi + fp, i + 1) [i < n ]       ;
+  v(n,fi,fp,fn,i) -> return(fi)                     [not (i < n)]  ;
+
+QUERY equivalence fib(n) -><- fastfib(n) [true]
+
+END OF FILE
+
+Student program:
+
+int fastfib(int n)
+{
+  int fib = 1; 
+  int fib_p = 0; 
+  int fib_n; 
+  int i; 
+
+  if(n <= 0) { 
+    return 0;
+  }
+  
+  for(i = 1; i < n; i++) { 
+    fib_n = fib + fib_p; 
+    fib_p = fib; 
+    fib = fib_n; 
+  }
+
+  return fib; 
+}
+

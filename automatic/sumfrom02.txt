@@ -1,0 +1,12 @@
+int sum2(int m, int n)
+{
+  int i, total = 0;
+
+  i = m;
+  while(i <= n){
+    total = total + i;
+    i++;
+  }
+
+  return total;
+} 

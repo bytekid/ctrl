@@ -1,0 +1,70 @@
+THEORY arrays
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+
+SIGNATURE
+  knapsack: IntArray * IntArray * Int * IntArray * IntArray * Int => result_1;
+  u_1: IntArray * IntArray * Int * IntArray * IntArray * Int * Int => result_1;
+  u_2: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_3: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_4: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_5: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_6: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  error_1: result_1;
+  u_7: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_8: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_9: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_10: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_11: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_12: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_13: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_14: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_15: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_16: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_17: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_18: IntArray * IntArray * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  return_1: IntArray * IntArray * IntArray * IntArray => result_1;
+  main: Int * Int * IntArray * IntArray * IntArray * IntArray => result_2;
+  u_19: Int * Int * IntArray * IntArray * IntArray * IntArray * result_1 => result_2;
+  error_2: result_2;
+  u_20: Int * Int * IntArray * IntArray * IntArray * IntArray => result_2;
+  return_2: IntArray * IntArray * IntArray * IntArray * Int => result_2;
+  errortest;
+
+RULES
+  knapsack(sizes_1, val_1, N_1, cost_1, best_1, M_1) -> u_1(sizes_1, val_1, N_1, cost_1, best_1, M_1, rnd_1);
+  u_1(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2) -> u_2(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, rnd_2);
+  u_2(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_3(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_3(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_4(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, 1);
+  u_4(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_5(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2)  [(j_2 <= N_1)];
+  u_5(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, 1, j_2);
+  u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> error_1  [((i_2 <= M_1) /\ (0 > j_2 \/ j_2 >= size(sizes_1)))];
+  u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> error_1  [((((i_2 <= M_1) /\ (i_2 >= select(sizes_1, j_2))) /\ (0 <= j_2 < size(sizes_1))) /\ ((0 > i_2 \/ i_2 >= size(cost_1)) \/ (((0 > j_2 \/ j_2 >= size(sizes_1)) \/ (0 > (i_2 - select(sizes_1, j_2)) \/ (i_2 - select(sizes_1, j_2)) >= size(cost_1))) \/ (0 > j_2 \/ j_2 >= size(val_1)))))];
+  u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_7(sizes_1, val_1, N_1, store(cost_1, i_2, (select(cost_1, (i_2 - select(sizes_1, j_2))) + select(val_1, j_2))), best_1, M_1, i_2, j_2)  [((((((i_2 <= M_1) /\ (i_2 >= select(sizes_1, j_2))) /\ (0 <= j_2 < size(sizes_1))) /\ (select(cost_1, i_2) < (select(cost_1, (i_2 - select(sizes_1, j_2))) + select(val_1, j_2)))) /\ ((0 <= i_2 < size(cost_1)) /\ (((0 <= j_2 < size(sizes_1)) /\ (0 <= (i_2 - select(sizes_1, j_2)) < size(cost_1))) /\ (0 <= j_2 < size(val_1))))) /\ ((((0 <= j_2 < size(sizes_1)) /\ (0 <= (i_2 - select(sizes_1, j_2)) < size(cost_1))) /\ (0 <= j_2 < size(val_1))) /\ (0 <= i_2 < size(cost_1))))];
+  u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> error_1  [((((((i_2 <= M_1) /\ (i_2 >= select(sizes_1, j_2))) /\ (0 <= j_2 < size(sizes_1))) /\ (select(cost_1, i_2) < (select(cost_1, (i_2 - select(sizes_1, j_2))) + select(val_1, j_2)))) /\ ((0 <= i_2 < size(cost_1)) /\ (((0 <= j_2 < size(sizes_1)) /\ (0 <= (i_2 - select(sizes_1, j_2)) < size(cost_1))) /\ (0 <= j_2 < size(val_1))))) /\ ((((0 > j_2 \/ j_2 >= size(sizes_1)) \/ (0 > (i_2 - select(sizes_1, j_2)) \/ (i_2 - select(sizes_1, j_2)) >= size(cost_1))) \/ (0 > j_2 \/ j_2 >= size(val_1))) \/ (0 > i_2 \/ i_2 >= size(cost_1))))];
+  u_7(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_8(sizes_1, val_1, N_1, cost_1, store(best_1, i_2, j_2), M_1, i_2, j_2)  [(0 <= i_2 < size(best_1))];
+  u_7(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> error_1  [(0 > i_2 \/ i_2 >= size(best_1))];
+  u_8(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_9(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_9(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_10(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_10(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2)  [(((((i_2 <= M_1) /\ (i_2 >= select(sizes_1, j_2))) /\ (0 <= j_2 < size(sizes_1))) /\ (select(cost_1, i_2) >= (select(cost_1, (i_2 - select(sizes_1, j_2))) + select(val_1, j_2)))) /\ ((0 <= i_2 < size(cost_1)) /\ (((0 <= j_2 < size(sizes_1)) /\ (0 <= (i_2 - select(sizes_1, j_2)) < size(cost_1))) /\ (0 <= j_2 < size(val_1)))))];
+  u_10(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_11(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_11(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_12(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_12(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2)  [(((i_2 <= M_1) /\ (i_2 < select(sizes_1, j_2))) /\ (0 <= j_2 < size(sizes_1)))];
+  u_12(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_13(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_13(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_14(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_14(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_15(sizes_1, val_1, N_1, cost_1, best_1, M_1, (i_2 + 1), j_2);
+  u_15(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_6(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_16(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2)  [(i_2 > M_1)];
+  u_16(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_17(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_17(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_18(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, (j_2 + 1));
+  u_18(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> u_4(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2);
+  u_4(sizes_1, val_1, N_1, cost_1, best_1, M_1, i_2, j_2) -> return_1(sizes_1, val_1, cost_1, best_1)  [(j_2 > N_1)];
+  main(N_1, M_1, sizes_1, val_1, cost_1, best_1) -> u_19(N_1, M_1, sizes_1, val_1, cost_1, best_1, knapsack(sizes_1, val_1, N_1, cost_1, best_1, M_1));
+  u_19(N_1, M_1, sizes_1, val_1, cost_1, best_1, error_1) -> error_2;
+  u_19(N_1, M_1, sizes_1, val_1, cost_1, best_1, return_1(w_4, w_5, w_6, w_7)) -> u_20(N_1, M_1, w_4, w_5, w_6, w_7);
+  u_20(N_1, M_1, sizes_1, val_1, cost_1, best_1) -> return_2(sizes_1, val_1, cost_1, best_1, 0);
+  errortest(error_2) -> false;
+  errortest(return_2(w_8, w_9, w_10, w_11, w_12)) -> true;
+
+QUERY do-simplify [knapsack main errortest] and equivalence errortest(main(N, M, sizes, val, cost, best)) -><- true [N >= 1 /\ M >= 1 /\ size(sizes) = N /\ size(val) = N /\ size(cost) = M /\ size(best) = M]
+

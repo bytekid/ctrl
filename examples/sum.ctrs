@@ -1,0 +1,27 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER intsolver ;
+
+SIGNATURE
+  sum               ;
+  sum1              ;
+  u                 ;
+  !INTEGER          ;
+
+RULES
+  sum(x)    -> 0                    <-- [x <= 0]       ;
+  sum(x)    -> x + sum(x - 1)       <-- [0 <= x - 1]   ;
+  sum1(x)   -> u(x,1,0)                                ;
+  u(x,i,z)  -> u(x, i + 1, z + i)   <-- [i <= x]       ;
+  u(x,i,z)  -> z                    <-- [not (i <= x)] ;
+
+NON-STANDARD
+
+QUERY do-simplify [sum sum1] and equivalence sum(x) -><- sum1(x) [true]
+
+END OF FILE
+
+This example compares a recursive and iterative definition of the
+function n -> sum_{i=1}^n i.  This problem is fairly easy; to see an
+automatic derivation, just remove the "user-" part.
+

@@ -1,0 +1,31 @@
+THEORY strings
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+SIGNATURE
+
+
+
+  mystrlen: IntArray => result;
+  u_1: IntArray * Int => result;
+  error: result;
+  return: IntArray * Int => result;
+  u_2: IntArray * Int => result;
+  u_3: IntArray * Int => result;
+  u_4: IntArray * Int => result;
+  u_5: IntArray => result;
+
+RULES
+
+
+
+  mystrlen(str_1) -> u_1(str_1, 0);
+  u_1(str_1, i_3) -> error  [((1 # 0) /\ (0 > i_3 \/ i_3 >= size(str_1)))];
+  u_1(str_1, i_3) -> return(str_1, i_3)  [(((1 # 0) /\ (select(str_1, i_3) = 0)) /\ (0 <= i_3 < size(str_1)))];
+  u_1(str_1, i_3) -> u_2(str_1, i_3)  [(((1 # 0) /\ (select(str_1, i_3) # 0)) /\ (0 <= i_3 < size(str_1)))];
+  u_2(str_1, i_3) -> u_3(str_1, i_3);
+  u_3(str_1, i_3) -> u_4(str_1, (i_3 + 1));
+  u_4(str_1, i_3) -> u_1(str_1, i_3);
+  u_1(str_1, i_3) -> u_5(str_1)  [(1 = 0)];
+
+QUERY  do-simplify [mystrlen] and equivalence mystrlen(x) -><- return(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+

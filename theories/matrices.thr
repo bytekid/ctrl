@@ -1,0 +1,11 @@
+INCLUDE ints ;
+
+DECLARE
+  create           : Int * Int * Int => Matrix ;
+  rows             : Matrix => Int ;
+  cols             : Matrix => Int ;
+  select           : Matrix * Int * Int => Int ;
+  store            : Matrix * Int * Int * Int => Matrix ;
+  !ARRAY!Int       : Column ;
+  !ARRAY!Column    : Matrix ;
+

@@ -1,0 +1,19 @@
+int mystrlen(int trg[]){
+  int i, len = 0;
+
+  for(i = 0; trg[i] != 0; i++)
+    len++;
+
+  return len;
+}
+
+/* original
+int mystrlen(char trg[]){
+  int i, len = 0;
+
+  for(i = 0; trg[i] != '\0'; i++)
+    len++;
+
+  return len;
+}
+*/

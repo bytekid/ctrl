@@ -1,0 +1,17 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/rec_strlen-alloca_true-valid-memsafety.c */
+
+int strlen_rec(char p[], int i) {
+  if(p[i] == '\0')
+    return 0;
+  else
+    return 1 + strlen_rec(p, i+1);
+}
+
+int main(int length1, char nondetString1[]) {
+  nondetString1[length1-1] = '\0';
+  strlen_rec(nondetString1, 0);
+  return 0;
+}
+
+[length1 >= 1 /\ size(nondetString1) = length1]
+

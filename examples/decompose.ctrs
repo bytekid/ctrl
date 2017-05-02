@@ -1,0 +1,24 @@
+THEORY ints  ;
+LOGIC QF_NIA ;
+
+SIGNATURE start, f, product ;
+
+RULES
+  start -> f(input) ;
+  f(x) -> product(f(y),f(z)) [ x > y > 0 /\ x > z > 0 /\ x = y * z ] ;
+
+IRREGULAR
+
+QUERY normal form start
+
+END OF FILE
+
+This query demonstrates the nastiness that is possible for "irregular"
+systems, where the constraint may contain variables not occurring in
+the left-hand side of the rule: with a simple rule, we can decompose
+any positive integer value into its prime factors.
+
+Rules like these are legal in LCTRSs, but since they are often not
+intended (due to giving hard rules like the one above), you have to
+explicitly specify that they are irregular, as demonstrated.
+

@@ -1,0 +1,45 @@
+THEORY arrays
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+
+SIGNATURE
+  cbzero: IntArray * Int => result_1;
+  u_1: IntArray * Int * Int => result_1;
+  u_2: IntArray * Int * Int => result_1;
+  u_3: IntArray * Int * Int => result_1;
+  u_4: IntArray * Int * Int => result_1;
+  u_5: IntArray * Int * Int => result_1;
+  error_1: result_1;
+  u_6: IntArray * Int * Int => result_1;
+  u_7: IntArray * Int * Int => result_1;
+  u_8: IntArray * Int * Int => result_1;
+  return_1: IntArray => result_1;
+  main: Int * Int * IntArray => result_2;
+  error_2: result_2;
+  return_2: IntArray * Int => result_2;
+  u_9: Int * Int * IntArray * result_1 => result_2;
+  u_10: Int * Int * IntArray => result_2;
+  errortest;
+
+RULES
+  cbzero(b_1, length_1) -> u_1(b_1, length_1, rnd_1);
+  u_1(b_1, length_1, p_2) -> u_2(b_1, length_1, p_2);
+  u_2(b_1, length_1, p_2) -> u_3(b_1, length_1, 0);
+  u_3(b_1, length_1, p_2) -> u_4(b_1, (length_1 - 1), p_2)  [(length_1 # 0)];
+  u_4(b_1, length_1, p_2) -> u_5(store(b_1, p_2, 0), length_1, p_2)  [(0 <= p_2 < size(b_1))];
+  u_4(b_1, length_1, p_2) -> error_1  [(0 > p_2 \/ p_2 >= size(b_1))];
+  u_5(b_1, length_1, p_2) -> u_6(b_1, length_1, (p_2 + 1));
+  u_6(b_1, length_1, p_2) -> u_7(b_1, length_1, p_2);
+  u_7(b_1, length_1, p_2) -> u_8(b_1, length_1, p_2);
+  u_8(b_1, length_1, p_2) -> u_3(b_1, length_1, p_2);
+  u_3(b_1, length_1, p_2) -> return_1(b_1)  [(length_1 = 0)];
+  main(length_1, n_1, nondetArea_1) -> return_2(nondetArea_1, 0)  [(n_1 > length_1)];
+  main(length_1, n_1, nondetArea_1) -> u_9(length_1, n_1, nondetArea_1, cbzero(nondetArea_1, n_1))  [(n_1 <= length_1)];
+  u_9(length_1, n_1, nondetArea_1, error_1) -> error_2;
+  u_9(length_1, n_1, nondetArea_1, return_1(w_3)) -> u_10(length_1, n_1, w_3);
+  u_10(length_1, n_1, nondetArea_1) -> return_2(nondetArea_1, 0);
+  errortest(error_2) -> false;
+  errortest(return_2(w_4, w_5)) -> true;
+
+QUERY do-simplify [cbzero main errortest] and equivalence errortest(main(length, n, nondetArea)) -><- true [length >= 1 /\ n >= 1 /\ size(nondetArea) = length]
+

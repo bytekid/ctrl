@@ -1,0 +1,17 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE double, u, double1, sucsuc, plus, !INTEGER ;
+
+RULES
+
+double(x)  -> 0                      [x <= 0]       ;
+double(x)  -> 2 + double(x - 1)      [x > 0]        ;
+double1(n) -> u(n, 1, 0)                            ;
+u(n, i, z) -> u(n, i + 1, sucsuc(z)) [i <= n]       ;
+u(n, i, z) -> z                      [not (i <= n)] ;
+sucsuc(x)  -> x + 2                                 ;
+
+QUERY user-equivalence double(n) -><- double1(n) [true]
+

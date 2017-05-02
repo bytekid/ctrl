@@ -1,0 +1,58 @@
+THEORY strings
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+SIGNATURE
+
+  test         ;
+  return     ;
+  error      ;
+
+
+  mystrcpy: IntArray * IntArray => result;
+  u_1: IntArray * IntArray * Int => result;
+  u_2: IntArray * IntArray * Int => result;
+  error: result;
+  u_3: IntArray * IntArray * Int => result;
+  u_4: IntArray * IntArray * Int => result;
+  u_5: IntArray * IntArray * Int => result;
+  u_6: IntArray * IntArray * Int => result;
+  u_7: IntArray * IntArray * Int => result;
+  u_8: IntArray * IntArray * Int => result;
+  u_9: IntArray * IntArray * Int => result;
+  u_10: IntArray * IntArray * Int => result;
+  return: IntArray * IntArray => result;
+
+RULES
+
+
+  test(org, n, error)    -> false                                   ;
+  test(org, n, return(dest, src)) -> false [org # src]            ;
+  test(org, n, return(dest, src)) -> correspond(org, dest, 0, n)  ;
+
+
+  mystrcpy(x_1, y_1) -> u_1(x_1, y_1, rnd_1);
+  u_1(x_1, y_1, i_2) -> u_2(x_1, y_1, 0);
+  u_2(x_1, y_1, i_2) -> error  [(0 > i_2 \/ i_2 >= size(y_1))];
+  u_2(x_1, y_1, i_2) -> u_3(store(x_1, i_2, select(y_1, i_2)), y_1, i_2)  [(((select(y_1, i_2) # 0) /\ (0 <= i_2 < size(y_1))) /\ ((0 <= i_2 < size(y_1)) /\ (0 <= i_2 < size(x_1))))];
+  u_2(x_1, y_1, i_2) -> error  [(((select(y_1, i_2) # 0) /\ (0 <= i_2 < size(y_1))) /\ ((0 > i_2 \/ i_2 >= size(y_1)) \/ (0 > i_2 \/ i_2 >= size(x_1))))];
+  u_3(x_1, y_1, i_2) -> error  [(0 > (i_2 + 1) \/ (i_2 + 1) >= size(y_1))];
+  u_3(x_1, y_1, i_2) -> u_4(store(x_1, (i_2 + 1), 0), y_1, i_2)  [(((select(y_1, (i_2 + 1)) = 0) /\ (0 <= (i_2 + 1) < size(y_1))) /\ (0 <= (i_2 + 1) < size(x_1)))];
+  u_3(x_1, y_1, i_2) -> error  [(((select(y_1, (i_2 + 1)) = 0) /\ (0 <= (i_2 + 1) < size(y_1))) /\ (0 > (i_2 + 1) \/ (i_2 + 1) >= size(x_1)))];
+  u_4(x_1, y_1, i_2) -> u_5(x_1, y_1, i_2);
+  u_5(x_1, y_1, i_2) -> u_6(x_1, y_1, i_2);
+  u_3(x_1, y_1, i_2) -> u_6(x_1, y_1, i_2)  [((select(y_1, (i_2 + 1)) # 0) /\ (0 <= (i_2 + 1) < size(y_1)))];
+  u_6(x_1, y_1, i_2) -> u_7(x_1, y_1, i_2);
+  u_2(x_1, y_1, i_2) -> u_8(x_1, y_1, i_2)  [((select(y_1, i_2) = 0) /\ (0 <= i_2 < size(y_1)))];
+  u_7(x_1, y_1, i_2) -> u_9(x_1, y_1, i_2);
+  u_9(x_1, y_1, i_2) -> u_10(x_1, y_1, (i_2 + 1));
+  u_10(x_1, y_1, i_2) -> u_2(x_1, y_1, i_2);
+  u_8(x_1, y_1, i_2) -> return(x_1, y_1);
+
+QUERY  do-simplify [test mystrcpy] and equivalence test(x, n, mystrcpy(y, x)) -><- true [0 <= n < size(x) /\ n < size(y) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0 /\ n > 0]
+
+
+END OF FILE
+
+This program is mostly correct; this student has merely failed to account for
+the empty string as input!  We excluded this possibility in the query.
+

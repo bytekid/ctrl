@@ -1,0 +1,62 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err1 : result1 ;
+  err2 : result2 ;
+  strlen         ;
+  strcpy         ;
+  s              ;
+  u              ;
+  v              ;
+  return1        ;
+  return2        ;
+  test           ;
+  !ARRAY!Int     ;
+
+RULES
+  strlen(x) -> s(x, 0) ;
+  s(x, i) -> err1          [i < 0 \/ i >= size(x)] ;
+  s(x, i) -> return1(x, i) [0 <= i /\ i < size(x) /\ select(x, i) = 0] ;
+  s(x, i) -> s(x, i + 1)   [0 <= i /\ i < size(x) /\ select(x, i) # 0] ;
+
+  strcpy(trg,src)           -> u(trg,src,strlen(src),0) ;
+  u(trg,src,err1,i)         -> err2                     ;
+  u(trg,src,return1(x,a),i) -> v(trg,src,a,i)           ;
+
+  v(trg,src,a,i)  -> v(store(trg, i, select(src,i)), src, a, i + 1) [0 <= i < size(src) /\ i < size(trg) /\ i <= a]       ;
+  v(trg,src,a,i)  -> return2(trg,src)                               [0 <= i < size(src) /\ i < size(trg) /\ not (i <= a)] ;
+  v(trg,src,a,i)  -> err2                                           [0 > i \/ i >= size(src) \/ i >= size(trg)]           ;
+
+  test(org, n, err2)               -> false                        ;
+  test(org, n, return2(dest, src)) -> false [org # src]            ;
+  test(org, n, return2(dest, src)) -> correspond(org, dest, 0, n)  ;
+
+QUERY equivalence test(x, n, strcpy(y, x)) -><- true [0 <= n < size(x) /\ n < size(y) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0] ;
+                  strlen(x) -><- return1(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+
+END OF FILE
+
+Student program:
+
+void mystrcpy(char trg[], char src[])
+{ 
+  int a = mystrlen(src);
+  int i;
+  for(i = 0; i <= a; i++)
+    trg[i] = src[i];
+}
+
+Comments:
+
+This program makes use of a self-implemented strlen function.  This
+strlen function we could not handle, so we instead use the teacher
+version.
+
+Unfortunately, we still cannot handle the program thus created.
+Given a better strategy, we might well be able to handle it, but it
+would require searching too deep (due to the strategy of when ranged
+quantifiers are introduced, and because the test for matching does
+not match a statement intelligently with quantified statements).
+

@@ -1,0 +1,47 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err : result ;
+  strcpy       ;
+  u            ;
+  v            ;
+  return       ;
+  test         ;
+  !ARRAY!Int   ;
+
+RULES
+  strcpy(dest, src) -> u(dest, src, 0) ;
+  u(dest, src, i)   -> v(dest, src, i)                               [0 <= i < size(src) /\ select(src, i) # 0]       ;   
+  u(dest, src, i)   -> return(dest, src)                             [0 <= i < size(src) /\ select(src, i) = 0]       ;   
+  v(dest, src, i)   -> u(store(dest, i, select(src, i)), src, i + 1) [0 <= i < size(src) /\ i < size(dest)]           ;   
+
+  u(dest, src, i)   -> err                                           [i < 0 \/ size(src) <= i]                        ;   
+  v(dest, src, i)   -> err                                           [i < 0 \/ size(src) <= i \/ size(dest) <= i]     ;   
+
+  test(org, n, err)    -> false                                       ;
+  test(org, n, return(dest, src)) -> false [org # src]                ;
+  test(org, n, return(dest, src)) -> correspond(org, dest, 0, n - 1)  ;
+
+
+QUERY equivalence test(x, n, strcpy(y, x)) -><- true [0 <= n < size(x) /\ n < size(y) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+
+END OF FILE
+
+Student program:
+
+void mystrcpy(char trg[], char src[])
+{
+  int i;
+  for(i = 0; src[i] != '\0'; i++)
+    trg[i] = src[i];
+}
+
+Comments:
+
+This program is incorrect, as the student failed to add the ending
+'\0' to trg!
+Therefore, we altered the test function to indicate the result only
+corresponds on the non-zero elements of src.
+

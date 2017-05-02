@@ -1,0 +1,70 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sumfrom, tmp, hikaku, max, min, sum2, u1, u2, u3, return, return1 : Int => Result1, return2 : Int => Result2, !INTEGER ;
+
+RULES
+  sumfrom(m, n) -> return(0)                 [m > n]  ;
+  sumfrom(m, n) -> tmp(n, sumfrom(m, n - 1)) [m <= n] ;
+  tmp(m, return(n)) -> return(m + n)                  ;
+
+  hikaku(x, y) -> 1 [x > y] ;
+  hikaku(x, y) -> -1 [not (x > y) /\ x < y] ;
+  hikaku(x, y) -> 0 [not (x > y) /\ not (x < y)] ;
+  max(x, y) -> return2(x) [x > y] ;
+  max(x, y) -> return2(y) [not (x > y)] ;
+  min(x, y) -> return1(x) [y > x] ;
+  min(x, y) -> return1(y) [not (y > x)] ;
+  sum2(x, y) -> u1(x, y, 0, rnd) ;
+  u1(x, y, t, i) -> return(0) [x > y] ;
+  u1(x, y, t, i) -> u2(x, y, 0, i, min(x, y)) [not (x > y)] ;
+  u2(x, y, t, i, return1(k)) -> u3(x, y, t, k, max(x, y)) ;
+  u3(x, y, t, i, return2(k)) -> return(t) [i <= k] ;
+  u3(x, y, t, i, return2(k)) -> u3(x, y, t + i, i + 1, max(x, y)) [not (i <= k)] ;
+
+QUERY equivalence sumfrom(x,y) -><- sum2(x,y) [true]
+
+END OF FILE
+
+
+Student program:
+
+int hikaku(int x, int y)
+{
+  if(x > y) return 1;
+  else if(x < y) return -1;
+  else return 0;
+}
+
+int max(int x, int y)
+{
+  if(x > y) return x;
+  else return y;
+}
+
+int min(int x, int y)
+{
+  if(y > x) return x;
+  else return y;
+}
+
+int sum2(int x, int y)
+{
+  int t=0, i;
+  if (x > y) return 0;
+
+  for( i=min(x, y) ; i <= max(x, y) ; i++){
+    t += i;
+  }
+
+  return t;
+}
+
+Note: the nasty way max(x, y) is recalculated every time makes
+termination analysis difficult.  Note that it is of course _possible_
+to note that max(x, y) returns the same every time, and thus to do the
+call only once, and replace future calls by a variable.  However, we
+don't do this at the moment.
+

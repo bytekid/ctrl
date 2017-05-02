@@ -1,0 +1,25 @@
+/*
+   Example in Fig. 1 on p.5 from 
+     Benny Godlin, Ofer Strichman:
+     Regression verification: proving the equivalence of similar programs.
+     Softw. Test., Verif. Reliab. 23(3): 241-258 (2013)
+*/
+
+int gcd1(int a, int b){
+  int g = 0;
+  if( b == 0 )
+    g = a;
+  else{
+    a = a % b;
+    g = gcd1(b, a);
+  }
+  return g;
+}
+
+int gcd2(int x, int y){
+  int z = 0;
+  z = x;
+  if( y > 0 )
+    z = gcd2(y, z % y);
+  return z;
+}

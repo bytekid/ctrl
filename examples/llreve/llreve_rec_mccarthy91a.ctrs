@@ -1,0 +1,28 @@
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  f1 : Int => Int ;
+  f2 : Int => Int ;
+  u_5 : Int => Int ;
+  u_8 : Int => Int ;
+  u_15 : Int => Int ;
+  u_18 : Int => Int ;
+  !INTEGER : Int ;
+
+RULES
+  f1(a) -> a - 10 [a > 100] ;
+  f1(a) -> u_5(f1(a + 11)) [a <= 100] ;
+  u_5(w_2) -> u_8(f1(w_2)) ;
+  u_8(w_3) -> w_3 ;
+  f2(x) -> u_15(f2(11 + x)) [x < 101] ;
+  f2(x) -> x - 10 [x >= 101] ;
+  u_15(w_5) -> u_18(f2(w_5)) ;
+  u_18(w_6) -> w_6 ;
+
+QUERY do-simplify [f1 f2] and equivalence f1(x) -><- f2(n) [true]
+
+This is a variant of llreve_rec_mccarthy91.ctrs obtained by dropping
+"result" types. 

@@ -1,0 +1,45 @@
+/*
+  Example on p.38 from 
+    Benny Godlin, Ofer Strichman:
+    Inference rules for proving the equivalence of recursive procedures.
+    Acta Inf. 45(6): 403-439 (2008)
+
+  procedure F(val n; ret r):
+    if n <= 0 then r := 0
+    else
+      call F(n-1,r);
+      r := n + r
+    fi
+    return
+
+  procedure F(val n; ret r):
+    if n <= 0 then r := 0
+    else
+      call F(n - 1,r);
+      if r >= 0 then r := n + r;
+      fi
+    fi
+    return
+
+*/
+
+int proc_F1(int n){
+  if( n <= 0 )
+    return 0;
+  else
+    return n + proc_F1(n-1);
+}
+
+int proc_F2(int n){
+  if( n <= 0 )
+    return 0;
+  else{
+    int r = proc_F2(n-1);
+    if( r >= 0 )
+      return n + r;
+    else
+      return r;
+  }
+}
+
+    

@@ -1,0 +1,48 @@
+/* 
+  an example from llreve:
+  http://formal.iti.kit.edu/projects/improve/reve/
+*/
+
+int g1(int n);
+int g2(int n, int s);
+
+int triangle1(int n) {
+  int r;
+  r = g1(n);
+  return r;
+}
+
+int g1(int n)
+{
+  int r;
+  r = 0;
+
+  if (n <= 0) {
+    r = 0;
+  } else {
+    r = g1(n - 1);
+    r = n + r;
+  }
+
+  return r;
+}
+
+int triangle2(int n) {
+  int r;
+  r = g2(n, 0);
+  return r;
+}
+
+int g2(int n, int s)
+{
+  int r;
+  r = 0;
+
+  if (n <= 0) {
+    r = s;
+  } else {
+    r = g2(n - 1, n + s);
+  }
+
+  return r;
+}

@@ -1,0 +1,23 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE ackermann, U2, U7, ack, !INTEGER ;
+
+RULES
+
+ackermann(x, y) -> U2(x,y,x,y)                                                                   ;
+U2(x, y, m, n)  -> n + 1                                   [not (y < 0 \/ x < 0) /\ not (m > 0)] ;
+U2(x, y, m, n)  -> U7(x, y, m, n)                          [not (y < 0 \/ x < 0) /\ m > 0]       ;
+U2(x, y, m, n)  -> 0                                       [y < 0 \/ x < 0]                      ;
+U7(x, y, m, n)  -> n + 1                                   [not (n <= 0) /\ not (m > 0)]         ;
+U7(x, y, m, n)  -> U7(x, y, m - 1, U2(m, n - 1, m, n - 1)) [not (n <= 0) /\ m > 0]               ;
+U7(x, y, m, n)  -> n + 1                                   [n <= 0 /\ not (m > 0)]               ;
+U7(x, y, m, n)  -> U7(x, y, m - 1, 1)                      [n <= 0 /\ m > 0]                     ;
+ack(0, n)       -> n + 1                                   [n >= 0]                              ;
+ack(m, 0)       -> ack(m - 1, 1)                           [m > 0]                               ;
+ack(m, n)       -> ack(m - 1, ack(m, n - 1))               [m > 0 /\ n > 0]                      ;
+ack(m, n)       -> 0                                       [m < 0 \/ n < 0]                      ;
+
+QUERY termination
+

@@ -1,0 +1,32 @@
+int sum1(int n)
+{
+        int sum=0;
+        if(n<0)
+        {
+                return 0;
+        }
+        else
+        {
+                while(n>=0)
+                {
+                        sum+=n;
+                        n--;
+                }
+                return sum;
+        }
+}
+
+/*
+int sum1(int x){
+  int y=0;  
+
+  if(x<0) return(0);
+  
+  while(x>=0){
+    y+=x;
+    x--;
+  }
+
+  return y;  
+}
+*/

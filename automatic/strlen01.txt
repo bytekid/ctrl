@@ -1,0 +1,17 @@
+int mystrlen(int trg[])
+{
+  int i, x;
+  for(i = 0; trg[i] != 0; i++)
+    x = i;
+  return x;
+}
+
+/* original
+int mystlen(char trg[])
+{
+  int i, x;
+  for(i = 0; trg[i] != '\0'; i++)
+    x = i;
+  return x;
+}
+*/

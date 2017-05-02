@@ -1,0 +1,74 @@
+THEORY arrays
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+
+SIGNATURE
+  cstrpbrk: IntArray * IntArray => result_1;
+  u_1: IntArray * IntArray * Int => result_1;
+  u_2: IntArray * IntArray * Int * Int => result_1;
+  u_3: IntArray * IntArray * Int * Int * Int => result_1;
+  u_4: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_5: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  error_1: result_1;
+  u_6: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_7: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_8: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_9: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_10: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_11: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  return_1: IntArray * IntArray => result_1;
+  u_12: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_13: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_14: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_15: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_16: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  u_17: IntArray * IntArray * Int * Int * Int * Int => result_1;
+  main: Int * Int * IntArray * IntArray => result_2;
+  u_18: Int * Int * IntArray * IntArray => result_2;
+  error_2: result_2;
+  u_19: Int * Int * IntArray * IntArray => result_2;
+  u_20: Int * Int * IntArray * IntArray * result_1 => result_2;
+  u_21: Int * Int * IntArray * IntArray => result_2;
+  return_2: IntArray * IntArray * Int => result_2;
+  errortest;
+
+RULES
+  cstrpbrk(s1_1, s2_1) -> u_1(s1_1, s2_1, rnd_1);
+  u_1(s1_1, s2_1, scanp_2) -> u_2(s1_1, s2_1, scanp_2, rnd_2);
+  u_2(s1_1, s2_1, scanp_2, c_2) -> u_3(s1_1, s2_1, scanp_2, c_2, rnd_3);
+  u_3(s1_1, s2_1, scanp_2, c_2, sc_2) -> u_4(s1_1, s2_1, scanp_2, c_2, sc_2, 0);
+  u_4(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_5(s1_1, s2_1, scanp_2, c_2, sc_2, i_2);
+  u_5(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> error_1  [(0 > i_2 \/ i_2 >= size(s1_1))];
+  u_5(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_6(s1_1, s2_1, scanp_2, select(s1_1, i_2), sc_2, i_2)  [(((select(s1_1, i_2) # 0) /\ (0 <= i_2 < size(s1_1))) /\ (0 <= i_2 < size(s1_1)))];
+  u_5(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> error_1  [(((select(s1_1, i_2) # 0) /\ (0 <= i_2 < size(s1_1))) /\ (0 > i_2 \/ i_2 >= size(s1_1)))];
+  u_6(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_7(s1_1, s2_1, scanp_2, c_2, sc_2, (i_2 + 1));
+  u_7(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_8(s1_1, s2_1, scanp_2, c_2, sc_2, i_2);
+  u_8(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_9(s1_1, s2_1, 0, c_2, sc_2, i_2);
+  u_9(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> error_1  [(0 > scanp_2 \/ scanp_2 >= size(s2_1))];
+  u_9(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_10(s1_1, s2_1, scanp_2, c_2, select(s2_1, scanp_2), i_2)  [(((select(s2_1, scanp_2) # 0) /\ (0 <= scanp_2 < size(s2_1))) /\ (0 <= scanp_2 < size(s2_1)))];
+  u_9(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> error_1  [(((select(s2_1, scanp_2) # 0) /\ (0 <= scanp_2 < size(s2_1))) /\ (0 > scanp_2 \/ scanp_2 >= size(s2_1)))];
+  u_10(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_11(s1_1, s2_1, (scanp_2 + 1), c_2, sc_2, i_2);
+  u_11(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> return_1(s1_1, s2_1)  [(sc_2 = c_2)];
+  u_11(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_12(s1_1, s2_1, scanp_2, c_2, sc_2, i_2)  [(sc_2 # c_2)];
+  u_9(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_13(s1_1, s2_1, scanp_2, c_2, sc_2, i_2)  [((select(s2_1, scanp_2) = 0) /\ (0 <= scanp_2 < size(s2_1)))];
+  u_12(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_14(s1_1, s2_1, scanp_2, c_2, sc_2, i_2);
+  u_14(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_9(s1_1, s2_1, scanp_2, c_2, sc_2, i_2);
+  u_13(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_15(s1_1, s2_1, scanp_2, c_2, sc_2, i_2);
+  u_15(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_5(s1_1, s2_1, scanp_2, c_2, sc_2, i_2);
+  u_5(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_16(s1_1, s2_1, scanp_2, select(s1_1, i_2), sc_2, i_2)  [(((select(s1_1, i_2) = 0) /\ (0 <= i_2 < size(s1_1))) /\ (0 <= i_2 < size(s1_1)))];
+  u_5(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> error_1  [(((select(s1_1, i_2) = 0) /\ (0 <= i_2 < size(s1_1))) /\ (0 > i_2 \/ i_2 >= size(s1_1)))];
+  u_16(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> u_17(s1_1, s2_1, scanp_2, c_2, sc_2, (i_2 + 1));
+  u_17(s1_1, s2_1, scanp_2, c_2, sc_2, i_2) -> return_1(s1_1, s2_1);
+  main(length1_1, length2_1, nondetString1_1, nondetString2_1) -> u_18(length1_1, length2_1, store(nondetString1_1, (length1_1 - 1), 0), nondetString2_1)  [(0 <= (length1_1 - 1) < size(nondetString1_1))];
+  main(length1_1, length2_1, nondetString1_1, nondetString2_1) -> error_2  [(0 > (length1_1 - 1) \/ (length1_1 - 1) >= size(nondetString1_1))];
+  u_18(length1_1, length2_1, nondetString1_1, nondetString2_1) -> u_19(length1_1, length2_1, nondetString1_1, store(nondetString2_1, (length2_1 - 1), 0))  [(0 <= (length2_1 - 1) < size(nondetString2_1))];
+  u_18(length1_1, length2_1, nondetString1_1, nondetString2_1) -> error_2  [(0 > (length2_1 - 1) \/ (length2_1 - 1) >= size(nondetString2_1))];
+  u_19(length1_1, length2_1, nondetString1_1, nondetString2_1) -> u_20(length1_1, length2_1, nondetString1_1, nondetString2_1, cstrpbrk(nondetString1_1, nondetString2_1));
+  u_20(length1_1, length2_1, nondetString1_1, nondetString2_1, error_1) -> error_2;
+  u_20(length1_1, length2_1, nondetString1_1, nondetString2_1, return_1(w_5, w_6)) -> u_21(length1_1, length2_1, w_5, w_6);
+  u_21(length1_1, length2_1, nondetString1_1, nondetString2_1) -> return_2(nondetString1_1, nondetString2_1, 0);
+  errortest(error_2) -> false;
+  errortest(return_2(w_7, w_8, w_9)) -> true;
+
+QUERY do-simplify [cstrpbrk main errortest] and equivalence errortest(main(length1, length2, nondetString1, nondetString2)) -><- true [length1 >= 1 /\ length2 >= 1 /\ size(nondetString1) = length1 /\ size(nondetString2) = length2]
+

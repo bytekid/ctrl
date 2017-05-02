@@ -1,0 +1,65 @@
+THEORY ints
+LOGIC  QF_NIA
+SOLVER internal
+
+SIGNATURE
+  error_proc : result_proc ;
+  gcd1 : Int * Int => result_proc ;
+  gcd2 : Int * Int => result_proc ;
+  return_proc : Int => result_proc ;
+  u_1 : result_proc => result_proc ;
+  u_4 : result_proc => result_proc ;
+  !INTEGER : Int ;
+
+RULES
+  gcd1(a_1, b_1) -> return_proc(a_1) [b_1 = 0] ;
+  gcd1(a_1, b_1) -> u_1(gcd1(b_1, a_1 mod b_1)) [b_1 # 0] ;
+  u_1(return_proc(w_1)) -> return_proc(w_1) ;
+  u_1(error_proc) -> error_proc ;
+  gcd2(x_1, y_1) -> u_4(gcd2(y_1, x_1 mod y_1)) [y_1 > 0] ;
+  gcd2(x_1, y_1) -> return_proc(x_1) [y_1 <= 0] ;
+  u_4(return_proc(w_2)) -> return_proc(w_2) ;
+  u_4(error_proc) -> error_proc ;
+
+QUERY equivalence gcd1(x, y) -><- gcd2(x, y) [x > 0 /\ y > 0]
+
+END OF FILE
+
+/*
+  Example on p.12 from 
+    Benny Godlin, Ofer Strichman:
+    Inference rules for proving the equivalence of recursive procedures.
+    Acta Inf. 45(6): 403-439 (2008)
+
+  procedure gcd1(val a,b; ret g):
+    if b = 0 then
+      g := a
+    else
+      a := a mod b;
+      call gcd1(b, a; g)
+    fi;
+    return
+
+  procedure gcd2(val x,y; ret z): 
+    z := x;
+    if y > 0 then
+      call gcd2(y, z mod y; z)
+    fi;
+  return
+
+*/
+
+int gcd1(int a, int b){
+  if( b == 0 )
+    return a;
+  else
+    return gcd1(b, a % b);
+}
+
+int gcd2(int x, int y){
+  int z = x;
+  if( y > 0 )
+    return gcd2(y, z % y);
+  else
+    return z;
+}

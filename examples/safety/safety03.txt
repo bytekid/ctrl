@@ -1,0 +1,29 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/openbsd_cstrpbrk-alloca_true-valid-memsafety.c */
+
+void cstrpbrk(char s1[], char s2[]) {
+    int scanp;
+    int c, sc;
+    int i = 0;
+
+    while (s1[i] != 0) {
+        c = s1[i];
+        i++;
+        for (scanp = 0; s2[scanp] != 0; ) {
+            sc = s2[scanp];
+            scanp++;
+            if (sc == c) return;
+        }
+    }
+    c = s1[i];
+    i++;
+}
+
+int main(int length1, int length2, char nondetString1[], char nondetString2[]) {
+    nondetString1[length1-1] = '\0';
+    nondetString2[length2-1] = '\0';
+    cstrpbrk(nondetString1,nondetString2);
+    return 0;
+}
+
+
+[length1 >= 1 /\ length2 >= 1 /\ size(nondetString1) = length1 /\ size(nondetString2) = length2]

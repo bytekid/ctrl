@@ -1,0 +1,31 @@
+INCLUDE core ;
+
+DECLARE
+  !INTEGER : Int                             ;
+  -        : Int * Int => Int  (l-infix 100) ;
+  +        : Int * Int => Int  (l-infix 100) ;
+  *        : Int * Int => Int  (l-infix 150) ;
+  div      : Int * Int => Int  (l-infix 150) ;
+  mod      : Int * Int => Int  (l-infix 150) ;
+  abs      : Int => Int                      ;
+  <=       : Int * Int => Bool (infix 70)    ;
+  >=       : Int * Int => Bool (infix 70)    ;
+  <        : Int * Int => Bool (infix 70)    ;
+  >        : Int * Int => Bool (infix 70)    ;
+  >!       : Int * Int => Bool (infix 70)    ;
+
+WELLFOUNDED >! ;
+
+CHAIN
+  x > y > z   : x > y /\ y > z   ;
+  x > y >= z  : x > y /\ y >= z  ;
+  x >= y > z  : x >= y /\ y > z  ;
+  x >= y >= z : x >= y /\ y >= z ;
+  x < y < z   : x < y /\ y < z   ;
+  x < y <= z  : x < y /\ y <= z  ;
+  x <= y < z  : x <= y /\ y < z  ;
+  x <= y <= z : x <= y /\ y <= z ;
+
+SMT-TRANSLATIONS
+  >!(x,y) -> (and (> x y) (>= x 0))
+

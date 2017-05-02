@@ -1,0 +1,53 @@
+THEORY ints
+LOGIC  QF_NIA
+SOLVER internal
+
+SIGNATURE
+  error ;
+  gcd1 ;
+  gcd2 ;
+  return ;
+  u_4 ;
+  u_11 ;
+  !INTEGER : Int ;
+
+RULES
+  gcd1(a, b) -> return(a) [b = 0] ;
+  gcd1(a, b) -> u_4(gcd1(b, a mod b)) [b # 0] ;
+  u_4(return(w_1)) -> return(w_1) ;
+  u_4(error) -> error ;
+  gcd2(x, y) -> u_11(gcd2(y, x mod y)) [y > 0] ;
+  gcd2(x, y) -> return(x) [y <= 0] ;
+  u_11(return(w_2)) -> return(w_2) ;
+  u_11(error) -> error ;
+
+QUERY equivalence gcd1(x, y) -><- gcd2(x, y) [true]
+
+END OF FILE
+
+/*
+   Example in Fig. 1 on p.5 from 
+     Benny Godlin, Ofer Strichman:
+     Regression verification: proving the equivalence of similar programs.
+     Softw. Test., Verif. Reliab. 23(3): 241-258 (2013)
+
+int gcd1(int a, int b){
+  int g = 0;
+  if( b == 0 )
+    g = a;
+  else{
+    a = a % b;
+    g = gcd1(b, a);
+  }
+  return g;
+}
+
+int gcd2(int x, int y){
+  int z = 0;
+  z = x;
+  if( y > 0 )
+    z = gcd2(y, z % y);
+  return z;
+}
+
+*/

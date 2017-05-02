@@ -1,0 +1,62 @@
+THEORY strings
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+SIGNATURE
+
+  test       ;
+  return     ;
+  error      ;
+
+
+  mystrlen: IntArray => result_mystrlen;
+  u_1: IntArray * Int => result_mystrlen;
+  error_mystrlen: result_mystrlen;
+  return_mystrlen: IntArray * Int => result_mystrlen;
+  u_2: IntArray * Int => result_mystrlen;
+  u_3: IntArray * Int => result_mystrlen;
+  u_4: IntArray * Int => result_mystrlen;
+  u_5: IntArray * Int => result_mystrlen;
+  mystrcpy: IntArray * IntArray => result;
+  u_6: IntArray * IntArray * result_mystrlen => result;
+  u_7: IntArray * IntArray * Int => result;
+  error: result;
+  u_8: IntArray * IntArray * Int => result;
+  u_9: IntArray * IntArray * Int * Int => result;
+  u_10: IntArray * IntArray * Int * Int => result;
+  u_11: IntArray * IntArray * Int * Int => result;
+  u_12: IntArray * IntArray * Int * Int => result;
+  u_13: IntArray * IntArray * Int * Int => result;
+  return: IntArray * IntArray => result;
+
+RULES
+
+
+  test(org, n, error)    -> false                                 ;
+  test(org, n, return(dest, src)) -> false [org # src]            ;
+  test(org, n, return(dest, src)) -> correspond(org, dest, 0, n)  ;
+
+
+  mystrlen(trg_1) -> u_1(trg_1, 0);
+  u_1(trg_1, i_2) -> error_mystrlen  [(0 > i_2 \/ i_2 >= size(trg_1))];
+  u_1(trg_1, i_2) -> return_mystrlen(trg_1, i_2)  [((select(trg_1, i_2) = 0) /\ (0 <= i_2 < size(trg_1)))];
+  u_1(trg_1, i_2) -> u_2(trg_1, (i_2 + 1))  [((select(trg_1, i_2) # 0) /\ (0 <= i_2 < size(trg_1)))];
+  u_2(trg_1, i_2) -> u_3(trg_1, i_2);
+  u_3(trg_1, i_2) -> u_5(trg_1, i_2);
+  u_5(trg_1, i_2) -> u_1(trg_1, i_2)  [(1 # 0)];
+  u_5(trg_1, i_2) -> u_4(trg_1, i_2)  [(1 = 0)];
+  u_4(trg_1, i_2) -> return_mystrlen(trg_1, 0);
+  mystrcpy(trg_1, src_1) -> u_6(trg_1, src_1, mystrlen(src_1));
+  u_6(trg_1, src_1, return_mystrlen(w_2, w_1)) -> u_7(trg_1, w_2, w_1);
+  u_6(trg_1, src_1, error_mystrlen) -> error;
+  u_7(trg_1, src_1, w_1) -> u_8(trg_1, src_1, w_1);
+  u_8(trg_1, src_1, a_2) -> u_9(trg_1, src_1, a_2, rnd_3);
+  u_9(trg_1, src_1, a_2, i_2) -> u_10(trg_1, src_1, a_2, 0);
+  u_10(trg_1, src_1, a_2, i_2) -> u_11(store(trg_1, i_2, select(src_1, i_2)), src_1, a_2, i_2)  [((i_2 <= a_2) /\ ((0 <= i_2 < size(src_1)) /\ (0 <= i_2 < size(trg_1))))];
+  u_10(trg_1, src_1, a_2, i_2) -> error  [((i_2 <= a_2) /\ ((0 > i_2 \/ i_2 >= size(src_1)) \/ (0 > i_2 \/ i_2 >= size(trg_1))))];
+  u_11(trg_1, src_1, a_2, i_2) -> u_12(trg_1, src_1, a_2, i_2);
+  u_12(trg_1, src_1, a_2, i_2) -> u_13(trg_1, src_1, a_2, (i_2 + 1));
+  u_13(trg_1, src_1, a_2, i_2) -> u_10(trg_1, src_1, a_2, i_2);
+  u_10(trg_1, src_1, a_2, i_2) -> return(trg_1, src_1)  [(i_2 > a_2)];
+
+QUERY  do-simplify [test mystrcpy] and equivalence test(x, n, mystrcpy(y, x)) -><- true [0 <= n < size(x) /\ n < size(y) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+

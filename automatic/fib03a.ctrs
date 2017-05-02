@@ -1,0 +1,62 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+SIGNATURE
+
+  fib ;
+  w   ;
+  return : Int => result;
+  error  : result;
+
+
+  fastfib: Int => result;
+  u_1: Int * Int => result;
+  u_2: Int * Int * Int => result;
+  u_3: Int * Int * Int * Int => result;
+  error: result;
+  u_4: Int * Int * Int * Int => result;
+  u_5: Int * Int * Int * Int => result;
+  u_6: Int * Int * Int * Int => result;
+  u_7: Int * Int * Int * Int => result;
+  u_8: Int * Int * Int * Int => result;
+  u_9: Int * Int * Int * Int => result;
+  u_10: Int * Int * Int * Int => result;
+  u_11: Int * Int * Int * Int => result;
+  u_12: Int * Int * Int * Int => result;
+  u_13: Int * Int * Int * Int => result;
+  u_14: Int * Int * Int * Int => result;
+  return: Int => result;
+
+RULES
+
+  fib(x)        -> return(0)               [x <= 0]       ;
+  fib(1)        -> return(1)                              ;
+  fib(x)        -> w(fib(x - 1), fib(x - 2)) [x - 2 >= 0]   ;
+  w(return(x), return(y)) -> return(x + y) ;
+  w(return(x), error) -> error ;
+  w(error, return(y)) -> error ;
+  w(error, error) -> error ;
+
+
+
+  fastfib(x_1) -> u_1(x_1, rnd_1);
+  u_1(x_1, i_2) -> u_2(x_1, i_2, 1);
+  u_2(x_1, i_2, p_2) -> u_3(x_1, i_2, p_2, 0);
+  u_3(x_1, i_2, p_2, q_2) -> u_4(x_1, i_2, 0, q_2)  [(x_1 = 0)];
+  u_3(x_1, i_2, p_2, q_2) -> u_5(x_1, i_2, 1, q_2)  [((x_1 # 0) /\ (x_1 = 1))];
+  u_3(x_1, i_2, p_2, q_2) -> u_6(x_1, 1, p_2, q_2)  [((x_1 # 0) /\ (x_1 # 1))];
+  u_6(x_1, i_2, p_2, q_2) -> u_7(x_1, i_2, (p_2 + q_2), q_2)  [(i_2 < x_1)];
+  u_7(x_1, i_2, p_2, q_2) -> u_8(x_1, i_2, p_2, (p_2 - q_2));
+  u_8(x_1, i_2, p_2, q_2) -> u_9(x_1, i_2, p_2, q_2);
+  u_9(x_1, i_2, p_2, q_2) -> u_10(x_1, i_2, p_2, q_2);
+  u_10(x_1, i_2, p_2, q_2) -> u_11(x_1, (i_2 + 1), p_2, q_2);
+  u_11(x_1, i_2, p_2, q_2) -> u_6(x_1, i_2, p_2, q_2);
+  u_6(x_1, i_2, p_2, q_2) -> u_12(x_1, i_2, p_2, q_2)  [(i_2 >= x_1)];
+  u_5(x_1, i_2, p_2, q_2) -> u_13(x_1, i_2, p_2, q_2);
+  u_12(x_1, i_2, p_2, q_2) -> u_13(x_1, i_2, p_2, q_2);
+  u_4(x_1, i_2, p_2, q_2) -> u_14(x_1, i_2, p_2, q_2);
+  u_13(x_1, i_2, p_2, q_2) -> u_14(x_1, i_2, p_2, q_2);
+  u_14(x_1, i_2, p_2, q_2) -> return(p_2);
+
+QUERY  do-simplify [fib fastfib] and equivalence fastfib(n) -><- fib(n) [n >= 0]
+

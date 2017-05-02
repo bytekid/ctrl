@@ -1,0 +1,9 @@
+int fastfib(int x) {
+  int y = 0, z = 1;
+  for (int i = 1; i <= x; i++) {
+    int tmp = z;
+    z = y + z;
+    y = tmp;
+  }
+  return y;
+}

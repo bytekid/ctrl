@@ -1,0 +1,70 @@
+THEORY strings
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+SIGNATURE
+
+  test         ;
+  return     ;
+  error      ;
+
+
+  strlen: IntArray => result_strlen;
+  u_1: IntArray * Int => result_strlen;
+  error_strlen: result_strlen;
+  return_strlen: IntArray * Int => result_strlen;
+  u_2: IntArray * Int => result_strlen;
+  u_3: IntArray * Int => result_strlen;
+  u_4: IntArray * Int => result_strlen;
+  u_5: IntArray => result_strlen;
+  mystrcpy: IntArray * IntArray => result;
+  u_6: IntArray * IntArray * result_strlen => result;
+  u_7: IntArray * IntArray * Int => result;
+  error: result;
+  u_8: IntArray * IntArray * Int => result;
+  u_9: IntArray * IntArray * Int * Int => result;
+  u_10: IntArray * IntArray * Int * Int => result;
+  u_11: IntArray * IntArray * Int * Int * result_strlen => result;
+  u_12: IntArray * IntArray * Int * Int * Int => result;
+  u_13: IntArray * IntArray * Int * Int => result;
+  u_14: IntArray * IntArray * Int * Int => result;
+  u_15: IntArray * IntArray * Int * Int => result;
+  u_16: IntArray * IntArray * Int * Int => result;
+  u_17: IntArray * IntArray * Int => result;
+  return: IntArray * IntArray => result;
+
+RULES
+
+
+  test(org, n, error)    -> false                                   ;
+  test(org, n, return(dest, src)) -> false [org # src]            ;
+  test(org, n, return(dest, src)) -> correspond(org, dest, 0, n)  ;
+
+
+  strlen(str_1) -> u_1(str_1, 0);
+  u_1(str_1, i_3) -> error_strlen  [((1 # 0) /\ (0 > i_3 \/ i_3 >= size(str_1)))];
+  u_1(str_1, i_3) -> return_strlen(str_1, i_3)  [(((1 # 0) /\ (select(str_1, i_3) = 0)) /\ (0 <= i_3 < size(str_1)))];
+  u_1(str_1, i_3) -> u_2(str_1, i_3)  [(((1 # 0) /\ (select(str_1, i_3) # 0)) /\ (0 <= i_3 < size(str_1)))];
+  u_2(str_1, i_3) -> u_3(str_1, i_3);
+  u_3(str_1, i_3) -> u_4(str_1, (i_3 + 1));
+  u_4(str_1, i_3) -> u_1(str_1, i_3);
+  u_1(str_1, i_3) -> u_5(str_1)  [(1 = 0)];
+  mystrcpy(x_1, y_1) -> u_6(x_1, y_1, strlen(x_1));
+  u_6(x_1, y_1, return_strlen(w_2, w_1)) -> u_7(w_2, y_1, w_1);
+  u_6(x_1, y_1, error_strlen) -> error;
+  u_7(x_1, y_1, w_1) -> u_8(x_1, y_1, w_1);
+  u_8(x_1, y_1, len_2) -> u_9(x_1, y_1, len_2, 0);
+  u_9(x_1, y_1, len_2, i_3) -> u_10(store(x_1, i_3, select(y_1, i_3)), y_1, len_2, i_3)  [((i_3 < len_2) /\ ((0 <= i_3 < size(y_1)) /\ (0 <= i_3 < size(x_1))))];
+  u_9(x_1, y_1, len_2, i_3) -> error  [((i_3 < len_2) /\ ((0 > i_3 \/ i_3 >= size(y_1)) \/ (0 > i_3 \/ i_3 >= size(x_1))))];
+  u_10(x_1, y_1, len_2, i_3) -> u_11(x_1, y_1, len_2, i_3, strlen(x_1));
+  u_11(x_1, y_1, len_2, i_3, return_strlen(w_4, w_3)) -> u_12(w_4, y_1, len_2, i_3, w_3);
+  u_11(x_1, y_1, len_2, i_3, error_strlen) -> error;
+  u_12(x_1, y_1, len_2, i_3, w_3) -> u_13(x_1, y_1, w_3, i_3);
+  u_13(x_1, y_1, len_2, i_3) -> u_14(x_1, y_1, len_2, i_3);
+  u_14(x_1, y_1, len_2, i_3) -> u_15(x_1, y_1, len_2, i_3);
+  u_15(x_1, y_1, len_2, i_3) -> u_16(x_1, y_1, len_2, (i_3 + 1));
+  u_16(x_1, y_1, len_2, i_3) -> u_9(x_1, y_1, len_2, i_3);
+  u_9(x_1, y_1, len_2, i_3) -> u_17(x_1, y_1, len_2)  [(i_3 >= len_2)];
+  u_17(x_1, y_1, len_2) -> return(x_1, y_1);
+
+QUERY  do-simplify [test mystrcpy] and equivalence test(x, n, mystrcpy(y, x)) -><- true [0 <= n < size(x) /\ n < size(y) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+

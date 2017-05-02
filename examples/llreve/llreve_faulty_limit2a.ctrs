@@ -1,0 +1,25 @@
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  f1 : Int => Int ;
+  f2 : Int => Int ;
+  u_5 : Int * Int => Int ;
+  u_15 : Int * Int => Int ;
+  !INTEGER : Int ;
+
+RULES
+  f1(n) -> n [n <= 0] ;
+  f1(n) -> u_5(n, f1(n - 1)) [n > 0] ;
+  u_5(n, w_2) -> n + w_2 ;
+  f2(n) -> n [n <= 1] ;
+  f2(n) -> u_15(n, f2(n - 1)) [n > 1] ;
+  u_15(n, w_4) -> 10 [n = 10] ;
+  u_15(n, w_4) -> n + w_4 [n # 10] ;
+
+QUERY do-simplify [f1 f2] and equivalence f1(n) -><- f2(n) [true]
+
+This is a variant of llreve_faulty_limit2.ctrs obtained by dropping
+"result" types. 

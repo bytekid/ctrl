@@ -1,0 +1,69 @@
+THEORY arrays
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+
+SIGNATURE
+  bubbleSort: IntArray * Int => result_1;
+  u_1: IntArray * Int * Int => result_1;
+  u_2: IntArray * Int * Int * Int => result_1;
+  u_3: IntArray * Int * Int * Int * Int => result_1;
+  u_4: IntArray * Int * Int * Int * Int => result_1;
+  u_5: IntArray * Int * Int * Int * Int => result_1;
+  u_6: IntArray * Int * Int * Int * Int => result_1;
+  u_7: IntArray * Int * Int * Int * Int => result_1;
+  error_1: result_1;
+  u_8: IntArray * Int * Int * Int * Int => result_1;
+  u_9: IntArray * Int * Int * Int * Int => result_1;
+  u_10: IntArray * Int * Int * Int * Int => result_1;
+  u_11: IntArray * Int * Int * Int * Int => result_1;
+  u_12: IntArray * Int * Int * Int * Int => result_1;
+  u_13: IntArray * Int * Int * Int * Int => result_1;
+  u_14: IntArray * Int * Int * Int * Int => result_1;
+  u_15: IntArray * Int * Int * Int * Int => result_1;
+  u_16: IntArray * Int * Int * Int * Int => result_1;
+  u_17: IntArray * Int * Int * Int * Int => result_1;
+  u_18: IntArray * Int * Int * Int * Int => result_1;
+  return_1: IntArray => result_1;
+  main: Int * IntArray => result_2;
+  u_19: Int * IntArray * result_1 => result_2;
+  error_2: result_2;
+  u_20: Int * IntArray => result_2;
+  return_2: IntArray * Int => result_2;
+  errortest;
+
+RULES
+  bubbleSort(numbers_1, array_size_1) -> u_1(numbers_1, array_size_1, rnd_1);
+  u_1(numbers_1, array_size_1, i_2) -> u_2(numbers_1, array_size_1, i_2, rnd_2);
+  u_2(numbers_1, array_size_1, i_2, j_2) -> u_3(numbers_1, array_size_1, i_2, j_2, rnd_3);
+  u_3(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_4(numbers_1, array_size_1, i_2, j_2, temp_2);
+  u_4(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_5(numbers_1, array_size_1, (array_size_1 - 1), j_2, temp_2);
+  u_5(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_6(numbers_1, array_size_1, i_2, j_2, temp_2)  [(i_2 >= 0)];
+  u_6(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_7(numbers_1, array_size_1, i_2, 1, temp_2);
+  u_7(numbers_1, array_size_1, i_2, j_2, temp_2) -> error_1  [((j_2 <= i_2) /\ ((0 > (j_2 - 1) \/ (j_2 - 1) >= size(numbers_1)) \/ (0 > j_2 \/ j_2 >= size(numbers_1))))];
+  u_7(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_8(numbers_1, array_size_1, i_2, j_2, select(numbers_1, (j_2 - 1)))  [((((j_2 <= i_2) /\ (select(numbers_1, (j_2 - 1)) > select(numbers_1, j_2))) /\ ((0 <= (j_2 - 1) < size(numbers_1)) /\ (0 <= j_2 < size(numbers_1)))) /\ (0 <= (j_2 - 1) < size(numbers_1)))];
+  u_7(numbers_1, array_size_1, i_2, j_2, temp_2) -> error_1  [((((j_2 <= i_2) /\ (select(numbers_1, (j_2 - 1)) > select(numbers_1, j_2))) /\ ((0 <= (j_2 - 1) < size(numbers_1)) /\ (0 <= j_2 < size(numbers_1)))) /\ (0 > (j_2 - 1) \/ (j_2 - 1) >= size(numbers_1)))];
+  u_8(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_9(store(numbers_1, (j_2 - 1), select(numbers_1, j_2)), array_size_1, i_2, j_2, temp_2)  [((0 <= j_2 < size(numbers_1)) /\ (0 <= (j_2 - 1) < size(numbers_1)))];
+  u_8(numbers_1, array_size_1, i_2, j_2, temp_2) -> error_1  [((0 > j_2 \/ j_2 >= size(numbers_1)) \/ (0 > (j_2 - 1) \/ (j_2 - 1) >= size(numbers_1)))];
+  u_9(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_10(store(numbers_1, j_2, temp_2), array_size_1, i_2, j_2, temp_2)  [(0 <= j_2 < size(numbers_1))];
+  u_9(numbers_1, array_size_1, i_2, j_2, temp_2) -> error_1  [(0 > j_2 \/ j_2 >= size(numbers_1))];
+  u_10(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_11(numbers_1, array_size_1, i_2, j_2, temp_2);
+  u_11(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_12(numbers_1, array_size_1, i_2, j_2, temp_2);
+  u_7(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_12(numbers_1, array_size_1, i_2, j_2, temp_2)  [(((j_2 <= i_2) /\ (select(numbers_1, (j_2 - 1)) <= select(numbers_1, j_2))) /\ ((0 <= (j_2 - 1) < size(numbers_1)) /\ (0 <= j_2 < size(numbers_1))))];
+  u_12(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_13(numbers_1, array_size_1, i_2, j_2, temp_2);
+  u_13(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_14(numbers_1, array_size_1, i_2, j_2, temp_2);
+  u_14(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_15(numbers_1, array_size_1, i_2, (j_2 + 1), temp_2);
+  u_15(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_7(numbers_1, array_size_1, i_2, j_2, temp_2);
+  u_7(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_16(numbers_1, array_size_1, i_2, j_2, temp_2)  [(j_2 > i_2)];
+  u_16(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_17(numbers_1, array_size_1, i_2, j_2, temp_2);
+  u_17(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_18(numbers_1, array_size_1, (i_2 - 1), j_2, temp_2);
+  u_18(numbers_1, array_size_1, i_2, j_2, temp_2) -> u_5(numbers_1, array_size_1, i_2, j_2, temp_2);
+  u_5(numbers_1, array_size_1, i_2, j_2, temp_2) -> return_1(numbers_1)  [(i_2 < 0)];
+  main(array_size_1, numbers_1) -> u_19(array_size_1, numbers_1, bubbleSort(numbers_1, array_size_1));
+  u_19(array_size_1, numbers_1, error_1) -> error_2;
+  u_19(array_size_1, numbers_1, return_1(w_5)) -> u_20(array_size_1, w_5);
+  u_20(array_size_1, numbers_1) -> return_2(numbers_1, 0);
+  errortest(error_2) -> false;
+  errortest(return_2(w_6, w_7)) -> true;
+
+QUERY do-simplify [bubbleSort main errortest] and equivalence errortest(main(array_size, numbers)) -><- true [array_size >= 1 /\ array_size < 2147483647 /\ size(numbers) = array_size]
+

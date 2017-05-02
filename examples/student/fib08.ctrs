@@ -1,0 +1,52 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE fib, fastfib, u : Int * Int * Int * Int * Int => Unit, v, w, return, !INTEGER ;
+
+RULES
+  fib(x)        -> return(0)                  [x <= 0]                     ;   
+  fib(1)        -> return(1)                                               ;   
+  fib(x)        -> w(fib(x - 1), fib(x - 2))  [x - 2 >= 0]                 ;   
+  w(return(x), return(y)) -> return(x + y)                                 ;   
+  fastfib(n)   -> u(n, 0, 1, rnd3, rnd4)                                   ;
+  u(n,a,b,c,d) -> return(0)                   [n < 0]                      ;
+  u(n,a,b,c,d) -> return(1)                   [not (n < 0) /\ n = 1]       ;
+  u(n,a,b,c,d) -> v(n,a,b,2,d)                [not (n < 0) /\ not (n = 1)] ;
+  v(n,a,b,c,d) -> v(n,b,a + b,c + 1,a + b)    [c <= n]                     ;
+  v(n,a,b,c,d) -> return(d)                   [not (c <= n)]               ;
+
+QUERY equivalence fib(n) -><- fastfib(n) [n > 0]
+
+END OF FILE
+
+Student program:
+
+int fastfib(int n){
+  int a,b,c,d;
+  a=0;
+  b=1;
+  if(n<0){
+    return(0);  
+  }else if(n==1){
+    return(1);  
+  }else{
+    for(c=2;c<=n;c++){
+      d=a+b;  
+      a=b;
+      b=d;
+    }
+    return(d);
+  }
+}
+
+Comments:
+
+Note that this program is incorrect: it returns an uninitialised
+integer if n = 0.  Thus, it is not surprising that the correctness
+proof fails when we test:
+
+  equivalence fib(n) -><- fastfib(n) [true]
+
+We altered the constraint to avoid this issue.
+

@@ -1,0 +1,55 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err : result ;
+  strcpy       ;
+  u            ;
+  v            ;
+  w            ;
+  g            ;
+  return       ;
+  test         ;
+  !ARRAY!Int   ;
+
+RULES
+  strcpy(x,y) -> u(x,y,0);
+  u(x,y,i) -> v(x,y,i)                      [0 <= i < size(y) /\ select(y,i) # 0];
+  u(x,y,i) -> return(x,y)                   [0 <= i < size(y) /\ select(y,i) = 0];
+  v(x,y,i) -> w(store(x,i,select(y,i)),y,i) [0 <= i < size(x) /\ i < size(y)];
+  w(x,y,i) -> g(x,y,i)                      [0 <= (i + 1) < size(y) /\ select(y, i + 1) = 0];
+  w(x,y,i) -> u(x,y,i + 1)                  [0 <= (i + 1) < size(y) /\ select(y, i + 1) # 0];
+  g(x,y,i) -> u(store(x,i + 1,0),y,i)       [0 <= (i + 1) < size(x)];
+
+  u(x,y,i) -> err [0 > i \/ i >= size(y)];
+  v(x,y,i) -> err [0 > i \/ i >= size(y) \/ i >= size(x)];
+  w(x,y,i) -> err [0 > i + 1 \/ i + 1 >= size(y)];
+  g(x,y,i) -> err [0 > i + 1 \/ i + 1 >= size(x)];
+
+  test(org, n, err)    -> false                                   ;
+  test(org, n, return(dest, src)) -> false [org # src]            ;
+  test(org, n, return(dest, src)) -> correspond(org, dest, 0, n)  ;
+
+QUERY equivalence test(x, n, strcpy(y, x)) -><- true [0 <= n < size(x) /\ n < size(y) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+
+END OF FILE
+
+Student program:
+
+void mystrcpy(char x[],char y[]){
+  int i;
+  for(i=0;y[i];i++){
+    x[i]=y[i];
+    if(!(y[i+1])){
+      x[i+1]='\0';
+    }
+  }
+}
+
+Comments:
+
+This should be doable, but unfortunately the not-yet-very-advanced
+termination proving module of Ctrl cannot prove termination of this
+system.
+

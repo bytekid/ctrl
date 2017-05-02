@@ -1,0 +1,31 @@
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  error : Unit ;
+  f1 : Int => Unit ;
+  f2 : Int => Unit ;
+  return  : Int => Unit ;
+  u_5 : Unit => Unit ;
+  u_8 : Unit => Unit ;
+  u_15 : Unit => Unit ;
+  u_18 : Unit => Unit ;
+  !INTEGER : Int ;
+
+RULES
+  f1(a) -> return(a - 10) [a > 100] ;
+  f1(a) -> u_5(f1(a + 11)) [a <= 100] ;
+  u_5(return(w_2)) -> u_8(f1(w_2)) ;
+  u_5(error) -> error ;
+  u_8(return(w_3)) -> return(w_3) ;
+  u_8(error) -> error ;
+  f2(x) -> u_15(f2(11 + x)) [x < 101] ;
+  f2(x) -> return(x - 10) [x >= 101] ;
+  u_15(return(w_5)) -> u_18(f2(w_5)) ;
+  u_15(error) -> error ;
+  u_18(return(w_6)) -> return(w_6) ;
+  u_18(error) -> error ;
+
+QUERY termination

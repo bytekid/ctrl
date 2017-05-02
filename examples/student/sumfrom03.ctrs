@@ -1,0 +1,47 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sumfrom, sum2, u, v, w, tmp, return, !INTEGER ;
+
+RULES
+  sumfrom(m,n)     -> return(0)                 [m > n]  ;
+  sumfrom(m,n)     -> tmp(n, sumfrom(m, n - 1)) [m <= n] ;
+  tmp(m,return(n)) -> return(m + n)                      ;
+
+  sum2(m,n)  -> u(m,n,0) ;
+  u(m,n,sum) -> v(m,n,sum) [m <= n] ;
+  v(m,n,sum) -> w(m + 1,n,sum + m) ;
+  w(m,n,sum) -> return(sum) [m > n] ;
+  w(m,n,sum) -> v(m,n,sum) [not (m > n)] ;
+  u(m,n,sum) -> return(0) [not (m <= n)] ;
+
+QUERY equivalence sumfrom(x,y) -><- sum2(x,y) [true]
+
+END OF FILE
+
+Student program:
+
+int sum2(int m,int n){
+
+  int sum = 0;
+
+  if(m <= n){
+    while(1){
+      sum += m;
+      m++;
+      if(m > n)
+	break;
+    }
+    return sum;
+  }else
+    return 0;
+
+}
+
+Result: fail
+
+Fatal error: exception Failure("Inductive Theorem Proving can only be used for terminating LCTRSs, and we could not automatically prove termination.
+")
+

@@ -1,0 +1,71 @@
+INCLUDE ints ;
+
+DECLARE
+  !BITVECTOR : BitVec                             ;
+  !=          : BitVec * BitVec => Bool (infix 70)    ;
+  i<=         : BitVec * BitVec => Bool (infix 70)    ;
+  i>=         : BitVec * BitVec => Bool (infix 70)    ;
+  i<          : BitVec * BitVec => Bool (infix 70)    ;
+  i>          : BitVec * BitVec => Bool (infix 70)    ;
+  u<=         : BitVec * BitVec => Bool (infix 70)    ;
+  u>=         : BitVec * BitVec => Bool (infix 70)    ;
+  u<          : BitVec * BitVec => Bool (infix 70)    ;
+  u>          : BitVec * BitVec => Bool (infix 70)    ;
+
+  ~           : BitVec => BitVec;
+  &           : BitVec * BitVec => BitVec (l-infix 150) ;
+  |           : BitVec * BitVec => BitVec (l-infix 100) ;
+  ^           : BitVec * BitVec => BitVec (l-infix 100) ;
+
+  neg         : BitVec => BitVec;
+  +i          : BitVec * BitVec => BitVec (l-infix 100);
+  -i          : BitVec * BitVec => BitVec (l-infix 100);
+  <<          : BitVec * BitVec => BitVec (r-infix 100);
+
+  #x0: BitVec;
+  #x1: BitVec;
+  #xff: BitVec;
+
+  absbv : BitVec => BitVec ;
+  ashr_th : BitVec * BitVec => BitVec;
+  computeKnownZeroBits : BitVec => BitVec;
+  countLeadingZeros : BitVec => BitVec;
+  countTrailingZeros : BitVec => BitVec;
+  hasOneUse : Bool;
+  isPowerOf2 : BitVec => Bool;
+  isPowerOf2OrZero : BitVec => Bool;
+  isShiftedMask : BitVec => Bool;
+  isSignBit : BitVec => Bool;
+  lshr_th : BitVec * BitVec => BitVec;
+  log2 : BitVec => BitVec;
+  MaskedValueIsZero : BitVec * BitVec => Bool;
+  sext : BitVec => BitVec;
+  sext_i1 : BitVec => BitVec;
+  trunc : BitVec => BitVec;
+  umax : BitVec * BitVec => BitVec;
+  width : BitVec => BitVec;
+  WillNotOverflowSignedAdd : BitVec * BitVec => Bool;
+  WillNotOverflowSignedSub : BitVec * BitVec => Bool;
+  WillNotOverflowUnsignedAdd : BitVec * BitVec => Bool;
+  WillNotOverflowUnsignedSub : BitVec * BitVec => Bool;
+  zext_i1 : BitVec => BitVec;
+
+SMT-RENAMINGS
+  i< 		-> bvslt;
+  i<=  	-> bvsle;
+  i> 		-> bvsgt;
+  i>=  	-> bvsge;
+  u< 		-> bvult;
+  u<=  	-> bvule;
+  u> 		-> bvugt;
+  u>=  	-> bvuge;
+
+  +i 		-> bvadd;
+  -i  	-> bvsub;
+
+  ~  	-> bvnot;
+  &  	-> bvand;
+  |  	-> bvor;
+
+SMT-TRANSLATIONS
+  !=(x, y) -> (not (= x y));

@@ -1,0 +1,30 @@
+int mystrlen(int trg[]){ 
+  int l = 80;
+  int i = 0;
+  do{
+    if(trg[i] == 0)
+      return i;
+    ++i;
+  }while(i < l);
+
+  return 0;
+ }
+
+/* original
+int l = 80;
+
+int mystrlen(char trg[]){ 
+  int i = 0;
+  do{
+    if(trg[i] == '\0')
+      return i;
+    ++i;
+  }while(i < l);
+
+  return 0;
+ }
+
+We changed this because, while our translation can handle global variables, it
+cannot yet handle global variables with an immediate initialisation (which is
+not changed throughout the program).
+*/

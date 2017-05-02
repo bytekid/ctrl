@@ -1,0 +1,19 @@
+int fastfib(int n)
+{
+  int fib = 1; 
+  int fib_p = 0; 
+  int fib_n; 
+  int i; 
+
+  if(n <= 0) { 
+    return 0;
+  }
+  
+  for(i = 1; i < n; i++) { 
+    fib_n = fib + fib_p; 
+    fib_p = fib; 
+    fib = fib_n; 
+  }
+
+  return fib; 
+}

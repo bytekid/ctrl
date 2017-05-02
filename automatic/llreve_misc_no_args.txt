@@ -1,0 +1,14 @@
+/* 
+  an example from llreve:
+  http://formal.iti.kit.edu/projects/improve/reve/
+*/
+
+int f1() {
+    int x = 0;
+    return x;
+}
+
+int f2() {
+    int x = 0;
+    return x;
+}

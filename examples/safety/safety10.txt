@@ -1,0 +1,21 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/count_down-alloca_true-valid-memsafety.c */
+
+int main(int length, int arr[]) {
+  int i, j;
+  for (i=0; i<length; i++) {
+    int val;
+    if (val < 0) {
+      val = 0;
+    }
+    arr[i] = val;
+  }
+  for (j=0; j<length; j++) {
+    while (arr[j] > 0) {
+      arr[j]--;
+    }
+  }
+  return 0;
+}
+
+[length >= 1 /\ size(arr) = length]
+

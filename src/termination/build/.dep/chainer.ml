@@ -1,0 +1,2 @@
+src/termination/build/chainer.cmx: src/ctrs/ctrs.cmxa src/termination/build/dpgraph.cmx src/termination/build/dpproblem.cmx src/io/io.cmxa src/rewriting/rewriting.cmxa src/smt/smt.cmxa src/util/util.cmxa
+src/termination/build/chainer.cmo: src/ctrs/ctrs.cma src/termination/build/dpgraph.cmo src/termination/build/dpproblem.cmo src/io/io.cma src/rewriting/rewriting.cma src/smt/smt.cma src/util/util.cma

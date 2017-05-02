@@ -1,0 +1,27 @@
+THEORY ints
+LOGIC  QF_NIA
+SOLVER internal
+SIGNATURE
+
+  sum      ;
+  w        ;
+  return ;
+
+
+  sum1: Int => result;
+  error: result;
+  return: Int => result;
+
+RULES
+
+  sum(x)            -> return(0)         [x <= 0]       ;
+  sum(x)            -> w(x, sum(x - 1))    [0 <= x - 1]   ;
+  w(x, return(y)) -> return(x + y)                    ;
+
+
+  sum1(n_1) -> return(0)  [(n_1 < 0)];
+  sum1(n_1) -> return(((n_1 * (n_1 + 1)) div 2))  [((n_1 >= 0) /\ (2 # 0))];
+  sum1(n_1) -> error  [((n_1 >= 0) /\ (2 = 0))];
+
+QUERY  do-simplify [sum sum1] and equivalence sum(x) -><- sum1(x) [true]
+

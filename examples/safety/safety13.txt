@@ -1,0 +1,20 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/openbsd_cbzero-alloca_true-valid-memsafety.c */
+
+void cbzero(int b[], int length)
+{
+  int p;
+
+  for (p = 0; length != 0;) {
+    length--;
+    b[p] = 0;
+    p++;
+  }
+}
+
+int main(int length, int n, int nondetArea[]) {
+  if (n > length) return 0;
+  cbzero(nondetArea, n);
+  return 0;
+}
+
+[length >= 1 /\ n >= 1 /\ size(nondetArea) = length]

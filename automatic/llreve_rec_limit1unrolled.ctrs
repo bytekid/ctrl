@@ -1,0 +1,27 @@
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  error : Unit ;
+  f1 : Int => Unit ;
+  f2 : Int => Unit ;
+  return : Int => Unit ;
+  u_13 : Int * Int * Unit => Unit ;
+  u_27 : Int * Unit => Unit ;
+  !INTEGER : Int ;
+
+RULES
+  f1(n) -> return(n) [n <= 1] ;
+  f1(n) -> return(n + (n - 1)) [n > 1 /\ n - 1 <= 1] ;
+  f1(n) -> u_13(n, n - 1, f1(n - 1 - 1)) [n > 1 /\ n - 1 > 1] ;
+  u_13(n, nx, return(w_4)) -> return(n + (nx + w_4)) ;
+  u_13(n, nx, error) -> error ;
+  f2(n) -> return(n) [n <= 1] ;
+  f2(n) -> u_27(n, f2(n - 2)) [n > 1] ;
+  u_27(n, return(w_6)) -> return(n + (n - 1) + w_6) ;
+  u_27(n, error) -> error ;
+
+QUERY equivalence f1(n) -><- f2(n) [true]
+

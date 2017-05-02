@@ -1,0 +1,2 @@
+src/inductive/build/theoremprover.cmx: src/confluence/confluence.cmxa src/ctrs/ctrs.cmxa src/io/io.cmxa src/inductive/build/proverbase.cmx src/rewriting/rewriting.cmxa src/smt/smt.cmxa src/termination/termination.cmxa src/util/util.cmxa
+src/inductive/build/theoremprover.cmo: src/confluence/confluence.cma src/ctrs/ctrs.cma src/io/io.cma src/inductive/build/proverbase.cmo src/rewriting/rewriting.cma src/smt/smt.cma src/termination/termination.cma src/util/util.cma

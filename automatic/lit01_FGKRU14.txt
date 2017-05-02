@@ -1,0 +1,62 @@
+/*
+   Example in Fig. 2 on p.2 from 
+     Dennis Felsing, Sarah Grebing, Vladimir Klebanov, Philipp Rümmer, Mattias Ulbrich:
+     Automating regression verification. ASE 2014: 349-360
+*/
+
+int f1(int n) {
+  int r = 1;
+  n = n/10;
+  while(n>0){
+    r++;
+    n = n / 10;
+  }
+  return r;
+}
+
+int f2(int n) {
+  int r = 1;
+  n = n / 10;
+  while( n > 0 ){
+    r++;
+    n = n / 10;
+    if( n > 0 ){
+      r++;
+      n = n / 10;
+      if( n > 0 ) {
+	r++;
+	n = n / 10;
+	if( n > 0 ){
+	  r++;
+	  n = n / 10;
+	}
+      }
+    }
+  }
+  return r;
+}
+
+int f3(int n){
+  int r = 1;
+  int b = 1;
+  int v = -1;
+  while( b != 0 ){
+    if( n < 10 ){
+      v = r;
+      b = 0;
+    }else if( n < 100 ){
+      v = r+1;
+      b = 0;
+    }else if( n < 1000 ){
+      v = r+2;
+      b = 0;
+    }else if( n < 10000 ){
+      v = r+3;
+      b = 0;
+    }else{
+      n = n / 10000;
+      r = r + 4; /* original code is "r = result + 1;", typo? */
+    }
+  }
+  return v;
+}

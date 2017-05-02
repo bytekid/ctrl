@@ -1,0 +1,6 @@
+INCLUDE arrays ;
+
+DECLARE
+  correspond : IntArray * IntArray * Int * Int => Bool ;
+  nonzero    : IntArray * Int * Int => Bool            ;
+

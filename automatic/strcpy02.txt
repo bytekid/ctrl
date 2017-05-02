@@ -1,0 +1,20 @@
+int mystrlen(int trg[])
+{
+  int i = 0;
+  do{
+    if(trg[i] == 0)
+      return i;
+    ++i;
+  }while(1);
+
+  return 0;
+}
+
+void mystrcpy(int trg[], int src[])
+{ 
+  int a = mystrlen(src);
+  int i;
+  for(i = 0; i <= a; i++)
+    trg[i] = src[i];
+}
+

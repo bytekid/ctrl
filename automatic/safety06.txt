@@ -1,0 +1,23 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/knapsack_alloca_unsafe_false-valid-deref.c */
+
+void knapsack(int sizes[], int val[], int N, int cost[], int best[], int M) {
+    int i, j;
+    for (j = 1; j <= N; j++) {
+        for (i = 1; i <= M; i++) {
+            if (i >= sizes[j]) {
+                if (cost[i] < cost[i - sizes[j]] + val[j]) {
+                    cost[i] = cost[i - sizes[j]] + val[j];
+                    best[i] = j;
+                }
+            }
+        }
+    }
+}
+
+int main(int N, int M, int sizes[], int val[], int cost[], int best[]) {
+  knapsack(sizes, val, N, cost, best, M);
+  return 0;
+}
+
+
+[N >= 1 /\ M >= 1 /\ size(sizes) = N /\ size(val) = N /\ size(cost) = M /\ size(best) = M]

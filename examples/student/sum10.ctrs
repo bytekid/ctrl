@@ -1,0 +1,47 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sum, sum1, u : Int * Int * Int => Result, v, w, c, return, !INTEGER ;
+
+RULES
+  sum(x)     -> return(0)            [x <= 0]       ;
+  sum(x)     -> c(x, sum(x - 1))     [0 <= x - 1]   ;
+  c(x, return(y)) -> return(x + y)                  ;
+  sum1(n)    -> u(n, rnd, 0)                        ;
+  u(n, i, s) -> return(0)            [n < 0]        ;
+  u(n, i, s) -> v(n, 0, s)           [not (n < 0)]  ;
+  v(n, i, s) -> v(n, i + 1, s + i)   [i <= n /\ s >= 0] ;
+  v(n, i, s) -> w(n, i, s)           [not (i <= n /\ s >= 0)] ;
+  w(n, i, s) -> return(-1)           [s < 0]        ;
+  w(n, i, s) -> return(s)            [not (s < 0)]  ;
+
+QUERY equivalence sum(x) -><- sum1(x) [true]
+
+END OF FILE
+
+Student program:
+
+int sum1(int n){
+  int i,sum=0;
+  
+  if(n<0){
+    return 0;
+  }
+  
+  for(i=0;i<=n && sum>=0;i++){
+    sum+=i;
+  }
+  
+  if(sum<0){
+    return -1;
+  }
+
+  return sum;
+}
+
+Comments:
+
+This student seems to be thinking about overflow!
+

@@ -1,0 +1,17 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/insertionsort-alloca_true-valid-memsafety.c */
+
+void main(int a[], int array_size)
+{
+    int i, j, index;
+    for (i = 1; i < array_size; ++i)
+    {
+        index = a[i];
+        for (j = i; j > 0 && a[j-1] > index; j--)
+            a[j] = a[j-1];
+
+        a[j] = index;
+    }
+}
+
+
+[array_size >= 1 /\ size(a) = array_size]

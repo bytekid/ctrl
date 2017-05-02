@@ -1,0 +1,20 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  fastfib : Int => Int ;
+  u, v  ;
+  g     : Int => Int ;
+
+RULES
+  fastfib(x) -> u(x, 0, 1, 0, 0)                       ;
+  u(x, i, p, q, z) -> 0                       [x <= 0] ;
+  u(x, i, p, q, z) -> 1                       [x = 1 ] ;
+  u(x, i, p, q, z) -> v(x, i, p, q, g(0))     [x > 1 ] ;
+  v(x, i, p, q, z) -> v(x, i + 1, p + q, p,z) [i < x ] ;
+  v(x, i, p, q, z) -> p                       [i >= x] ;
+  g(x) -> g(x) ;
+
+QUERY print-simplification [fastfib]
+

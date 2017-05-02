@@ -1,0 +1,47 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+SIGNATURE
+
+  sum      ;
+  w        ;
+  return ;
+
+
+  sum1call: Int => result;
+  sum1: Int * Int * Int => result;
+  error: result;
+  return: Int => result;
+  u_1: Int * Int * Int => result;
+  u_2: Int * Int * Int => result;
+  u_3: Int * Int * Int => result;
+  u_4: Int * Int * Int => result;
+  u_5: Int * Int * Int => result;
+  u_6: Int * Int * Int => result;
+
+RULES
+
+  sum(x)            -> return(0)         [x <= 0]       ;
+  sum(x)            -> w(x, sum(x - 1))    [0 <= x - 1]   ;
+  w(x, return(y))   -> return(x + y)                    ;
+
+  sum1call(num) -> sum1(num, rnd2, rnd3);
+  sum1(num, i, answer) -> return(0)  [(num < 0)];
+  sum1(num, i, answer) -> u_1(num, i, 0)  [(num >= 0)];
+  u_1(num, i, answer) -> u_2(num, 0, answer);
+  u_2(num, i, answer) -> u_3(num, i, (answer + i))  [(i <= num)];
+  u_3(num, i, answer) -> u_4(num, i, answer);
+  u_4(num, i, answer) -> u_5(num, i, answer);
+  u_5(num, i, answer) -> u_6(num, (i + 1), answer);
+  u_6(num, i, answer) -> u_2(num, i, answer);
+  u_2(num, i, answer) -> return(answer)  [(i > num)];
+
+QUERY  do-simplify [sum sum1call] and equivalence sum(x) -><- sum1call(x) [true]
+
+END OF FILE
+
+Note: we have manually altered this file, to handle the global
+variables like local ones, because of the specification (a function
+which alters global variables cannot be equivalent to a function
+which does not).
+

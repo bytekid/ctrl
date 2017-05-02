@@ -1,0 +1,26 @@
+/* 
+  an example from llreve:
+  http://formal.iti.kit.edu/projects/improve/reve/
+*/
+
+int f1(int x) {
+  if (x > 0) {
+    x = f1(x-1);
+    x = x + 1;
+  }
+  if (x < 0) {
+    x = 0;
+  }
+  return x;
+}
+
+int f2(int x) {
+  if (x > 1) {
+    x = f2(x-2);
+    x = x + 2;
+  }
+  if (x < 2) {
+    x = 0;
+  }
+  return x;
+}

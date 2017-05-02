@@ -1,0 +1,80 @@
+int sum1(int n)
+{
+        int i, sum = 0;
+        if(n < 0){
+                return 0;
+        }else{
+                for(i = 1; i <= n; i++){
+                        sum = sum + i;
+                }
+                return sum;
+        }
+}
+
+/*
+int sum1( int n )
+{
+  int i;
+  int a=0;
+
+  if( n<0 ){
+    return 0;
+  }
+
+  for(i=0;i<=n;i++){
+    a  =  a + i;
+  }    
+
+  return a;
+}
+*/
+
+/*
+int sum1(int n)  
+{
+  int i,gokei1=0;
+ 
+  if(n<0) {return 0;}
+
+  else
+ {
+    for(i=0;i<=n;i++)
+    
+    gokei1=gokei1+i;
+
+    return gokei1;
+ }
+}
+*/
+
+/*
+int sum1(int num){
+        int sum,i;
+        sum=0;
+        if(num<0) return(0);
+        else {
+        
+        for(i=1;i<=num;i++){
+                sum=sum+i;
+                        }
+}
+        return sum;
+}
+*/
+
+/*
+int sum1( int n )
+{
+        int m,i;
+
+        m = 0;
+        if ( n < 0 ){           
+                return 0;
+        }else{
+                for( i = 0; i <= n; i = i++){ 
+                        m = m + i;
+                }
+                return m;       
+        }
+}
+*/

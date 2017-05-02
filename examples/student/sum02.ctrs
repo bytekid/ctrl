@@ -1,0 +1,99 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sum, sum1, u, w, return1 : Int => Result, return, ditch_globals, !INTEGER ;
+
+RULES
+  sum(x)  -> return1(0)              [x <= 0]     ;
+  sum(x)  -> w(x, sum(x - 1))        [0 <= x - 1] ;
+  w(x, return1(y)) -> return1(x + y)              ;
+
+  sum1(num, i, answer) -> return(i, answer, 0)   [num < 0] ;
+  sum1(num, i, answer) -> u(num, 0, 0)           [not (num < 0)] ;
+  u(num, i, answer) -> u(num, i + 1, answer + i) [i <= num] ;
+  u(num, i, answer) -> return(i, answer, answer) [not (i <= num)] ;
+  ditch_globals(return(x, y, z)) -> return1(z)
+
+QUERY equivalence sum(x) -><- ditch_globals(sum1(x, y, z)) [true]
+
+END OF FILE
+
+Student program:
+
+int num,i,answer;
+
+int sum1(int num){
+        if(num < 0){
+                return 0;
+        }else{
+                answer = 0;
+                for(i=0;i<=num;i++){
+                        answer = answer + i;
+                }return answer;
+        }
+}
+
+Comments:
+
+Because of global variables, this function has side effects.
+Thus, we model it using a return value.
+As we are not actually interested in the modified global variables, we use the ditch_globals function to just get the answer.
+
+Unfortunately, the nicest version of the process requires
+introduction of rules such as:
+  ditch_globals(u(x18, x37, x38)) = w(x18, ditch_globals(u(x17, x33, x34))) [...]
+
+With the very limited termination proving currently implemented in
+Ctrl, we cannot handle such rules (where more than one defined symbol
+occurs on both sides) yet.  This is why the proof takes a different
+direction.
+
+If termination is ignored, the following procedure also works:
+
+expand
+skip
+swap
+expand 1
+simplify 3 1
+simplify 2 1
+simplify 1
+eq-delete
+delete
+simplify 1
+eq-delete
+delete
+simplify X1 2
+simplify 4 2.1
+simplify 3 2.1
+swap
+simplify 4 1
+simplify 3 1
+simplify 3 1
+force-expand 1
+simplify 1
+swap
+simplify 2 2.1
+simplify 1 2
+simplify 6
+eq-delete
+delete
+swap
+simplify 3 2.1
+swap
+generalise v1 v2
+force-expand 1
+simplify 1
+swap
+simplify 2 2.1
+simplify 1 2
+simplify 6
+eq-delete
+delete
+simplify X4
+swap
+simplify 3 2.1
+eq-delete
+delete
+

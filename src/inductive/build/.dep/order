@@ -1,0 +1,1 @@
+OBJS_Inductive := src/inductive/build/completenesschecker.cmx src/inductive/build/proverbase.cmx src/inductive/build/manualprover.cmx src/inductive/build/theoremprover.cmx

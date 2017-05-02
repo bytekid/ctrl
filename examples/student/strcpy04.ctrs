@@ -1,0 +1,56 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err1 : result1 ;
+  err2 : result2 ;
+  strlen         ;   
+  strcpy         ;   
+  s              ;   
+  u              ;   
+  v              ;   
+  w              ;   
+  return1        ;   
+  return2        ;   
+  test           ;   
+  !ARRAY!Int     ;   
+
+RULES
+  strlen(x) -> s(x, 0) ;
+  s(x, i) -> err1          [i < 0 \/ i >= size(x)] ;
+  s(x, i) -> return1(x, i) [0 <= i /\ i < size(x) /\ select(x, i) = 0] ;
+  s(x, i) -> s(x, i + 1)   [0 <= i /\ i < size(x) /\ select(x, i) # 0] ;
+
+  strcpy(x,y)            -> u(x,y,0)          ;
+  u(x,y,i)              -> v(x,y,i,strlen(x)) ;
+  v(x,y,i,err1)         -> err2               ;
+  v(x,y,i,return1(z,l)) -> w(x,y,i,l)         ;
+
+  w(x,y,i,l) -> u(store(x,i,select(y,i)),y,i) [0 <= i < size(x) /\ i < size(y) /\ i < l]      ;
+  w(x,y,i,l) -> return2(x,y)                  [0 <= i < size(x) /\ i < size(y) /\ not(i < l)] ;
+  w(x,y,i,l) -> err2                          [0 > i \/ i >= size(x) \/ i >= size(y)]         ;
+
+  test(org, n, err)                -> false                        ;
+  test(org, n, return2(dest, src)) -> false [org # src]            ;
+  test(org, n, return2(dest, src)) -> correspond(org, dest, 0, n)  ;
+
+QUERY equivalence test(x, n, strcpy(y, x)) -><- true [0 <= n < size(x) /\ n < size(y) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+
+END OF FILE
+
+Student program:
+
+void mystrcpy(char x[], char y[])
+{
+  for(int i=0 ; i < strlen(x) ; i++) x[i] = y[i];
+}
+
+Comments:
+
+This program makes use of the existing strlen function.
+Unfortunately, the program is not correct: first of all the student
+only considers strlen(x) instead of strlen(y) (which fails if x has
+smaller length than y), second, even if this were reversed, the
+closing '\0' is not added to the target string x.
+

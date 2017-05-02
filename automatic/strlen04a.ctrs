@@ -1,0 +1,45 @@
+THEORY strings
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+SIGNATURE
+
+
+
+  mystrlen: IntArray => result;
+  u_1: IntArray * Int => result;
+  u_2: IntArray * Int * Int => result;
+  error: result;
+  u_3: IntArray * Int * Int => result;
+  u_4: IntArray * Int * Int => result;
+  u_5: IntArray * Int * Int => result;
+  u_6: IntArray * Int * Int => result;
+  u_7: IntArray * Int * Int => result;
+  u_8: IntArray * Int * Int => result;
+  u_9: IntArray * Int => result;
+  return: IntArray * Int => result;
+
+RULES
+
+
+
+  mystrlen(x_1) -> u_1(x_1, 0);
+  u_1(x_1, t_2) -> u_2(x_1, t_2, 0);
+  u_2(x_1, t_2, i_3) -> error  [((i_3 < 80) /\ (0 > i_3 \/ i_3 >= size(x_1)))];
+  u_2(x_1, t_2, i_3) -> u_3(x_1, i_3, i_3)  [(((i_3 < 80) /\ (select(x_1, i_3) = 0)) /\ (0 <= i_3 < size(x_1)))];
+  u_2(x_1, t_2, i_3) -> u_4(x_1, t_2, i_3)  [(((i_3 < 80) /\ (select(x_1, i_3) # 0)) /\ (0 <= i_3 < size(x_1)))];
+  u_3(x_1, t_2, i_3) -> u_5(x_1, t_2, i_3);
+  u_2(x_1, t_2, i_3) -> u_6(x_1, t_2, i_3)  [(i_3 >= 80)];
+  u_5(x_1, t_2, i_3) -> u_6(x_1, t_2, i_3);
+  u_4(x_1, t_2, i_3) -> u_7(x_1, t_2, i_3);
+  u_7(x_1, t_2, i_3) -> u_8(x_1, t_2, (i_3 + 1));
+  u_8(x_1, t_2, i_3) -> u_2(x_1, t_2, i_3);
+  u_6(x_1, t_2, i_3) -> u_9(x_1, t_2);
+  u_9(x_1, t_2) -> return(x_1, t_2);
+
+QUERY  do-simplify [mystrlen] and equivalence mystrlen(x) -><- return(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0 /\ n < 80]
+
+
+END OF FILE
+
+This student, like the student of strlen02, has imposed a maximum length of 80
+on strings.  We have adapted the query accordingly.

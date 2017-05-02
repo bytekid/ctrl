@@ -1,0 +1,23 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/selectionsort-alloca_true-valid-memsafety.c */
+
+void main(int a[], int array_size)
+{
+    int i;
+    for (i = 0; i < array_size - 1; ++i)
+    {
+        int j, min, temp;
+        min = i;
+        for (j = i+1; j < array_size; ++j)
+        {
+            if (a[j] < a[min])
+                min = j;
+        }
+        
+        temp = a[i];
+        a[i] = a[min];
+        a[min] = temp;
+    }
+}
+
+[array_size >= 1 /\ array_size < 2147483647 /\ size(a) = array_size]
+

@@ -1,0 +1,74 @@
+THEORY arrays
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+
+SIGNATURE
+  diff: IntArray * Int * IntArray * Int * IntArray => result_1;
+  u_1: IntArray * Int * IntArray * Int * IntArray * Int => result_1;
+  u_2: IntArray * Int * IntArray * Int * IntArray * Int * Int => result_1;
+  u_3: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int => result_1;
+  u_4: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int => result_1;
+  u_5: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int => result_1;
+  u_6: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int => result_1;
+  u_7: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_8: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_9: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  error_1: result_1;
+  u_10: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_11: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_12: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_13: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_14: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_15: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_16: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_17: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_18: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_19: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_20: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int * Int => result_1;
+  u_21: IntArray * Int * IntArray * Int * IntArray * Int * Int * Int * Int * Int => result_1;
+  return_1: IntArray * IntArray * IntArray => result_1;
+  main: Int * Int * IntArray * IntArray * IntArray => result_2;
+  u_22: Int * Int * IntArray * IntArray * IntArray * result_1 => result_2;
+  error_2: result_2;
+  u_23: Int * Int * IntArray * IntArray * IntArray => result_2;
+  return_2: IntArray * IntArray * IntArray * Int => result_2;
+  errortest;
+
+RULES
+  diff(A_1, Alen_1, B_1, Blen_1, D_1) -> u_1(A_1, Alen_1, B_1, Blen_1, D_1, 0);
+  u_1(A_1, Alen_1, B_1, Blen_1, D_1, k_2) -> u_2(A_1, Alen_1, B_1, Blen_1, D_1, k_2, 0);
+  u_2(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2) -> u_3(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, Alen_1);
+  u_3(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2) -> u_4(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, Blen_1);
+  u_4(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2) -> u_5(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, rnd_1);
+  u_5(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2) -> u_6(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2);
+  u_6(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2) -> u_7(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, 0)  [(i_2 < l1_2)];
+  u_7(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_8(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, 0, j_3);
+  u_8(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_9(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_9(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> error_1  [(((j_3 < l2_2) /\ (found_2 = 0)) /\ ((0 > i_2 \/ i_2 >= size(A_1)) \/ (0 > j_3 \/ j_3 >= size(B_1))))];
+  u_9(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_10(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, 1, j_3)  [((((j_3 < l2_2) /\ (found_2 = 0)) /\ (select(A_1, i_2) = select(B_1, j_3))) /\ ((0 <= i_2 < size(A_1)) /\ (0 <= j_3 < size(B_1))))];
+  u_10(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_11(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_9(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_12(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, (j_3 + 1))  [((((j_3 < l2_2) /\ (found_2 = 0)) /\ (select(A_1, i_2) # select(B_1, j_3))) /\ ((0 <= i_2 < size(A_1)) /\ (0 <= j_3 < size(B_1))))];
+  u_12(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_13(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_11(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_14(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_13(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_14(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_14(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_15(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_15(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_9(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_9(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_16(A_1, Alen_1, B_1, Blen_1, store(D_1, k_2, select(A_1, i_2)), k_2, i_2, l1_2, l2_2, found_2, j_3)  [((((j_3 >= l2_2) \/ (found_2 # 0)) /\ (found_2 = 0)) /\ ((0 <= i_2 < size(A_1)) /\ (0 <= k_2 < size(D_1))))];
+  u_9(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> error_1  [((((j_3 >= l2_2) \/ (found_2 # 0)) /\ (found_2 = 0)) /\ ((0 > i_2 \/ i_2 >= size(A_1)) \/ (0 > k_2 \/ k_2 >= size(D_1))))];
+  u_16(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_17(A_1, Alen_1, B_1, Blen_1, D_1, (k_2 + 1), i_2, l1_2, l2_2, found_2, j_3);
+  u_17(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_18(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_18(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_19(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3);
+  u_9(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_19(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3)  [(((j_3 >= l2_2) \/ (found_2 # 0)) /\ (found_2 # 0))];
+  u_19(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_20(A_1, Alen_1, B_1, Blen_1, D_1, k_2, (i_2 + 1), l1_2, l2_2, found_2, j_3);
+  u_20(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2, j_3) -> u_21(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2);
+  u_21(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2) -> u_6(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2);
+  u_6(A_1, Alen_1, B_1, Blen_1, D_1, k_2, i_2, l1_2, l2_2, found_2) -> return_1(A_1, B_1, D_1)  [(i_2 >= l1_2)];
+  main(Alen_1, Blen_1, A_1, B_1, D_1) -> u_22(Alen_1, Blen_1, A_1, B_1, D_1, diff(A_1, Alen_1, B_1, Blen_1, D_1));
+  u_22(Alen_1, Blen_1, A_1, B_1, D_1, error_1) -> error_2;
+  u_22(Alen_1, Blen_1, A_1, B_1, D_1, return_1(w_3, w_4, w_5)) -> u_23(Alen_1, Blen_1, w_3, w_4, w_5);
+  u_23(Alen_1, Blen_1, A_1, B_1, D_1) -> return_2(A_1, B_1, D_1, 0);
+  errortest(error_2) -> false;
+  errortest(return_2(w_6, w_7, w_8, w_9)) -> true;
+
+QUERY do-simplify [diff main errortest] and equivalence errortest(main(Alen, Blen, A, B, D)) -><- true [alen >= 1 /\ Alen < 2147483647 /\ Blen >= 1 /\ Blen < 2147483647 /\ size(A) = Alen /\ size(B) = Blen /\ size(D) = Alen]
+

@@ -1,0 +1,31 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sum, sum1, w, return, !INTEGER ;
+
+RULES
+  sum(x)     -> return(0)                 [x <= 0]      ;
+  sum(x)     -> w(x, sum(x - 1))          [0 <= x - 1]  ;
+  w(x, return(y)) -> return(x + y)                      ;
+  sum1(n)    -> return(0)                 [n < 0]       ;
+  sum1(n)    -> return(n * (n + 1) div 2) [not (n < 0)] ;
+
+QUERY equivalence sum(x) -><- sum1(x) [true]
+
+END OF FILE
+
+Student program:
+
+int
+sum1(int n) 
+{
+  if(n < 0) { 
+    return 0; 
+  }
+
+  
+  return n * (n + 1) / 2; 
+}
+

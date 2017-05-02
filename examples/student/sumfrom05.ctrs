@@ -1,0 +1,33 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sumfrom, sum2, u, tmp, return, !INTEGER ;
+
+RULES
+  sumfrom(m,n)     -> return(0)                 [m > n]  ;
+  sumfrom(m,n)     -> tmp(n, sumfrom(m, n - 1)) [m <= n] ;
+  tmp(m,return(n)) -> return(m + n)                      ;
+
+  sum2(m,n)    -> u(m,n,0);
+  u(m,n,count) -> u(m + 1,n,count + m) [m <= n];
+  u(m,n,count) -> return(count) [not (m <= n)];
+
+QUERY equivalence sumfrom(x,y) -><- sum2(x,y) [true]
+
+END OF FILE
+
+Student program:
+
+int sum2(int m, int n)
+{
+  int count = 0;
+  while (m <= n)
+    {
+      count = count + m;
+      m++;
+    }
+  return count;
+}
+

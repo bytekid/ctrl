@@ -1,0 +1,45 @@
+THEORY ints  ;
+LOGIC QF_LIA ;
+SOLVER internal ;
+
+SIGNATURE eval1, eval2, eval3, !INTEGER ;
+
+RULES
+  eval1(x,y) -> eval2(x,y)         [x >! y] ;
+  eval1(x,y) -> eval3(x,y)         [y >= x] ;
+  eval2(x,y) -> eval2(x - 1,y + 1) [x >! 0] ;
+  eval2(x,y) -> eval1(x,y)         [not (x > 0)];
+  eval3(x,y) -> eval3(x + 1,y - 1) [x > 0]      ;
+  eval3(x,y) -> eval2(x - 1,y + 1) [x > 0]      ;
+
+CONTEXT-SENSITIVE
+  eval1 : {1} ;
+
+QUERY normal form eval1(2,1)
+
+END OF FILE
+
+
+
+
+
+IMPORTS int,
+
+DECLARE 
+  even  : int => bool ,
+  false : bool        ,
+  true  : bool        ,
+  #     : int * int => int (infix 3),
+  >>    : int * int => int (r-infix 4),
+  <<    : int * int => int (infix 4),
+  ^     : int * int => int (infix 2),
+
+RULES
+  even(0) -> true ;
+  even(n) -> false   <-- [n > 0 > 2], even (n - 1) ->* true ;
+  (1 # 2) >> 3 >> 4 ^ 5 << (6 >> 7) -> a + d + b * c
+
+CONTEXT-SENSITIVE
+  # : {1} ;
+  >> : {1, 2} ;
+

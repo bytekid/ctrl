@@ -1,0 +1,18 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/cstrchr-alloca_true-valid-memsafety.c */
+
+int cstrchr(int s[], int c) {
+    int i = 0;
+    while (s[i] != '\0' && s[i] != c)
+        i++;
+    return s[i];
+}
+
+int main(int length, char nondetString[]) {
+    int rnd;
+    nondetString[length-1] = '\0';
+    cstrchr(nondetString, rnd);
+    return 0;
+}
+
+[length >= 1 /\ size(nondetString) = length]
+

@@ -1,0 +1,10 @@
+INCLUDE core;
+
+DECLARE
+  !MIXED!'!' : Char                           ;
+  s          : Char => Char                   ;
+  p          : Char => Char                   ;
+  >          : Char * Char => Bool (infix 70) ;
+
+WELLFOUNDED > ;
+

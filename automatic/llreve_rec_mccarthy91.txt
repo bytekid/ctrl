@@ -1,0 +1,28 @@
+/* 
+  an example from llreve:
+  http://formal.iti.kit.edu/projects/improve/reve/
+*/
+
+int f1(int a) {
+  int r;
+  r = 0;
+  if (a > 100) {
+    r = a - 10;
+  } else {
+    r = f1(a + 11);
+    r = f1(r);
+  }
+  return r;
+}
+
+int f2(int x) {
+  int r;
+  r = 0;
+  if (x < 101) {
+    r = f2(11 + x);
+    r = f2(r);
+  } else {
+    r = x - 10;
+  }
+  return r;
+}

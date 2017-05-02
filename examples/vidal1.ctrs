@@ -1,0 +1,25 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE fun1, fun2, fun3, fun4, fun5, fun6, fun7, fun8 ;
+
+RULES
+
+fun1(x,y)   -> fun2(x,y,input) [x > 0 /\ y > 0]   ;
+fun1(x,y)   -> fun8(x,y)       [x <= 0 /\ y <= 0] ;
+fun2(x,y,i) -> fun3(x,y)       [i = 1]            ;
+fun2(x,y,i) -> fun6(x,y)       [not (i = 1)]      ;
+fun3(x,y)   -> fun4(x - 1,y)                      ;
+fun4(x,y)   -> fun5(x,input)                      ;
+fun5(x,y)   -> fun7(x,y)                          ;
+fun6(x,y)   -> fun7(x,y - 1)                      ;
+fun7(x,y)   -> fun1(x,y)                          ;
+
+QUERY termination
+
+END OF FILE
+
+An integer example by Vidal.  Note that here, we allow for user input,
+which may give arbitrarily large values.
+

@@ -1,0 +1,99 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  f1 : Int => result ;
+  f2 : Int => result ;
+  f3 : Int => result ;
+  return : Int => result ;
+  u_3 : Int * Int => result ;
+  u_9 : Int * Int => result ;
+  u_28 : Int * Int * Int * Int => result ;
+  !INTEGER : Int ;
+
+RULES
+  f1(n_1) -> u_3(n_1 div 10, 1) ;
+  u_3(n_1, r_2) -> u_3(n_1 div 10, r_2 + 1) [n_1 > 0] ;
+  u_3(n_1, r_2) -> return(r_2) [n_1 <= 0] ;
+  f2(n_1) -> u_9(n_1 div 10, 1) ;
+  u_9(n_1, r_2) -> u_9(n_1 div 10 div 10 div 10 div 10, r_2 + 1 + 1 + 1 + 1) [n_1 > 0 /\ n_1 div 10 > 0 /\ n_1 div 10 div 10 > 0 /\ n_1 div 10 div 10 div 10 > 0] ;
+  u_9(n_1, r_2) -> u_9(n_1 div 10 div 10 div 10, r_2 + 1 + 1 + 1) [n_1 > 0 /\ n_1 div 10 > 0 /\ n_1 div 10 div 10 > 0 /\ n_1 div 10 div 10 div 10 <= 0] ;
+  u_9(n_1, r_2) -> u_9(n_1 div 10 div 10, r_2 + 1 + 1) [n_1 > 0 /\ n_1 div 10 > 0 /\ n_1 div 10 div 10 <= 0] ;
+  u_9(n_1, r_2) -> u_9(n_1 div 10, r_2 + 1) [n_1 > 0 /\ n_1 div 10 <= 0] ;
+  u_9(n_1, r_2) -> return(r_2) [n_1 <= 0] ;
+  f3(n_1) -> u_28(n_1, 1, 1, -1) ;
+  u_28(n_1, r_2, b_2, v_2) -> u_28(n_1, r_2, 0, r_2) [b_2 # 0 /\ n_1 < 10] ;
+  u_28(n_1, r_2, b_2, v_2) -> u_28(n_1, r_2, 0, r_2 + 1) [b_2 # 0 /\ n_1 >= 10 /\ n_1 < 100] ;
+  u_28(n_1, r_2, b_2, v_2) -> u_28(n_1, r_2, 0, r_2 + 2) [b_2 # 0 /\ n_1 >= 10 /\ n_1 >= 100 /\ n_1 < 1000] ;
+  u_28(n_1, r_2, b_2, v_2) -> u_28(n_1, r_2, 0, r_2 + 3) [b_2 # 0 /\ n_1 >= 10 /\ n_1 >= 100 /\ n_1 >= 1000 /\ n_1 < 10000] ;
+  u_28(n_1, r_2, b_2, v_2) -> u_28(n_1 div 10000, r_2 + 4, b_2, v_2) [b_2 # 0 /\ n_1 >= 10 /\ n_1 >= 100 /\ n_1 >= 1000 /\ n_1 >= 10000] ;
+  u_28(n_1, r_2, b_2, v_2) -> return(v_2) [b_2 = 0] ;
+
+QUERY equivalence f1(x) -><- f3(x) [true]
+
+END OF FILE
+
+/*
+   Example in Fig. 2 on p.2 from 
+     Dennis Felsing, Sarah Grebing, Vladimir Klebanov, Philipp Rümmer, Mattias Ulbrich:
+     Automating regression verification. ASE 2014: 349-360
+
+int f1(int n) {
+  int r = 1;
+  n = n/10;
+  while(n>0){
+    r++;
+    n = n / 10;
+  }
+  return r;
+}
+
+int f2(int n) {
+  int r = 1;
+  n = n / 10;
+  while( n > 0 ){
+    r++;
+    n = n / 10;
+    if( n > 0 ){
+      r++;
+      n = n / 10;
+      if( n > 0 ) {
+	r++;
+	n = n / 10;
+	if( n > 0 ){
+	  r++;
+	  n = n / 10;
+	}
+      }
+    }
+  }
+  return r;
+}
+
+int f3(int n){
+  int r = 1;
+  int b = 1;
+  int v = -1;
+  while( b != 0 ){
+    if( n < 10 ){
+      v = r;
+      b = 0;
+    }else if( n < 100 ){
+      v = r+1;
+      b = 0;
+    }else if( n < 1000 ){
+      v = r+2;
+      b = 0;
+    }else if( n < 10000 ){
+      v = r+3;
+      b = 0;
+    }else{
+      n = n / 10000;
+      r = r + 4; /* original code is "r = result + 1;", typo? */
+    }
+  }
+  return v;
+}
+
+*/

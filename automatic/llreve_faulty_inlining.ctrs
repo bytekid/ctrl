@@ -1,0 +1,30 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  error : Unit ;
+  f1 : Int => Unit ;
+  f2 : Int => Unit ;
+  return : Int => Unit ;
+  u_1 : Unit => Unit ;
+  u_6 : Int => Unit ;
+  u_10 : Unit => Unit ;
+  u_15 : Int => Unit ;
+  !INTEGER : Int ;
+
+RULES
+  f1(x) -> u_1(f1(x - 1)) [x > 0] ;
+  u_1(return(w_1)) -> u_6(w_1 + 1) ;
+  u_1(error) -> error ;
+  f1(x) -> u_6(x) [x <= 0] ;
+  u_6(x) -> return(0) [x < 0] ;
+  u_6(x) -> return(x) [x >= 0] ;
+  f2(x) -> u_10(f2(x - 2)) [x > 1] ;
+  u_10(return(w_2)) -> u_15(w_2 + 2) ;
+  u_10(error) -> error ;
+  f2(x) -> u_15(x) [x <= 1] ;
+  u_15(x) -> return(0) [x < 2] ;
+  u_15(x) -> return(x) [x >= 2] ;
+
+QUERY equivalence f1(x) -><- f2(x) [true]

@@ -1,0 +1,42 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err : result ;
+  return       ;
+  strlen       ;
+  u            ;
+  v            ;
+  !ARRAY!Int   ;
+
+RULES
+  strlen(x) -> u(x,0,0);
+  u(x,t,i) -> v(x,t,i) [i < 80];
+  v(x,t,i) -> u(x,t,i + 1) [0 <= i /\ i < size(x) /\ select(x,i) # 0];
+  v(x,t,i) -> return(x,i) [0 <= i /\ i < size(x) /\ select(x,i) = 0];
+  u(x,t,i) -> return(x,t) [not (i < 80)];
+
+  v(x,t,i) -> err [0 > i \/ i >= size(x)]
+
+QUERY equivalence strlen(x) -><- return(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0 /\ n < 80]
+
+END OF FILE
+
+Student program:
+
+int mystrlen(char x[])
+{
+  int t = 0;
+  for(int i=0 ; i < 80 ; i++) {
+    if ((int) x[i] == 0) {t = i; break;}
+  }
+
+  return t;
+}
+
+Comments:
+
+This student has chosen to only consider strings of length < 80. 
+We altered the constraint accordingly.
+

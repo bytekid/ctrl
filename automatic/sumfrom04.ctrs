@@ -1,0 +1,41 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+SIGNATURE
+
+  sumfrom ;
+  w ;
+  return : Int => result;
+  error : result;
+
+
+  sum2: Int * Int => result;
+  u_1: Int * Int * Int => result;
+  u_2: Int * Int * Int * Int => result;
+  error: result;
+  return: Int => result;
+  u_3: Int * Int * Int * Int => result;
+  u_4: Int * Int * Int * Int => result;
+  u_5: Int * Int * Int * Int => result;
+  u_6: Int * Int * Int * Int => result;
+
+RULES
+
+  sumfrom(m, n)   -> return(0)               [m > n];
+  sumfrom(m, n)   -> w(n, sumfrom(m, n - 1)) [m <= n] ;
+  w(m, return(n)) -> return(m + n)                ;
+  w(m, error) -> error                            ;
+
+
+  sum2(m_1, n_1) -> u_1(m_1, n_1, 0);
+  u_1(m_1, n_1, s_2) -> u_2(m_1, n_1, s_2, m_1);
+  u_2(m_1, n_1, s_2, i_2) -> return(0)  [(m_1 > n_1)];
+  u_2(m_1, n_1, s_2, i_2) -> u_3(m_1, n_1, s_2, i_2)  [(m_1 <= n_1)];
+  u_3(m_1, n_1, s_2, i_2) -> u_4(m_1, n_1, (s_2 + i_2), i_2)  [(i_2 <= n_1)];
+  u_4(m_1, n_1, s_2, i_2) -> u_5(m_1, n_1, s_2, (i_2 + 1));
+  u_5(m_1, n_1, s_2, i_2) -> u_6(m_1, n_1, s_2, i_2);
+  u_6(m_1, n_1, s_2, i_2) -> u_2(m_1, n_1, s_2, i_2);
+  u_3(m_1, n_1, s_2, i_2) -> return(s_2)  [(i_2 > n_1)];
+
+QUERY  do-simplify [sumfrom sum2] and equivalence sumfrom(x,y) -><- sum2(x,y) [true]
+

@@ -1,0 +1,32 @@
+/* 
+  an example from llreve:
+  http://formal.iti.kit.edu/projects/improve/reve/
+*/
+
+int f1(int n) {
+  int r;
+  r = 0;
+
+  if (n <= 1) {
+    r = n;
+  } else {
+    r = f1(n - 1);
+    r = n + r;
+  }
+
+  return r;
+}
+
+int f2(int n) {
+  int r;
+  r = 0;
+
+  if (n <= 1) {
+    r = n;
+  } else {
+    r = f2(n - 3);
+    r = n + (n-1) + r;
+  }
+
+  return r;
+}

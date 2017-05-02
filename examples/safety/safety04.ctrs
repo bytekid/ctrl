@@ -1,0 +1,51 @@
+THEORY arrays
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+
+SIGNATURE
+  main: Int * Int * IntArray * IntArray => result_1;
+  u_1: Int * Int * IntArray * IntArray * Int => result_1;
+  u_2: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_3: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_4: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_5: Int * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  u_6: Int * Int * IntArray * IntArray * Int * Int * Int => result_1;
+  error_1: result_1;
+  u_7: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_8: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_9: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_10: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_11: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_12: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_13: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_14: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  u_15: Int * Int * IntArray * IntArray * Int * Int => result_1;
+  return_1: IntArray * IntArray * Int => result_1;
+  errortest;
+
+RULES
+  main(length_1, fac_1, arr_1, arr2_1) -> u_1(length_1, fac_1, arr_1, arr2_1, rnd_1);
+  u_1(length_1, fac_1, arr_1, arr2_1, i_2) -> u_2(length_1, fac_1, arr_1, arr2_1, i_2, rnd_2);
+  u_2(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_3(length_1, fac_1, arr_1, arr2_1, i_2, j_2);
+  u_3(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_4(length_1, fac_1, arr_1, arr2_1, 0, j_2);
+  u_4(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_5(length_1, fac_1, arr_1, arr2_1, i_2, j_2, rnd_3)  [(i_2 < length_1)];
+  u_5(length_1, fac_1, arr_1, arr2_1, i_2, j_2, rnd_3) -> u_6(length_1, fac_1, store(arr_1, i_2, rnd_3), arr2_1, i_2, j_2, rnd_3)  [(0 <= i_2 < size(arr_1))];
+  u_5(length_1, fac_1, arr_1, arr2_1, i_2, j_2, rnd_3) -> error_1  [(0 > i_2 \/ i_2 >= size(arr_1))];
+  u_6(length_1, fac_1, arr_1, arr2_1, i_2, j_2, rnd_3) -> u_7(length_1, fac_1, arr_1, arr2_1, i_2, j_2);
+  u_7(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_8(length_1, fac_1, arr_1, arr2_1, i_2, j_2);
+  u_8(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_9(length_1, fac_1, arr_1, arr2_1, (i_2 + 1), j_2);
+  u_9(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_4(length_1, fac_1, arr_1, arr2_1, i_2, j_2);
+  u_4(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_10(length_1, fac_1, arr_1, arr2_1, i_2, j_2)  [(i_2 >= length_1)];
+  u_10(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_11(length_1, fac_1, arr_1, arr2_1, i_2, 0);
+  u_11(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_12(length_1, fac_1, arr_1, store(arr2_1, j_2, select(arr_1, (i_2 mod length_1))), i_2, j_2)  [((j_2 < (length_1 * fac_1)) /\ (((length_1 # 0) /\ (0 <= (i_2 mod length_1) < size(arr_1))) /\ (0 <= j_2 < size(arr2_1))))];
+  u_11(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> error_1  [((j_2 < (length_1 * fac_1)) /\ (((length_1 = 0) \/ (0 > (i_2 mod length_1) \/ (i_2 mod length_1) >= size(arr_1))) \/ (0 > j_2 \/ j_2 >= size(arr2_1))))];
+  u_12(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_13(length_1, fac_1, arr_1, arr2_1, i_2, j_2);
+  u_13(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_14(length_1, fac_1, arr_1, arr2_1, i_2, j_2);
+  u_14(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_15(length_1, fac_1, arr_1, arr2_1, i_2, (j_2 + 1));
+  u_15(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> u_11(length_1, fac_1, arr_1, arr2_1, i_2, j_2);
+  u_11(length_1, fac_1, arr_1, arr2_1, i_2, j_2) -> return_1(arr_1, arr2_1, 0)  [(j_2 >= (length_1 * fac_1))];
+  errortest(error_1) -> false;
+  errortest(return_1(w_4, w_5, w_6)) -> true;
+
+QUERY do-simplify [main errortest] and equivalence errortest(main(length, fac, arr, arr2)) -><- true [length >= 1 /\ fac >= 1 /\ size(arr) = length /\ size(arr2) = fac * length]
+

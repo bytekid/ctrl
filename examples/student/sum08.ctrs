@@ -1,0 +1,105 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sum, sum1, u : Int * Int * Int => Result, v, w, return, !INTEGER ;
+
+RULES
+  sum(x)     -> return(0)            [x <= 0]       ;
+  sum(x)     -> w(x, sum(x - 1))     [0 <= x - 1]   ;
+  w(x, return(y)) -> return(x + y)                  ;
+  sum1(n)    -> u(n, rnd, 0)                        ;
+  u(n, i, s) -> return(0)            [n < 0]        ;
+  u(n, i, s) -> v(n, 1, s)           [not (n < 0)]  ;
+  v(n, i, s) -> v(n, i + 1, s + i)   [i <= n]       ;
+  v(n, i, s) -> return(s)            [not (i <= n)] ;
+
+QUERY equivalence sum(x) -><- sum1(x) [true]
+
+END OF FILE
+
+Student programs:
+
+int sum1(int n)
+{
+        int i, sum = 0;
+        if(n < 0){
+                return 0;
+        }else{
+                for(i = 1; i <= n; i++){
+                        sum = sum + i;
+                }
+                return sum;
+        }
+}
+
+int sum1( int n )
+{
+  int i;
+  int a=0;
+
+  if( n<0 ){
+    return 0;
+  }
+
+  for(i=0;i<=n;i++){
+    a  =  a + i;
+  }    
+
+  return a;
+}
+
+int sum1(int n)  
+{
+  int i,gokei1=0;
+ 
+  if(n<0) {return 0;}
+
+  else
+ {
+    for(i=0;i<=n;i++)
+    
+    gokei1=gokei1+i;
+
+    return gokei1;
+ }
+}
+
+int sum1(int num){
+        int sum,i;
+        sum=0;
+        if(num<0) return(0);
+        else {
+        
+        for(i=1;i<=num;i++){
+                sum=sum+i;
+                        }
+}
+        return sum;
+}
+
+int sum1( int n )
+{
+        int m,i;
+
+        m = 0;
+        if ( n < 0 ){           
+                return 0;
+        }else{
+                for( i = 0; i <= n; i = i++){ 
+                        m = m + i;
+                }
+                return m;       
+        }
+}
+
+(Technically the positions of sum and i are swapped between the first
+three and last two programs, so an automatic translation would create
+different LCTRSs unless we use some equivalence check (which would
+also collapse this with for instance sum01.ctrs).  However, since this
+translation was done by hand, we took these together.)
+
+There were several more student programs reducing to this LCTRS.  We
+only presented the first five.
+

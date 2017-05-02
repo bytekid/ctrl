@@ -1,0 +1,24 @@
+/* teacher implementation of strlen, as the student used the library */
+int strlen(int str[]) {
+  for (int i = 0; 1; i++) {
+    if (str[i] == 0) return i;
+  }
+}
+
+void mystrcpy(int x[], int y[])
+{
+  int len = strlen(x);
+  for(int i=0 ; i < len ; i++){
+    x[i] = y[i];
+    len = strlen(x);
+  }
+}
+
+/* original:
+void mystrcpy(int x[], int y[])
+{
+  for(int i=0 ; i < strlen(x) ; i++){
+    x[i] = y[i];
+  }
+}
+*/

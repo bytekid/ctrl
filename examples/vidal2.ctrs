@@ -1,0 +1,25 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE start, end, f, g, h, h', i, i' ;
+
+RULES
+  start -> f(input)               ;
+  f(x)  -> g(x)     [x > 0]       ;
+  f(x)  -> end      [not (x > 0)] ;
+  g(x)  -> h(x)     [x > 2]       ;
+  g(x)  -> i(x)     [not (x > 2)] ;
+  h(x)  -> h'(x - 12)             ;
+  h'(x) -> f(x)                   ;
+  i(x)  -> i'(x + 1)              ;
+  i'(x) -> f(x)                   ;
+
+QUERY termination
+
+END OF FILE
+
+This example by Vidal is particularly challenging to automatically
+prove termination of, due to the increase of x in the i-rule.  At the
+moment, Ctrl cannot yet handle this challenge.
+

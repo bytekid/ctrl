@@ -1,0 +1,33 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE sum1, sum2, u, !INTEGER ;
+
+RULES
+  sum1(x)   -> 0                    <-- [x <= 0]       ;
+  sum1(x)   -> x + sum1(x - 1)      <-- [0 <= x - 1]   ;
+  sum2(x)   -> u(x,0,0)                                ;
+  u(x,i,z)  -> u(x, i + 1, z + i)   <-- [i <= x]       ;
+  u(x,i,z)  -> z                    <-- [not (i <= x)] ;
+
+QUERY user-equivalence sum1(x) -><- sum2(x) [true] ; u(x,y,z) -><- x + u(x1,y,z) [x >= y >= 0 /\ x = x1 + 1 /\ z = z]
+
+END OF FILE
+
+This file demonstrates a version of the sum example where, instead of
+having to use generalisation, we introduce a suitable lemma equation
+from the start.  The lemma is proved using:
+
+auto
+expand
+auto
+auto
+auto
+expand
+auto
+swap
+expand
+auto
+auto
+

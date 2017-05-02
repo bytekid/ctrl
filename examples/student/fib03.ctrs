@@ -1,0 +1,52 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE fib, fastfib, badfib, u : Int * Int * Int * Int => Unit, v, w, return, !INTEGER ;
+
+RULES
+  fib(x)        -> return(0)               [x <= 0]                     ;
+  fib(1)        -> return(1)                                            ;
+  fib(x)        -> w(fib(x - 1), fib(x - 2)) [x - 2 >= 0]               ;
+  w(return(x), return(y)) -> return(x + y)                              ;
+  fastfib(x)    -> u(x, rnd, 1, 0)                                      ;
+  u(x, i, p, q) -> return(0)               [x = 0]                      ;
+  u(x, i, p, q) -> return(1)               [not (x = 0) /\ x = 1]       ;
+  u(x, i, p, q) -> v(x, 1, p, q)           [not (x = 0) /\ not (x = 1)] ;
+  v(x, i, p, q) -> v(x, i + 1, p + q, p)   [i < x]                      ;
+  v(x, i, p, q) -> return(q)               [not (i < x)]                ;
+  badfib(x)     -> return(1)               [x <= 3]                     ;
+  badfib(x)     -> w(badfib(x - 1), badfib(x - 2)) [x > 3]              ;
+
+QUERY equivalence badfib(n) -><- fastfib(n) [n > 0]
+
+END OF FILE
+
+Student program:
+
+int fastfib(int x){
+  int i,p=1,q=0;
+  if(x==0)p=0;
+  else if(x==1)p=1;
+  else{
+    for(i=1;i<x;i++){
+      p=p+q;
+      q=p-q;
+    }
+  }
+  return(p);
+}
+
+Comments:
+
+Note that this program is incorrect: it incorrectly returns 1 if num
+<= 0, and otherwise generates the numbers 1, 1, 1, 2, 3, 5, 8, ...
+instead of 1, 1, 2, 3, 5, ...
+
+Thus, it is not surprising that the correctness proof fails when we test:
+  
+    equivalence fib(n) -><- fastfib(n) [true]
+
+To still test the strength of the tool, we used the alternative
+equivalence.
+

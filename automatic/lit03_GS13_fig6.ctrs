@@ -1,0 +1,245 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  F1 : Int => result_int ;
+  F2 : Int => result_int ;
+  G2 : Int => result_int ;
+  M1 : Int => result_int ;
+  M2 : Int => result_int ;
+  error_int : result_int ;
+  error_main : result_main ;
+  main1 : result_main ;
+  main2 : result_main ;
+  return_int : Int => result_int ;
+  return_main : Int => result_main ;
+  u_1 : Int * result_int => result_int ;
+  u_4 : Int * result_int => result_int ;
+  u_6 : Int * result_int => result_int ;
+  u_9 : Int * result_int => result_int ;
+  u_14 : Int * Int => result_main ;
+  u_15 : Int * result_int => result_main ;
+  u_22 : Int * Int => result_main ;
+  u_23 : Int * result_int => result_main ;
+  u_26 : Int * result_int => result_main ;
+  u_32 : Int * result_int => result_int ;
+  u_35 : Int * result_int => result_int ;
+  u_37 : Int * result_int => result_int ;
+  u_40 : Int * result_int => result_int ;
+  u_42 : Int * result_int => result_int ;
+  u_44 : result_int => result_int ;
+  u_49 : Int * Int => result_main ;
+  u_50 : Int * result_int => result_main ;
+  u_57 : Int * Int => result_main ;
+  u_58 : Int * result_int => result_main ;
+  u_61 : Int * result_int => result_main ;
+  val1 : Int => result_int ;
+  val2 : Int => result_int ;
+  !INTEGER : Int ;
+
+RULES
+  val1(x) -> return_int(x) ;
+  F1(n) -> return_int(1) [n = 0] ;
+  F1(n) -> u_1(n, F1(n - 1)) [n # 0] ;
+  u_1(n, return_int(w_1)) -> u_4(n, M1(w_1)) ;
+  u_1(n, error_int) -> error_int ;
+  u_4(n, return_int(w_2)) -> return_int(n - w_2) ;
+  u_4(n, error_int) -> error_int ;
+  M1(n) -> return_int(0) [n = 0] ;
+  M1(n) -> u_6(n, M1(n - 1)) [n # 0] ;
+  u_6(n, return_int(w_3)) -> u_9(n, F1(w_3)) ;
+  u_6(n, error_int) -> error_int ;
+  u_9(n, return_int(w_4)) -> return_int(n - w_4) ;
+  u_9(n, error_int) -> error_int ;
+  main1 -> u_14(0, 0) ;
+  u_14(i, out) -> u_15(i, F1(i)) [i < 20] ;
+  u_15(i, return_int(w_5)) -> return_main(3) [i > 20] ;
+  u_15(i, return_int(w_5)) -> u_14(i + 1, w_5) [i <= 20] ;
+  u_15(i, error_int) -> error_main ;
+  u_14(i, out) -> u_22(0, out) [i >= 20] ;
+  u_22(i, out) -> u_23(i, M1(i)) [i < 20] ;
+  u_23(i, return_int(w_6)) -> u_26(i, val1(w_6)) ;
+  u_23(i, error_int) -> error_main ;
+  u_26(i, return_int(w_7)) -> u_22(i + 1, w_7) ;
+  u_26(i, error_int) -> error_main ;
+  u_22(i, out) -> return_main(out) [i >= 20] ;
+  val2(x) -> return_int(x + 1) ;
+  F2(n) -> return_int(1) [n = 0] ;
+  F2(n) -> u_32(n, F2(n - 1)) [n # 0] ;
+  u_32(n, return_int(w_8)) -> u_35(n, M2(w_8)) ;
+  u_32(n, error_int) -> error_int ;
+  u_35(n, return_int(w_9)) -> return_int(n - w_9) ;
+  u_35(n, error_int) -> error_int ;
+  M2(n) -> return_int(0) [n = 0] ;
+  M2(n) -> u_37(n, M2(n - 1)) [n # 0] ;
+  u_37(n, return_int(w_10)) -> u_40(w_10, val2(n)) ;
+  u_37(n, error_int) -> error_int ;
+  u_40(tmp, return_int(w_11)) -> u_42(w_11, G2(tmp)) ;
+  u_40(tmp, error_int) -> error_int ;
+  u_42(w_11, return_int(w_12)) -> return_int(w_11 - 1 - w_12) ;
+  u_42(w_11, error_int) -> error_int ;
+  G2(n) -> u_44(F2(n)) ;
+  u_44(return_int(w_13)) -> return_int(w_13) ;
+  u_44(error_int) -> error_int ;
+  main2 -> u_49(0, 0) ;
+  u_49(i, out) -> u_50(i, F2(i)) [i < 20] ;
+  u_50(i, return_int(w_14)) -> return_main(12) [i > 25] ;
+  u_50(i, return_int(w_14)) -> u_49(i + 1, w_14) [i <= 25] ;
+  u_50(i, error_int) -> error_main ;
+  u_49(i, out) -> u_57(0, out) [i >= 20] ;
+  u_57(i, out) -> u_58(i, M2(i)) [i < 20] ;
+  u_58(i, return_int(w_15)) -> u_61(i, val2(w_15)) ;
+  u_58(i, error_int) -> error_main ;
+  u_61(i, return_int(w_16)) -> u_57(i + 1, w_16 - 1) ;
+  u_61(i, error_int) -> error_main ;
+  u_57(i, out) -> return_main(out) [i >= 20] ;
+
+QUERY equivalence main1() -><- main2() [true]
+
+END OF FILE
+
+/*
+   Example in Fig. 6 on p.15 from 
+     Benny Godlin, Ofer Strichman:
+     Regression verification: proving the equivalence of similar programs.
+     Softw. Test., Verif. Reliab. 23(3): 241-258 (2013)
+
+   The following is original, and the nesting of function calls are
+   decomposed by hand.
+
+int M1(int n);
+
+int val1(int x){
+  return x;
+}
+
+int F1(int n){
+  if( n == 0 ) return 1;
+  return n - M1(F1(n-1));
+}
+
+int M1(int n){
+  if( n == 0 ) return 0;
+  return n - F1(M1(n-1));
+}
+
+int main1(){
+  int i=0, out=0;
+  for( i=0 ; i < 20 ; i++ ){
+    out = F1(i);
+    if( i > 20 ) return 3;
+  }
+  for( i=0 ; i < 20 ; i++ ){
+    out = val1(M1(i));
+  }
+  return out;
+}
+
+int M2(int n);
+int G2(int n);
+
+int val2(int x){
+  return x + 1;
+}
+
+int F2(int n){
+  if( n == 0 ) return (n == 0);
+  return n - M2(F2(n-1));
+}
+
+int M2(int n){
+  if( n == 0 ) return 0;
+  return val2(n) - 1 - G2(M2(n-1));
+}
+
+int G2(int n){
+  return F2(n);
+}
+
+int main2(){
+  int i=0, out=0;
+  for( i=0 ; i < 20 ; i++ ){
+    out = F2(i);
+    if( i > 25 ) return 12;
+  }
+  for( i=0 ; i < 20 ; i++ ){
+    out = val2(M2(i)) - 1;
+  }
+  return out;
+}
+
+*/
+
+/* Removed nesting of function calls */
+int M1(int n);
+
+int val1(int x){
+  return x;
+}
+
+int F1(int n){
+  if( n == 0 ) return 1;
+  { int tmp = F1(n-1);
+    return n - M1(tmp);
+  }
+}
+
+int M1(int n){
+  if( n == 0 ) return 0;
+  { int tmp = M1(n-1);
+    return n - F1(tmp);
+  }
+}
+
+int main1(){
+  int i=0, out=0;
+  for( i=0 ; i < 20 ; i++ ){
+    out = F1(i);
+    if( i > 20 ) return 3;
+  }
+  for( i=0 ; i < 20 ; i++ ){
+    int tmp = M1(i);
+    out = val1(tmp);
+  }
+  return out;
+}
+
+int M2(int n);
+int G2(int n);
+
+int val2(int x){
+  return x + 1;
+}
+
+int F2(int n){
+  if( n == 0 ) return 1;
+  { int tmp = F2(n-1);
+    return n - M2(tmp);
+  }
+}
+
+int M2(int n){
+  if( n == 0 ) return 0;
+  { int tmp = M2(n-1);
+    return val2(n) - 1 - G2(tmp);
+  }
+}
+
+int G2(int n){
+  return F2(n);
+}
+
+int main2(){
+  int i=0, out=0;
+  for( i=0 ; i < 20 ; i++ ){
+    out = F2(i);
+    if( i > 25 ) return 12;
+  }
+  for( i=0 ; i < 20 ; i++ ){
+    int tmp = M2(i);
+    out = val2(tmp) - 1;
+  }
+  return out;
+}
+

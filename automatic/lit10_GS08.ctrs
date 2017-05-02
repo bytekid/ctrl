@@ -1,0 +1,75 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  error_proc : result_proc ;
+  error_proc : result_proc ;
+  proc_F1 : Int => result_proc ;
+  proc_F2 : Int => result_proc ;
+  return_proc : Int => result_proc ;
+  return_proc : Int => result_proc ;
+  u_1 : Int * result_proc => result_proc ;
+  u_3 : Int * result_proc => result_proc ;
+  !INTEGER : Int ;
+
+RULES
+  proc_F1(n_1) -> return_proc(0) [n_1 <= 0] ;
+  proc_F1(n_1) -> u_1(n_1, proc_F1(n_1 - 1)) [n_1 > 0] ;
+  u_1(n_1, return_proc(w_1)) -> return_proc(n_1 + w_1) ;
+  u_1(n_1, error_proc) -> error_proc ;
+  proc_F2(n_1) -> return_proc(0) [n_1 <= 0] ;
+  proc_F2(n_1) -> u_3(n_1, proc_F2(n_1 - 1)) [n_1 > 0] ;
+  u_3(n_1, return_proc(w_2)) -> return_proc(n_1 + w_2) [w_2 >= 0] ;
+  u_3(n_1, return_proc(w_2)) -> return_proc(w_2) [w_2 < 0] ;
+  u_3(n_1, error_proc) -> error_proc ;
+
+QUERY equivalence proc_F1(x) -><- proc_F2(x) [true]
+
+END OF FILE
+
+/*
+  Example on p.38 from 
+    Benny Godlin, Ofer Strichman:
+    Inference rules for proving the equivalence of recursive procedures.
+    Acta Inf. 45(6): 403-439 (2008)
+
+  procedure F(val n; ret r):
+    if n <= 0 then r := 0
+    else
+      call F(n-1,r);
+      r := n + r
+    fi
+    return
+
+  procedure F(val n; ret r):
+    if n <= 0 then r := 0
+    else
+      call F(n - 1,r);
+      if r >= 0 then r := n + r;
+      fi
+    fi
+    return
+
+*/
+
+int proc_F1(int n){
+  if( n <= 0 )
+    return 0;
+  else
+    return n + proc_F1(n-1);
+}
+
+int proc_F2(int n){
+  if( n <= 0 )
+    return 0;
+  else{
+    int r = proc_F2(n-1);
+    if( r >= 0 )
+      return n + r;
+    else
+      return r;
+  }
+}
+
+    

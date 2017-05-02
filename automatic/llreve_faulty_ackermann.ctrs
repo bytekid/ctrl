@@ -1,0 +1,40 @@
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  error : Unit ;
+  f1 : Int * Int => Unit ;
+  f2 : Int * Int => Unit ;
+  return : Int => Unit ;
+  u_7 : Unit => Unit ;
+  u_11 : Int * Unit => Unit ;
+  u_14 : Unit => Unit ;
+  u_25 : Unit => Unit ;
+  u_31 : Int * Unit => Unit ;
+  u_34 : Unit => Unit ;
+  !INTEGER : Int ;
+
+RULES
+  f1(m, n) -> return(n + 1) [m = 0] ;
+  f1(m, n) -> u_7(f1(m - 1, 1)) [m # 0 /\ m > 0 /\ n = 0] ;
+  f1(m, n) -> u_11(m, f1(m, n - 1)) [m # 0 /\ (m <= 0 \/ n # 0)] ;
+  u_7(return(w_3)) -> return(w_3) ;
+  u_7(error) -> error ;
+  u_11(m, return(w_4)) -> u_14(f1(m - 1, w_4)) ;
+  u_11(m, error) -> error ;
+  u_14(return(w_5)) -> return(w_5) ;
+  u_14(error) -> error ;
+  f2(m, n) -> u_25(f2(m - 1, 1)) [m > 0 /\ n = 0] ;
+  f2(m, n) -> return(n + 1) [(m <= 0 \/ n # 0) /\ m = 1] ;
+  f2(m, n) -> u_31(m, f2(m, n - 1)) [(m <= 0 \/ n # 0) /\ m # 1] ;
+  u_25(return(w_8)) -> return(w_8) ;
+  u_25(error) -> error ;
+  u_31(m, return(w_9)) -> u_34(f2(m - 1, w_9)) ;
+  u_31(m, error) -> error ;
+  u_34(return(w_10)) -> return(w_10) ;
+  u_34(error) -> error ;
+
+QUERY equivalence f1(m, n) -><- f2(m, n) [true]
+

@@ -1,0 +1,27 @@
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  error : Unit ;
+  f1 : Int * Int => Unit ;
+  f2 : Int * Int => Unit ;
+  return : Int => Unit ;
+  u_5 : Unit => Unit ;
+  u_16 : Unit => Unit ;
+  !INTEGER : Int ;
+
+RULES
+  f1(i, j) -> return(j) [i = 0] ;
+  f1(i, j) -> u_5(f1(i - 1, j + 1)) [i # 0] ;
+  u_5(return(w_2)) -> return(w_2) ;
+  u_5(error) -> error ;
+  f2(i, j) -> return(j) [i = 0] ;
+  f2(i, j) -> return(j + 1) [i # 0 /\ i = 1] ;
+  f2(i, j) -> u_16(f2(i - 1, j + 1)) [i # 0 /\ i # 1] ;
+  u_16(return(w_4)) -> return(w_4) ;
+  u_16(error) -> error ;
+
+QUERY equivalence f1(i, j) -><- f2(i, j) [true]
+

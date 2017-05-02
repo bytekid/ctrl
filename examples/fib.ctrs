@@ -1,0 +1,26 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE fib1, fib, u, !INTEGER ;
+
+RULES
+  fib1(x)       -> u(x, 1, 0, 1)                          ;
+  u(x, i, y, z) -> u(x, i + 1, z, y + z)   [x >= i]       ;
+  u(x, i, y, z) -> y                       [not (x >= i)] ;
+  fib(x)        -> 0                       [x <= 0]       ;
+  fib(1)        -> 1                                      ;
+  fib(x)        -> fib(x - 1) + fib(x - 2) [x - 2 >= 0]   ;
+
+QUERY user-equivalence fib1(n) -><- fib(n) [true]
+
+END OF FILE
+
+Using inductive theorem proving, we show that an iterative definition
+of the Fibonacci function defines the same function for all input
+values as the recursive definition.
+
+Note that this is not a trivial example; following discussions on
+APLAS, it is fairly hard to prove correctness of iterative Fibonacci
+functions using conventional program verification methods.
+

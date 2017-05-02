@@ -1,0 +1,2 @@
+src/ctrs/build/substitution.cmx: src/ctrs/build/context.cmx src/ctrs/build/function.cmx src/ctrs/build/prelude.cmx src/ctrs/build/sortdeclaration.cmx src/ctrs/build/term.cmx src/util/util.cmxa src/ctrs/build/variable.cmx
+src/ctrs/build/substitution.cmo: src/ctrs/build/context.cmo src/ctrs/build/function.cmo src/ctrs/build/prelude.cmo src/ctrs/build/sortdeclaration.cmo src/ctrs/build/term.cmo src/util/util.cma src/ctrs/build/variable.cmo

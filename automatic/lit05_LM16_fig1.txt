@@ -1,0 +1,36 @@
+/*
+   Example in Fig. 2 on p.2 from 
+     Nuno P. Lopes, Jose Monteiro:
+     Automatic equivalence checking of programs with uninterpreted
+     functions and integer arithmetic. 
+     STTT 18(4): 359-374 (2016)
+*/
+
+int f(int k, int i){
+  return k + i; /* dummy */
+}
+
+int main1(int k, int N){
+  int i = 0;
+  int k = 0;
+  while( i < N ){
+    k = f(k, i);
+    i = i + 1;
+  }
+  return i + k; /* dummy. Replaced by "return(i, k)" after conversion */
+}
+
+int main2(int k, int N){
+  int i = N;
+  int k = 0;
+  while( i >= 1 ){
+    k = f(k, N - i);
+    i = i - 1;
+  }
+  if( N <= 0 )
+    i = 0;
+  else
+    i = N;
+
+  return i + k; /* dummy. Replaced by "return(i, k)" after conversion */
+}

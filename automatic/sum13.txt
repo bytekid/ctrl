@@ -1,0 +1,5 @@
+int sum1(int n){
+        int i,sum;
+        for (i=n;i>=0;i--) sum=sum+i;
+        return sum;
+}

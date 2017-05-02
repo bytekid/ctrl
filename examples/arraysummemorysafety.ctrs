@@ -1,0 +1,24 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  error : result ;
+  return         ;
+  sum            ;
+  u              ;
+  !ARRAY!Int     ;
+  safe           ;
+
+RULES
+  sum(arr, n) -> u(arr, n, 0, 0)                                                                   ;
+  u(arr, n, ret, i) -> error                                  [i < n /\ (i < 0 \/ i >= size(arr))] ;
+  u(arr, n, ret, i) -> u(arr, n, ret + select(arr, i), i + 1) [i < n /\ 0 <= i /\ i < size(arr)]   ;
+  u(arr, n, ret, i) -> return(ret)                            [i >= n]                             ;
+  safe(error) -> false                                                                             ;
+  safe(return(x)) -> true                                                                          ;
+
+QUERY equivalence safe(sum(a, n)) -><- true [0 <= n /\ n <= size(a) + 1]
+
+END OF FILE
+

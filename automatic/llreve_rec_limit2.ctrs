@@ -1,0 +1,26 @@
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  error : Unit ;
+  f1 : Int => Unit ;
+  f2 : Int => Unit ;
+  return : Int => Unit ;
+  u_5 : Int * Unit => Unit ;
+  u_15 : Int * Unit => Unit ;
+  !INTEGER : Int ;
+
+RULES
+  f1(n) -> return(n) [n <= 0] ;
+  f1(n) -> u_5(n, f1(n - 1)) [n > 0] ;
+  u_5(n, return(w_2)) -> return(n + w_2) ;
+  u_5(n, error) -> error ;
+  f2(n) -> return(n) [n <= 1] ;
+  f2(n) -> u_15(n, f2(n - 1)) [n > 1] ;
+  u_15(n, return(w_4)) -> return(n + w_4) ;
+  u_15(n, error) -> error ;
+
+QUERY equivalence f1(n) -><- f2(n) [true]
+

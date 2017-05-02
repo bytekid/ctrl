@@ -1,0 +1,10 @@
+int sum2(int m, int n)
+{
+  int count = 0;
+  while (m <= n)
+    {
+      count = count + m;
+      m++;
+    }
+  return count;
+}

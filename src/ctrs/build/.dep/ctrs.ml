@@ -1,0 +1,2 @@
+src/ctrs/build/ctrs.cmx: src/ctrs/build/alphabet.cmx src/ctrs/build/csmapping.cmx src/ctrs/build/environment.cmx src/ctrs/build/position.cmx src/ctrs/build/trs.cmx src/util/util.cmxa src/ctrs/build/variable.cmx
+src/ctrs/build/ctrs.cmo: src/ctrs/build/alphabet.cmo src/ctrs/build/csmapping.cmo src/ctrs/build/environment.cmo src/ctrs/build/position.cmo src/ctrs/build/trs.cmo src/util/util.cma src/ctrs/build/variable.cmo

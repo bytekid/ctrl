@@ -1,0 +1,105 @@
+THEORY arrays ;
+LOGIC QF_LIA ;
+SOLVER internal ;
+
+SIGNATURE
+  sum : Int => result ;
+  u_1 : Int * Int => result ;
+  u_2 : Int * Int * Int => result ;
+  u_3 : Int * Int * Int => result ;
+  u_4 : Int * Int * Int * Int => result ;
+  u_5 : Int * Int * Int * Int => result ;
+  u_6 : Int * Int * Int * Int => result ;
+  u_7 : Int * Int * Int => result ;
+  u_8 : Int * Int * Int => result ;
+  u_9 : Int * Int * Int * result => result ;
+  err_sum : result ;
+  u_10 : Int * Int * Int => result ;
+  ret_sum : Int => result ;
+  nop : result ;
+  ret_nop : result ;
+  sum1 : Int => result ;
+  u_11 : Int * Int => result ;
+  u_12 : Int * Int => result ;
+  ret_sum1 : Int => result ;
+  u_13 : Int * Int => result ;
+  u_14 : Int * Int => result ;
+  u_15 : Int * Int => result ;
+  test : Int => result ;
+  u_16 : Int * Int => result ;
+  u_17 : Int * Int * Int => result ;
+  u_18 : Int * Int * Int => result ;
+  u_19 : Int * Int * Int => result ;
+  u_20 : Int * Int * Int => result ;
+  u_21 : Int * Int * Int * Int => result ;
+  u_22 : Int * Int * Int => result ;
+  u_23 : Int * Int * Int => result ;
+  u_24 : Int * Int * Int => result ;
+  u_25 : Int * Int * Int => result ;
+  u_26 : Int * Int * Int => result ;
+  u_27 : Int * Int * Int => result ;
+  u_28 : Int * Int * Int => result ;
+  u_29 : Int * Int * Int => result ;
+  u_30 : Int * Int * Int => result ;
+  u_31 : Int * Int * Int => result ;
+  ret_test : Int => result ;
+  main : result ;
+  u_32 : Int => result ;
+  u_33 : Int * Int => result ;
+  ret_main : Int => result ;
+  !INTEGER ;
+
+RULES
+  sum(n) -> u_1(n, 0) ;
+  u_1(n, i_2) -> u_2(n, i_2, 0) ;
+  u_2(n, i_2, z_2) -> u_3(n, i_2, z_2) <-- [(i_2 <= n)] ;
+  u_3(n, i_2, z_2) -> u_4(n, i_2, z_2, 2) ;
+  u_4(n, i_2, z_2, w_3) -> u_5(n, i_2, (z_2 + i_2), w_3) ;
+  u_5(n, i_2, z_2, w_3) -> u_6(n, (i_2 + 1), z_2, w_3) ;
+  u_6(n, i_2, z_2, w_3) -> u_7(n, i_2, z_2) ;
+  u_7(n, i_2, z_2) -> u_2(n, i_2, z_2) ;
+  u_2(n, i_2, z_2) -> u_8(n, i_2, z_2) <-- [(i_2 > n)] ;
+  u_8(n, i_2, z_2) -> u_9(n, i_2, z_2, nop) ;
+  u_9(n, i_2, z_2, err_nop) -> err_sum ;
+  u_9(n, i_2, z_2, ret_nop) -> u_10(n, i_2, z_2) ;
+  u_10(n, i_2, z_2) -> ret_sum(z_2) ;
+  nop -> ret_nop ;
+  sum1(n) -> u_11(n, 0) ;
+  u_11(n, z_2) -> u_12(n, z_2) <-- [(n <= 0)] ;
+  u_12(n, z_2) -> ret_sum1(0) ;
+  u_11(n, z_2) -> u_13(n, z_2) <-- [(n > 0)] ;
+  u_13(n, z_2) -> u_14(n, (n + (n - 1))) ;
+  u_14(n, z_2) -> u_15(n, z_2) ;
+  u_15(n, z_2) -> ret_sum1(z_2) ;
+  test(n) -> u_16(n, 0) ;
+  u_16(n, z_2) -> u_17(n, z_2, 0) ;
+  u_17(n, z_2, i_2) -> u_18(n, z_2, i_2) <-- [(n > 0)] ;
+  u_18(n, z_2, i_2) -> u_19(n, z_2, (i_2 + 1)) ;
+  u_19(n, z_2, i_2) -> u_20(n, z_2, i_2) <-- [(n > i_2)] ;
+  u_20(n, z_2, i_2) -> u_21(n, z_2, i_2, 1) ;
+  u_19(n, z_2, i_2) -> u_22(n, z_2, i_2) <-- [(n <= i_2)] ;
+  u_22(n, z_2, i_2) -> u_23(n, z_2, i_2) <-- [(n = i_2)] ;
+  u_22(n, z_2, i_2) -> u_24(n, z_2, i_2) <-- [(n # i_2)] ;
+  u_24(n, z_2, i_2) -> u_25(n, z_2, (i_2 + 1)) ;
+  u_25(n, z_2, i_2) -> u_26(n, z_2, i_2) ;
+  u_26(n, z_2, i_2) -> u_27(n, z_2, i_2) ;
+  u_27(n, z_2, i_2) -> u_28(n, z_2, i_2) ;
+  u_21(n, z_2, i_2, v_4) -> u_29(n, z_2, i_2) ;
+  u_23(n, z_2, i_2) -> u_30(n, z_2, i_2) ;
+  u_28(n, z_2, i_2) -> u_17(n, z_2, i_2) ;
+  u_17(n, z_2, i_2) -> u_31(n, z_2, i_2) <-- [(n <= 0)] ;
+  u_29(n, z_2, i_2) -> u_17(n, z_2, i_2) ;
+  u_30(n, z_2, i_2) -> u_31(n, z_2, i_2) ;
+  u_31(n, z_2, i_2) -> ret_test(i_2) ;
+  main -> u_32(99) ;
+  u_32(num_2) -> u_33(num_2, 0) ;
+  u_33(num_2, x_2) -> ret_main(0) ;
+
+QUERY simplification [main sum sum1]
+
+END OF FILE
+
+A very long system, as created by a (faulty) generator.
+The function names in the original file are main, sum and sum1, so we
+tell Ctrl to not alter their declaration.
+

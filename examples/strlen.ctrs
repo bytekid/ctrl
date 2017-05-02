@@ -1,0 +1,25 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err : result ;
+  return       ;
+  strlen       ;
+  u            ;
+  !ARRAY!Int   ;
+
+RULES
+  strlen(x) -> u(x, 0) ;
+  u(x, i) -> err          [i < 0 \/ i >= size(x)] ;
+  u(x, i) -> return(x, i) [0 <= i /\ i < size(x) /\ select(x, i) = 0] ;
+  u(x, i) -> u(x, i + 1)  [0 <= i /\ i < size(x) /\ select(x, i) # 0] ;
+
+QUERY equivalence strlen(x) -><- return(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+
+END OF FILE
+
+This file considers a translation of a strlen function.  As in strcpy,
+we do not compare strlen to a recursive specification, but rather test
+whether it reduces to a normal form of the right shape.
+

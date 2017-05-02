@@ -1,0 +1,15 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/mult_array-alloca_true-valid-memsafety.c */
+
+int main(int length, int fac, int arr[], int arr2[]) {
+  int i, j;
+  for (i=0; i<length; i++) {
+    int rnd;
+    arr[i] = rnd;
+  }
+  for (j=0; j<length*fac; j++) {
+    arr2[j] = arr[i % length];
+  }
+  return 0;
+}
+
+[length >= 1 /\ fac >= 1 /\ size(arr) = length /\ size(arr2) = fac * length]

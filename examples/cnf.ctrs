@@ -1,0 +1,12 @@
+THEORY ints  ;
+LOGIC QF_LIA ;
+
+SIGNATURE start, f, g, h ;
+
+RULES
+  start -> g(f(input)) ;
+  f(x) -> x [x > 0] ;
+  g(x) -> h(x) <-- x \in GCNF ;
+
+QUERY normal form start
+

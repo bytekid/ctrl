@@ -1,0 +1,40 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  twice, quad, u, !INTEGER ;
+
+RULES
+  twice(x) -> u(x,0,0);
+  u(x,i,z) -> u(x,i + 1,z + 2) [i < x];
+  u(x,i,z) -> z [not (i < x)];
+
+  quad(x) -> twice(x) + twice(x);
+
+QUERY user-equivalence quad(x) -><- twice(x + x) [true]
+
+END OF FILE
+
+QUERY equivalence quad(x) -><- twice(twice(x)) [true]
+
+
+NN: My old approach for lemma generation would be unsuccessful for
+this example perhaps due to two occurrences of "twice(x)" in
+"quad"-rule.
+
+CK: This is part of the problem:
+
+GOAL: u(x8, v1, v2) = u(x0, v1, v2) + u(x0, v1, v2) [x8 = x0 + x0 /\ v1 = 0 /\ v2 = 0]
+> expand
+
+Expansion cannot be be applied at this position (the resulting set of rules is non-terminating).
+
+However, this one also doesn't work:
+  
+  QUERY user-equivalence quad(x) -><- twice(x + x) [x > 0]
+
+That's because this equation does not have the required shape!
+Although we do end up with a claim u(...) = u(...) + u(...), doing a case
+analysis on the left-hand side gives no information on the right-hand side.
+

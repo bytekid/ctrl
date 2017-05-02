@@ -1,0 +1,31 @@
+Welcome to CTRL.
+
+Before compiling, check if you have at least
+ - ocaml 3.12
+ - camlidl 1.05
+
+The following things may already be available on your machine:
+ - gcc-c++ (provides g++ 4.4.4)
+ - zlib-devel 
+ - glibc-static 2.12-1(if you compile static)
+ - libxslt-devel
+ - libxml-devel
+
+To compile, type
+
+ $ make
+
+To run the tool, type
+ 
+ $ ./ctrl <file>
+
+After successful compilation you can type
+
+ $ make clean
+
+to clean up compiled sources.
+
+The website of the tool is http://cl-informatik.uibk.ac.at/software/ctrl/
+You can contact the author at Cynthia.Kop@uibk.ac.at
+The supplied smt-solver is Z3, and can be downloaded (including source) at http://z3.codeplex.com/
+

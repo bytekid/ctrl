@@ -1,0 +1,51 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE fib, fastfib, u : Int * Int * Int * Int * Int => Unit, v, w, return, !INTEGER ;
+
+RULES
+  fib(x)        -> return(0)                         [x <= 0]                   ;   
+  fib(1)        -> return(1)                                                    ;   
+  fib(x)        -> w(fib(x - 1), fib(x - 2))         [x - 2 >= 0]               ;   
+  w(return(x), return(y)) -> return(x + y)                                      ;   
+  fastfib(n)       -> u(n, 1, 0, 0, rnd)                                        ;
+  u(n,a1,a2,sum,i) -> v(n,a1,a2,1,1)                [(n > 0) /\ (n < 47)]       ;
+  u(n,a1,a2,sum,i) -> return(sum)                   [not ((n > 0) /\ (n < 47))] ;
+  v(n,a1,a2,sum,i) -> v(n,a1 + a2,a1,a1 + a2,i + 1) [i < n]                     ;
+  v(n,a1,a2,sum,i) -> return(sum)                   [not (i < n)]               ;
+
+QUERY equivalence fib(n) -><- fastfib(n) [n < 47]
+
+END OF FILE
+
+Student program:
+
+int fastfib(int n){
+        int a1,a2,sum,i;
+        a1 = 1;
+        a2 = 0;
+        sum = 0;
+        if( (n>0) && (n<47)){
+                sum = 1;
+                for(i=1;i<n;i++){
+                        sum = a1 + a2;
+                        a2 = a1;
+                        a1 = sum;
+                }
+        }
+        return sum;
+}
+
+Comments:
+
+This program does not follow the specifications, as it returns 0 given
+an integer greater than or equal to 47, which it shouldn't; the
+student is probably trying to cater for integer overflow.  Since we
+ignore integer overflow,
+
+    equivalence fib(n) -><- fastfib(n) [true]
+
+will not give an inductive theorem.  We altered the constraint to
+avoid this issue.
+

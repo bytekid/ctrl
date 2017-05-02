@@ -1,0 +1,38 @@
+/*
+  Example on p.12 from 
+    Benny Godlin, Ofer Strichman:
+    Inference rules for proving the equivalence of recursive procedures.
+    Acta Inf. 45(6): 403-439 (2008)
+
+  procedure gcd1(val a,b; ret g):
+    if b = 0 then
+      g := a
+    else
+      a := a mod b;
+      call gcd1(b, a; g)
+    fi;
+    return
+
+  procedure gcd2(val x,y; ret z): 
+    z := x;
+    if y > 0 then
+      call gcd2(y, z mod y; z)
+    fi;
+  return
+
+*/
+
+int gcd1(int a, int b){
+  if( b == 0 )
+    return a;
+  else
+    return gcd1(b, a % b);
+}
+
+int gcd2(int x, int y){
+  int z = x;
+  if( y > 0 )
+    return gcd2(y, z % y);
+  else
+    return z;
+}

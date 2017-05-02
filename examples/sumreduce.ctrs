@@ -1,0 +1,19 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE sum, !INTEGER, test ;
+
+RULES
+  sum(x)    -> 0                    <-- [x < 0]   ;
+  sum(0)    -> 0 ;
+  sum(x)    -> x + sum(x - 1)       <-- [0 < x]   ;
+  test(x)   -> test(y)              <-- [x > 0 /\ x = y + 1]   ;
+
+IRREGULAR
+
+QUERY reduce constrained sum(x) [x = 5]
+
+END OF FILE
+
+QUERY confluence

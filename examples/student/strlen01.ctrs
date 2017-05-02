@@ -1,0 +1,35 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err : result ;
+  return       ;
+  strlen       ;
+  u            ;
+  !ARRAY!Int   ;
+
+RULES
+  strlen(trg) -> u(trg,0,rnd) ;
+  u(trg,i,x) -> u(trg,i + 1, i) [0 <= i /\ i < size(trg) /\ select(trg,i) # 0];
+  u(trg,i,x) -> return(trg,x)   [0 <= i /\ i < size(trg) /\ select(trg,i) = 0];
+  u(trg,i,x) -> err             [i < 0 \/ i >= size(trg)];
+
+QUERY equivalence strlen(x) -><- return(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+
+END OF FILE
+
+Student program:
+
+int mystlen(char trg[])
+{
+  int i, x;
+  for(i = 0; trg[i] != '\0'; i++)
+    x = i;
+  return x;
+}
+
+Comments:
+
+Note that this program is wrong: its output is always 1 too low.
+

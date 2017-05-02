@@ -1,0 +1,17 @@
+int fastfib(int n){
+  int a,b,c,d;
+  a=0;
+  b=1;
+  if(n<0){
+    return(0);  
+  }else if(n==1){
+    return(1);  
+  }else{
+    for(c=2;c<=n;c++){
+      d=a+b;  
+      a=b;
+      b=d;
+    }
+    return(d);
+  }
+}

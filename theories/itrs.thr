@@ -1,0 +1,46 @@
+DECLARE
+  true     : Bool                              ;
+  false    : Bool                              ;
+  !INTEGER : Int                               ;
+  not      : Bool => Bool                      ;
+  &&       : Bool * Bool => Bool (l-infix 50)  ;
+  ||       : Bool * Bool => Bool (l-infix 45)  ;
+  xor      : Bool * Bool => Bool (l-infix 47)  ;
+  =>       : Bool * Bool => Bool (r-infix 40)  ;
+  <=>      : <Bool> => Bool      (infix 42)    ;
+  =        : <?A> => Bool        (infix 60)    ;
+  !=       : Int * Int => Bool   (infix 60)    ;
+  -        : Int * Int => Int    (l-infix 100) ;
+  +        : Int * Int => Int    (l-infix 100) ;
+  *        : Int * Int => Int    (l-infix 150) ;
+  /        : Int * Int => Int    (l-infix 150) ;
+  %        : Int * Int => Int    (l-infix 150) ;
+  abs      : Int => Int                        ;
+  <=       : Int * Int => Bool   (infix 70)    ;
+  >=       : Int * Int => Bool   (infix 70)    ;
+  <        : Int * Int => Bool   (infix 70)    ;
+  >        : Int * Int => Bool   (infix 70)    ;
+  >!       : Int * Int => Bool (infix 70)      ;
+
+WELLFOUNDED >! ;
+
+CHAIN
+  x > y > z   : x > y && y > z   ;
+  x > y >= z  : x > y && y >= z  ;
+  x >= y > z  : x >= y && y > z  ;
+  x >= y >= z : x >= y && y >= z ;
+  x < y < z   : x < y && y < z   ;
+  x < y <= z  : x < y && y <= z  ;
+  x <= y < z  : x <= y && y < z  ;
+  x <= y <= z : x <= y && y <= z ;
+
+SMT-RENAMINGS
+  <=>   -> =   ;
+  &&    -> and ;
+  ||    -> or  ;
+  /     -> div ;
+  %     -> mod ;
+
+SMT-TRANSLATIONS
+  >!(x,y) -> (and (> x y) (>= x 0))
+

@@ -1,0 +1,32 @@
+/*
+   Example in Fig. 2 on p.2 from 
+     Nuno P. Lopes, Jose Monteiro:
+     Automatic equivalence checking of programs with uninterpreted
+     functions and integer arithmetic. 
+     STTT 18(4): 359-374 (2016)
+
+   Revised version of "lit06_GS13_optim" by replacing "i < n" with
+   "i+1 < n".
+*/
+
+int main1(int x, int i, int n){
+  while( i < n ){
+    x = i + 2;
+    i = i + 1;
+  }
+  return x + i + n; /* dummy. Replaced by "return(x, i, n)" after conversion. */
+}
+
+int main2(int x, int i, int n){
+  while( i+1 < n ){ /* origianl is "i < n" that would be a typo. */
+    x = i + 2;
+    i = i + 1;
+    x = i + 2;
+    i = i + 1;
+  }
+  if( i < n ){
+    x = i + 2;
+    i = i + 1;
+  }
+  return x + i + n; /* dummy. Replaced by "return(x, i, n)" after conversion. */
+}

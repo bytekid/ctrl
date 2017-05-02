@@ -1,0 +1,30 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  twice             ;
+  quad              ;
+  u                 ;
+  !INTEGER          ;
+
+RULES
+  quad(x) -> twice(x) + twice(x)              ;
+  twice(x) -> u(x,0,0)                        ;
+  u(x,i,z) -> u(x,i + 1,z + 2)   <-- [i < x]  ;
+  u(x,i,z) -> z                  <-- [i >= x] ;
+
+NON-STANDARD
+
+QUERY equivalence quad(x) -><- twice(x + x) [true];
+                  twice(x) -><- x + x [x >= 0];
+                  u(x,i,z) -><- x + x [x >= 0 /\ x > i /\ z = i + i];
+
+END OF FILE
+
+MAIN CLAIM
+quad(x) -><- twice(x + x) [true]
+
+LEMMA
+ twice(x) -><- x + x [x >= 0]
+ u(x,i,z) -><- x + x [x >= 0 /\ x > i /\ z = i + i]

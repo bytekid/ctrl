@@ -1,0 +1,40 @@
+THEORY arrays
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+
+SIGNATURE
+  strlen_rec: IntArray * Int => result_1;
+  error_1: result_1;
+  return_1: IntArray * Int => result_1;
+  u_1: IntArray * Int * result_1 => result_1;
+  u_2: IntArray * Int * Int => result_1;
+  main: Int * IntArray => result_2;
+  u_3: Int * IntArray => result_2;
+  error_2: result_2;
+  u_4: Int * IntArray * result_1 => result_2;
+  u_5: Int * IntArray * Int => result_2;
+  u_6: Int * IntArray * Int => result_2;
+  u_7: Int * IntArray => result_2;
+  return_2: IntArray * Int => result_2;
+  errortest;
+
+RULES
+  strlen_rec(p_1, i_1) -> error_1  [(0 > i_1 \/ i_1 >= size(p_1))];
+  strlen_rec(p_1, i_1) -> return_1(p_1, 0)  [((select(p_1, i_1) = 0) /\ (0 <= i_1 < size(p_1)))];
+  strlen_rec(p_1, i_1) -> u_1(p_1, i_1, strlen_rec(p_1, (i_1 + 1)))  [((select(p_1, i_1) # 0) /\ (0 <= i_1 < size(p_1)))];
+  u_1(p_1, i_1, return_1(w_2, w_1)) -> u_2(w_2, i_1, w_1);
+  u_1(p_1, i_1, error_1) -> error_1;
+  u_2(p_1, i_1, w_1) -> return_1(p_1, (1 + w_1));
+  main(length1_1, nondetString1_1) -> u_3(length1_1, store(nondetString1_1, (length1_1 - 1), 0))  [(0 <= (length1_1 - 1) < size(nondetString1_1))];
+  main(length1_1, nondetString1_1) -> error_2  [(0 > (length1_1 - 1) \/ (length1_1 - 1) >= size(nondetString1_1))];
+  u_3(length1_1, nondetString1_1) -> u_4(length1_1, nondetString1_1, strlen_rec(nondetString1_1, 0));
+  u_4(length1_1, nondetString1_1, return_1(w_4, w_3)) -> u_5(length1_1, w_4, w_3);
+  u_4(length1_1, nondetString1_1, error_1) -> error_2;
+  u_5(length1_1, nondetString1_1, w_3) -> u_6(length1_1, nondetString1_1, w_3);
+  u_6(length1_1, nondetString1_1, w_5) -> u_7(length1_1, nondetString1_1);
+  u_7(length1_1, nondetString1_1) -> return_2(nondetString1_1, 0);
+  errortest(error_2) -> false;
+  errortest(return_2(w_6, w_7)) -> true;
+
+QUERY do-simplify [strlen_rec main errortest] and equivalence errortest(main(length1, nondetString1)) -><- true [length1 >= 1 /\ size(nondetString1) = length1]
+

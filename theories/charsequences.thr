@@ -1,0 +1,20 @@
+INCLUDE ints ;
+
+DECLARE
+  !MIXED!'!' : Char                               ;
+  !MIXED!"!" : String                             ;
+  select     : String * Int => Char               ;
+  replace    : String * Int * Char => String      ;
+  concat     : String * String => String          ;
+  length     : String => Int                      ;
+  substring  : String * Int * Int => String       ;
+  charcmp    : Char * Char => Int                 ;
+  <<         : String * String => Bool (infix 70) ;
+  >lex       : String * String => Bool (infix 70) ;
+  >lexorsub  : String * String => Bool (infix 70) ;
+
+WELLFOUNDED >lexorsub ;
+
+SMT-TRANSLATIONS
+  >lexorsub(x,y) -> (and (>lex x y) (>= (length x) (length y))) ;
+

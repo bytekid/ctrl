@@ -1,0 +1,73 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  error_f : result_f ;
+  error : result ;
+  f : Int * Int => result_f ;
+  main1 : Int * Int => result ;
+  main2 : Int * Int => result ;
+  return_f : Int => result_f ;
+  return : Int * Int => result ;
+  u_3 : Int * Int * Int => result ;
+  u_4 : Int * Int * result_f => result ;
+  u_11 : Int * Int * Int => result ;
+  u_12 : Int * Int * result_f => result ;
+  !INTEGER : Int ;
+
+RULES
+  f(k, i) -> return_f(k + i) ;
+  main1(k, N) -> u_3(N, 0, 0) ;
+  u_3(N, i, k) -> u_4(N, i, f(k, i)) [i < N] ;
+  u_4(N, i, return_f(w_1)) -> u_3(N, i + 1, w_1) ;
+  u_4(N, i, error_f) -> error ;
+  u_3(N, i, k) -> return(i, k) [i >= N] ;
+  main2(k, N) -> u_11(N, N, 0) ;
+  u_11(N, i, k) -> u_12(N, i, f(k, N - i)) [i >= 1] ;
+  u_12(N, i, return_f(w_2)) -> u_11(N, i - 1, w_2) ;
+  u_12(N, i, error_f) -> error ;
+  u_11(N, i, k) -> return(0, k) [i < 1 /\ N <= 0] ;
+  u_11(N, i, k) -> return(N, k) [i < 1 /\ N > 0] ;
+
+QUERY equivalence main1(k, N) -><- main2(k, N) [true]
+
+END OF FILE
+
+/*
+   Example in Fig. 2 on p.2 from 
+     Nuno P. Lopes, Jose Monteiro:
+     Automatic equivalence checking of programs with uninterpreted
+     functions and integer arithmetic. 
+     STTT 18(4): 359-374 (2016)
+
+int f(int k, int i){
+  return k + i; /* dummy */
+}
+
+int main1(int k, int N){
+  int i = 0;
+  int k = 0;
+  while( i < N ){
+    k = f(k, i);
+    i = i + 1;
+  }
+  return i + k; /* dummy. Replaced by "return(i, k)" after conversion */
+}
+
+int main2(int k, int N){
+  int i = N;
+  int k = 0;
+  while( i >= 1 ){
+    k = f(k, N - i);
+    i = i - 1;
+  }
+  if( N <= 0 )
+    i = 0;
+  else
+    i = N;
+
+  return i + k; /* dummy. Replaced by "return(i, k)" after conversion */
+}
+
+*/

@@ -1,0 +1,24 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE sum, sum2, u1, u2, !INTEGER ;
+
+RULES
+  sum(x)      -> 0                    <-- [x <= 0];
+  sum(x)      -> x + sum(x - 1)       <-- [0 < x] ;
+  sum2(x)     -> u1(x,0,0)                        ;
+  u1(x,i,z)   -> u2(x,i,0,z)          <-- [i <= x];
+  u2(x,i,j,z) -> u2(x,i,j + 1,z + 1)  <-- [j < i] ;
+  u2(x,i,j,z) -> u1(x,i + 1,z)        <-- [not (j < i)];
+  u1(x,i,z)   -> z                    <-- [not (i <= x)];
+
+QUERY user-equivalence sum(x) -><- sum2(x) [true];
+
+END OF FILE
+
+A version of sum with dual recursion, corresponding to a nested loop.
+Hard (especially automatically), but possible in manual mode.
+
+Is it, really?
+

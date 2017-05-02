@@ -1,0 +1,24 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE f, g ;
+
+RULES
+  f(x1, y1)      -> g(x1 + y1) <-- [x1 >= y1] ;
+  f(x2, y2)      -> g(x2)      <-- [x2 <= y2] ;
+  f(x3, y3)      -> g(y3)      <-- [x3 <  y3] ;
+  f(x4, x4 + y4) -> g(y4)      <-- [x4 >   0] ;
+
+NON-STANDARD
+
+IRREGULAR
+
+QUERY confluence
+
+END OF FILE
+
+This obviously non-confluent example originates from a published paper
+at FroCos (http://link.springer.com/chapter/10.1007%2F978-3-319-12736-1_18)
+where it is used to demonstrate the various kinds of critical pairs.
+

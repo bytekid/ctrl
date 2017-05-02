@@ -1,0 +1,2 @@
+src/util/build/graph.cmx: src/util/build/hashtblx.cmx src/util/build/listx.cmx src/util/build/mapx.cmx src/util/build/option.cmx src/util/build/pair.cmx src/util/build/prelude.cmx src/util/build/triple.cmx
+src/util/build/graph.cmo: src/util/build/hashtblx.cmo src/util/build/listx.cmo src/util/build/mapx.cmo src/util/build/option.cmo src/util/build/pair.cmo src/util/build/prelude.cmo src/util/build/triple.cmo

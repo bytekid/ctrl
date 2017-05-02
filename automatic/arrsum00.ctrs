@@ -1,0 +1,49 @@
+THEORY strings
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+SIGNATURE
+
+
+
+  sum1: IntArray * Int => result;
+  u_1: IntArray * Int * Int => result;
+  u_2: IntArray * Int * Int * Int => result;
+  u_3: IntArray * Int * Int * Int => result;
+  error: result;
+  u_4: IntArray * Int * Int * Int => result;
+  u_5: IntArray * Int * Int * Int => result;
+  u_6: IntArray * Int * Int => result;
+  return: IntArray * Int => result;
+  sum2: IntArray * Int => result;
+  u_7: IntArray * Int * Int => result;
+  error: result;
+  return: IntArray * Int => result;
+  u_8: IntArray * Int * Int * result => result;
+  u_9: IntArray * Int * Int * Int => result;
+  u_10: IntArray * Int * Int => result;
+
+RULES
+
+
+
+  sum1(arr_1, n_1) -> u_1(arr_1, n_1, 0);
+  u_1(arr_1, n_1, ret_2) -> u_2(arr_1, n_1, ret_2, 0);
+  u_2(arr_1, n_1, ret_2, i_3) -> u_3(arr_1, n_1, (ret_2 + select(arr_1, i_3)), i_3)  [((i_3 < n_1) /\ (0 <= i_3 < size(arr_1)))];
+  u_2(arr_1, n_1, ret_2, i_3) -> error  [((i_3 < n_1) /\ (0 > i_3 \/ i_3 >= size(arr_1)))];
+  u_3(arr_1, n_1, ret_2, i_3) -> u_4(arr_1, n_1, ret_2, i_3);
+  u_4(arr_1, n_1, ret_2, i_3) -> u_5(arr_1, n_1, ret_2, (i_3 + 1));
+  u_5(arr_1, n_1, ret_2, i_3) -> u_2(arr_1, n_1, ret_2, i_3);
+  u_2(arr_1, n_1, ret_2, i_3) -> u_6(arr_1, n_1, ret_2)  [(i_3 >= n_1)];
+  u_6(arr_1, n_1, ret_2) -> return(arr_1, ret_2);
+  sum2(arr_1, k_1) -> u_7(arr_1, k_1, rnd_1);
+  u_7(arr_1, k_1, x_2) -> return(arr_1, 0)  [(k_1 <= 0)];
+  u_7(arr_1, k_1, x_2) -> u_8(arr_1, k_1, x_2, sum2(arr_1, (k_1 - 1)))  [(k_1 > 0)];
+  u_8(arr_1, k_1, x_2, return(w_3, w_2)) -> u_9(w_3, k_1, x_2, w_2);
+  u_8(arr_1, k_1, x_2, error) -> error;
+  u_9(arr_1, k_1, x_2, w_2) -> u_10(arr_1, k_1, w_2);
+  u_10(arr_1, k_1, x_2) -> return(arr_1, (select(arr_1, (k_1 - 1)) + x_2))  [(0 <= (k_1 - 1) < size(arr_1))];
+  u_10(arr_1, k_1, x_2) -> error  [(0 > (k_1 - 1) \/ (k_1 - 1) >= size(arr_1))];
+
+QUERY  do-simplify [sum1 sum2] and equivalence sum1(a, n) -><- sum2(a, n) [0 <= n /\ n < size(a)]
+
+

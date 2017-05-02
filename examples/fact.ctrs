@@ -1,0 +1,27 @@
+THEORY ints     ;
+LOGIC QF_NIA    ;
+SOLVER internal ;
+
+SIGNATURE fact, fact1, u, !INTEGER ;
+
+RULES
+  fact1(n)   -> u(n, 1, 1)                         ;
+  u(n, i, z) -> z                   [not (i <= n)] ;
+  u(n, i, z) -> u(n, i + 1, z * i)  [i <= n]       ;
+  fact(x)    -> 1                   [x <= 0]       ;
+  fact(x)    -> fact(x - 1) * x     [x - 1 >= 0]   ;
+
+QUERY equivalence fact(n) -><- fact1(n) [true]
+
+END OF FILE
+
+The factorial function: fact gives a recursive definition, fact1 an
+iterative one.  The equivalence query requests Ctrl to prove that the
+two functions essentially define the same function (in all
+circumstances).
+
+Although very similar to the sum example, this example is
+significantly harder in the underlying logic, as SMT-solvers
+typically have a lot more trouble with multiplication than with
+addition.
+

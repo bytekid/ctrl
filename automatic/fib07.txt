@@ -1,0 +1,20 @@
+int fastfib(int n)
+{
+  int now,next,i,tmp;
+        
+  if(n <= 0){
+    return(0);
+  }else if(n == 1){
+    return(1);
+  }else{
+    now  = 1;                   //fastfib(1)=1
+    next = 1;                   //fastfib(2)=1
+
+    for(i=3;i<=n;i++){
+      tmp   = now;
+      now   = next; 
+      next += tmp;
+    }
+  }
+  return(next);
+}

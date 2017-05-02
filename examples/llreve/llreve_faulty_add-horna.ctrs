@@ -1,0 +1,24 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  f1 : Int * Int => Int ;
+  f2 : Int * Int => Int ;
+  u_5 : Int => Int ;
+  u_18 : Int => Int ;
+  !INTEGER : Int ;
+
+RULES
+  f1(i, j) -> j [i = 0] ;
+  f1(i, j) -> u_5(f1(i - 1, j + 1)) [i # 0] ;
+  u_5(w_2) -> w_2 ;
+  f2(i, j) -> j + 1 [i # 0 /\ i = 1] ;
+  f2(i, j) -> j [i # 0 /\ i # 1 /\ i = 2 \/ i = 0] ;
+  f2(i, j) -> u_18(f2(i - 1, j + 1)) [i # 0 /\ i # 1 /\ i # 2] ;
+  u_18(w_4) -> w_4 ;
+
+QUERY do-simplify [f1 f2] and equivalence f1(i, j) -><- f2(i, j) [true]
+
+This is a variant of llreve_faulty_add-horn.ctrs obtained by dropping
+"result" types. 

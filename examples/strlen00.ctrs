@@ -1,0 +1,29 @@
+THEORY arrays;
+LOGIC QF_INTARRAY;
+SOLVER arrsolver;
+
+SIGNATURE
+  strlen: IntArray => result_strlen;
+  u_1: IntArray * Int => result_strlen;
+  err_strlen: result_strlen;
+  ret_strlen: IntArray * Int => result_strlen;
+  u_2: IntArray * Int => result_strlen;
+  u_3: IntArray * Int => result_strlen;
+  u_4: IntArray * Int => result_strlen;
+  u_5: IntArray => result_strlen;
+  !INTEGER;
+  !ARRAY!Int : IntArray;
+
+RULES
+  strlen(str_1) -> u_1(str_1, 0);
+  u_1(str_1, i_3) -> err_strlen <-- [((1 # 0) /\ (0 > i_3 \/ i_3 >= size(str_1)))];
+  u_1(str_1, i_3) -> ret_strlen(str_1, i_3) <-- [(((1 # 0) /\ (select(str_1, i_3) = 0)) /\ (0 <= i_3 < size(str_1)))];
+  u_1(str_1, i_3) -> u_2(str_1, i_3) <-- [(((1 # 0) /\ (select(str_1, i_3) # 0)) /\ (0 <= i_3 < size(str_1)))];
+  u_2(str_1, i_3) -> u_3(str_1, i_3);
+  u_3(str_1, i_3) -> u_4(str_1, (i_3 + 1));
+  u_4(str_1, i_3) -> u_1(str_1, i_3);
+  u_1(str_1, i_3) -> u_5(str_1) <-- [(1 = 0)];
+
+QUERY print-simplification [strlen]
+
+END OF FILE

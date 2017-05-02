@@ -1,0 +1,72 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+SIGNATURE
+
+  fib ;
+  w   ;
+  return : Int => result;
+  error  : result;
+
+
+  fastfib: Int => result;
+  u_1: Int * Int => result;
+  u_2: Int * Int * Int => result;
+  u_3: Int * Int * Int * Int => result;
+  u_4: Int * Int * Int * Int * Int => result;
+  u_5: Int * Int * Int * Int * Int => result;
+  u_6: Int * Int * Int * Int * Int => result;
+  u_7: Int * Int * Int * Int * Int => result;
+  error: result;
+  u_8: Int * Int * Int * Int * Int => result;
+  u_9: Int * Int * Int * Int * Int => result;
+  u_10: Int * Int * Int * Int * Int => result;
+  u_11: Int * Int * Int * Int * Int => result;
+  u_12: Int * Int * Int * Int * Int => result;
+  u_13: Int * Int * Int * Int * Int => result;
+  u_14: Int * Int * Int * Int * Int => result;
+  u_15: Int * Int * Int * Int * Int => result;
+  u_16: Int * Int * Int * Int * Int => result;
+  u_17: Int * Int * Int * Int * Int => result;
+  return: Int => result;
+
+RULES
+
+  fib(x)        -> return(0)               [x <= 0]       ;
+  fib(1)        -> return(1)                              ;
+  fib(x)        -> w(fib(x - 1), fib(x - 2)) [x - 2 >= 0]   ;
+  w(return(x), return(y)) -> return(x + y) ;
+  w(return(x), error) -> error ;
+  w(error, return(y)) -> error ;
+  w(error, error) -> error ;
+
+
+
+  fastfib(n_1) -> u_1(n_1, rnd_1);
+  u_1(n_1, a1_2) -> u_2(n_1, a1_2, rnd_2);
+  u_2(n_1, a1_2, a2_2) -> u_3(n_1, a1_2, a2_2, rnd_3);
+  u_3(n_1, a1_2, a2_2, sum_2) -> u_4(n_1, a1_2, a2_2, sum_2, rnd_4);
+  u_4(n_1, a1_2, a2_2, sum_2, i_2) -> u_5(n_1, 1, a2_2, sum_2, i_2);
+  u_5(n_1, a1_2, a2_2, sum_2, i_2) -> u_6(n_1, a1_2, 0, sum_2, i_2);
+  u_6(n_1, a1_2, a2_2, sum_2, i_2) -> u_7(n_1, a1_2, a2_2, 0, i_2);
+  u_7(n_1, a1_2, a2_2, sum_2, i_2) -> u_8(n_1, a1_2, a2_2, 1, i_2)  [((n_1 > 0) /\ (n_1 < 47))];
+  u_8(n_1, a1_2, a2_2, sum_2, i_2) -> u_9(n_1, a1_2, a2_2, sum_2, 1);
+  u_9(n_1, a1_2, a2_2, sum_2, i_2) -> u_10(n_1, a1_2, a2_2, (a1_2 + a2_2), i_2)  [(i_2 < n_1)];
+  u_10(n_1, a1_2, a2_2, sum_2, i_2) -> u_11(n_1, a1_2, a1_2, sum_2, i_2);
+  u_11(n_1, a1_2, a2_2, sum_2, i_2) -> u_12(n_1, sum_2, a2_2, sum_2, i_2);
+  u_12(n_1, a1_2, a2_2, sum_2, i_2) -> u_13(n_1, a1_2, a2_2, sum_2, i_2);
+  u_13(n_1, a1_2, a2_2, sum_2, i_2) -> u_14(n_1, a1_2, a2_2, sum_2, i_2);
+  u_14(n_1, a1_2, a2_2, sum_2, i_2) -> u_15(n_1, a1_2, a2_2, sum_2, (i_2 + 1));
+  u_15(n_1, a1_2, a2_2, sum_2, i_2) -> u_9(n_1, a1_2, a2_2, sum_2, i_2);
+  u_9(n_1, a1_2, a2_2, sum_2, i_2) -> u_16(n_1, a1_2, a2_2, sum_2, i_2)  [(i_2 >= n_1)];
+  u_16(n_1, a1_2, a2_2, sum_2, i_2) -> u_17(n_1, a1_2, a2_2, sum_2, i_2);
+  u_7(n_1, a1_2, a2_2, sum_2, i_2) -> u_17(n_1, a1_2, a2_2, sum_2, i_2)  [((n_1 <= 0) \/ (n_1 >= 47))];
+  u_17(n_1, a1_2, a2_2, sum_2, i_2) -> return(sum_2);
+
+QUERY  do-simplify [fib fastfib] and equivalence fastfib(n) -><- fib(n) [n < 47]
+
+
+END OF FILE
+
+Apparently concerned for integer overflows, this student decided to limit
+interest to input below 47, so we adapted the query accordingly.

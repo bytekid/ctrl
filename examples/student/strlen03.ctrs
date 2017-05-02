@@ -1,0 +1,40 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err : result ;
+  return       ;
+  strlen       ;
+  u            ;
+  !ARRAY!Int   ;
+
+RULES
+  strlen(trg) -> u(trg,0,0);
+  u(trg,i,len) -> u(trg,i + 1,len + 1) [0 <= i /\ i < size(trg) /\ select(trg,i) # 0];
+  u(trg,i,len) -> return(trg,len) [0 <= i /\ i < size(trg) /\ select(trg,i) = 0];
+
+  u(trg,i,len) -> err [0 > i \/ i >= size(trg)];
+
+QUERY equivalence strlen(x) -><- return(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+
+END OF FILE
+
+Student program:
+
+int mystrlen(char trg[]){
+  int i, len = 0;
+
+  for(i = 0; trg[i] != '\0'; i++)
+    len++;
+
+  return len;
+}
+
+Comments:
+
+Ctrl fails to prove this result because two different counters are
+used, i and len.  Unfortunately, generalising removes the relation
+between their initialisations, which correspondingly loses the
+information that always i = len.
+

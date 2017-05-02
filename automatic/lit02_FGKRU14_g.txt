@@ -1,0 +1,25 @@
+/*
+   Example in Fig. 2 on p.2 from 
+     Dennis Felsing, Sarah Grebing, Vladimir Klebanov, Philipp Rümmer, Mattias Ulbrich:
+     Automating regression verification. ASE 2014: 349-360
+*/
+
+int g1(int n) {
+  int r = 0;
+  if (n <= 0) {
+    r = 0;
+  } else {
+    r = g1(n-1) + n;
+  }
+  return r;
+}
+
+int g2(int n, int s) {
+  int r = 0;
+  if (n <= 0) {
+    r = s;
+  } else {
+    r = g2(n-1, n+s);
+  }
+  return r;
+}

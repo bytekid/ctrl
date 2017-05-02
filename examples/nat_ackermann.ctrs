@@ -1,0 +1,20 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE ack, O, s ;
+
+RULES
+
+ack(O,    n   )  -> s(n)                 ;
+ack(s(m), O   )  -> ack(m, s(O))         ;
+ack(s(m), s(n))  -> ack(m, ack(s(m), n)) ;
+
+QUERY termination
+
+END OF FILE
+
+This file demonstrates that Ctrl can also handle termination of
+unconstrained system.  However, its power on such systems is not too
+great.
+

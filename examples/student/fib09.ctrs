@@ -1,0 +1,60 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE fib, fastfib, u : Int * Int * Int * Int * Int => Unit, v, w, p, tmp, return, !INTEGER ;
+
+RULES
+  fib(x)        -> return(0)                    [x <= 0]     ;
+  fib(1)        -> return(1)                                 ;
+  fib(x)        -> tmp(fib(x - 1), fib(x - 2))  [x - 2 >= 0] ;
+  tmp(return(x), return(y)) -> return(x + y)                 ;
+  fastfib(n)   -> u(n, 1, 0, rnd3, rnd4)                 ;
+  u(n,x,y,z,i) -> v(n,x,y,z,i)            [n <= 1]       ;
+  u(n,x,y,z,i) -> w(n,x,y,z,i)            [not (n <= 1)] ;
+  v(n,x,y,z,i) -> return(0)               [n < 0]        ;
+  v(n,x,y,z,i) -> return(n)               [not (n < 0)]  ;
+  w(n,x,y,z,i) -> return(-1)              [n > 46]       ;
+  w(n,x,y,z,i) -> p(n,x,y,z,1)            [not (n > 46)] ;
+  p(n,x,y,z,i) -> p(n,x + y,x,x,i + 1)    [i < n]        ;
+  p(n,x,y,z,i) -> return(x)               [not (i < n)]  ;
+
+QUERY equivalence fib(n) -><- fastfib(n) [n <= 46]
+
+END OF FILE
+
+Student program:
+
+int fastfib(int n){
+  int x=1,y=0,z,i;
+    
+  if(n <= 1){
+    if(n < 0){
+      n = 0;
+    }
+    return n;
+  }else
+    if(n >46){
+      return -1;
+    }else{
+      for(i=1;i<n;i++){
+        z = x;
+        x = x + y;
+        y = z;
+      }
+    }
+  return x;
+}
+
+Comments:
+
+This program does not follow the specifications, as it returns 0 given
+an integer greater than or equal to 47, which it shouldn't; the 
+student is probably trying to cater for integer overflow.  Since we
+ignore integer overflow,
+
+    equivalence fib(n) -><- fastfib(n) [true]
+
+will not give an inductive theorem.  We altered the constraint to
+avoid this issue.
+

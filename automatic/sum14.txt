@@ -1,0 +1,13 @@
+int sum1(int n){
+	int num;
+	num = n;
+
+	if(n < 0){
+		return (0);
+	}else{
+		for(n = n - 1 ; n > 0 ; n--){
+			num = num + n;
+		}
+		return (num);
+	}
+}

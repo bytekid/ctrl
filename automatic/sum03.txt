@@ -1,0 +1,32 @@
+int sum1(n)
+{
+  int i,a=0;
+  if(n<=0) return 0;
+
+  else{
+   for(i=0;i<=n;i++){
+   a=a+i;
+   }
+  return a;
+  }
+}
+
+/*
+int sum1(int i)
+{
+  int n,m;
+  m = 0;
+
+  if(i<=0){ 
+
+    return 0;
+
+  }else{
+    for(n=1;n<=i;n++){
+      m = n + m;
+    }
+
+    return m;
+  }
+}
+*/

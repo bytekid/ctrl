@@ -1,0 +1,101 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  sum  ;
+  sum_decl ;
+  u_3  ;
+  sum3 ;
+
+RULES
+  sum(x)    -> 0                    [x <= 0]       ;
+  sum(x)    -> x + sum(x - 1)       [0 <= x - 1]   ;
+
+  sum_decl(x) -> u_3(0, x) ;
+  u_3(z, i) -> u_3(z + i, i - 1) [i > 0] ;
+  u_3(z, i) -> z [i <= 0] ;
+
+  sum3(x, n) -> 0 [x < n];
+  sum3(x, n) -> n + sum3(x, n + 1) [x >= n];
+
+QUERY equivalence sum(x) -><- sum_decl(x) [true]
+
+END OF FILE
+
+-------------------------------------------
+
+QUERY equivalence sum(x) -><- sum_decl(x) [true]
+QUERY equivalence sum_decl(x) -><- sum3(x,0) [true]
+QUERY termination
+
+-------------------------------------------
+#include <stdio.h>
+
+int sum_decl(int x){
+  int z = 0;
+  for(int i = x; i > 0 ; i-- )
+    z += i;
+  return z;
+}
+
+int main(){
+  int x = 10;
+  for(int i = 0 ; i <= x ; i++ ){
+    printf("sum(%d) = %d\n", i, sum_decl(i) );
+  }
+  return 0;
+}
+
+-------------------------------------------
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  sum_decl: Int => result_sum_decl;
+  u_1: Int * Int => result_sum_decl;
+  u_2: Int * Int * Int => result_sum_decl;
+  u_3: Int * Int * Int => result_sum_decl;
+  u_4: Int * Int * Int => result_sum_decl;
+  u_5: Int * Int * Int => result_sum_decl;
+  u_6: Int * Int * Int => result_sum_decl;
+  u_7: Int * Int => result_sum_decl;
+  return_sum_decl: Int => result_sum_decl;
+  error_sum_decl: result_sum_decl;
+
+RULES
+  sum_decl(x_1) -> u_1(x_1, 0);
+  u_1(x_1, z_2) -> u_2(x_1, z_2, x_1);
+  u_2(x_1, z_2, i_3) -> u_3(x_1, z_2, i_3);
+  u_3(x_1, z_2, i_3) -> u_4(x_1, (z_2 + i_3), i_3)  [(i_3 > 0)];
+  u_4(x_1, z_2, i_3) -> u_5(x_1, z_2, i_3);
+  u_5(x_1, z_2, i_3) -> u_6(x_1, z_2, (i_3 - 1));
+  u_6(x_1, z_2, i_3) -> u_3(x_1, z_2, i_3);
+  u_3(x_1, z_2, i_3) -> u_7(x_1, z_2)  [(i_3 <= 0)];
+  u_7(x_1, z_2) -> return_sum_decl(z_2);
+
+QUERY print-simplification [sum_decl]
+
+-------------------------------------------
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  return_sum_decl : Int => result_sum_decl ;
+  sum_decl : Int => result_sum_decl ;
+  u_3 : Int * Int => result_sum_decl ;
+  !INTEGER : Int ;
+
+RULES
+  sum_decl(x) -> u_3(0, x) ;
+  u_3(z, i) -> u_3(z + i, i - 1) [i > 0] ;
+  u_3(z, i) -> return_sum_decl(z) [i <= 0] ;
+
+-------------------------------------------
+
+
+

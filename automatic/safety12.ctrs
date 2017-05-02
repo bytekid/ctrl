@@ -1,0 +1,40 @@
+THEORY arrays
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+
+SIGNATURE
+  main: IntArray * Int * Int => result_1;
+  u_1: IntArray * Int * Int * Int => result_1;
+  u_2: IntArray * Int * Int * Int * Int => result_1;
+  u_3: IntArray * Int * Int * Int * Int => result_1;
+  error_1: result_1;
+  u_4: IntArray * Int * Int * Int * Int => result_1;
+  u_5: IntArray * Int * Int * Int * Int => result_1;
+  u_6: IntArray * Int * Int * Int * Int => result_1;
+  u_7: IntArray * Int * Int * Int * Int => result_1;
+  u_8: IntArray * Int * Int * Int * Int => result_1;
+  u_9: IntArray * Int * Int * Int * Int => result_1;
+  return_1: IntArray * Int => result_1;
+  errortest;
+
+RULES
+  main(s_1, old_1, new_1) -> u_1(s_1, old_1, new_1, 0);
+  u_1(s_1, old_1, new_1, p_2) -> u_2(s_1, old_1, new_1, p_2, 0);
+  u_2(s_1, old_1, new_1, p_2, numReplaced_2) -> u_3(s_1, old_1, new_1, p_2, numReplaced_2);
+  u_3(s_1, old_1, new_1, p_2, numReplaced_2) -> error_1  [(0 > p_2 \/ p_2 >= size(s_1))];
+  u_3(s_1, old_1, new_1, p_2, numReplaced_2) -> error_1  [(((select(s_1, p_2) # 0) /\ (0 <= p_2 < size(s_1))) /\ (0 > p_2 \/ p_2 >= size(s_1)))];
+  u_3(s_1, old_1, new_1, p_2, numReplaced_2) -> u_4(store(s_1, p_2, new_1), old_1, new_1, p_2, numReplaced_2)  [(((((select(s_1, p_2) # 0) /\ (0 <= p_2 < size(s_1))) /\ (select(s_1, p_2) = old_1)) /\ (0 <= p_2 < size(s_1))) /\ (0 <= p_2 < size(s_1)))];
+  u_3(s_1, old_1, new_1, p_2, numReplaced_2) -> error_1  [(((((select(s_1, p_2) # 0) /\ (0 <= p_2 < size(s_1))) /\ (select(s_1, p_2) = old_1)) /\ (0 <= p_2 < size(s_1))) /\ (0 > p_2 \/ p_2 >= size(s_1)))];
+  u_4(s_1, old_1, new_1, p_2, numReplaced_2) -> u_5(s_1, old_1, new_1, p_2, (numReplaced_2 + 1));
+  u_5(s_1, old_1, new_1, p_2, numReplaced_2) -> u_6(s_1, old_1, new_1, p_2, numReplaced_2);
+  u_6(s_1, old_1, new_1, p_2, numReplaced_2) -> u_7(s_1, old_1, new_1, p_2, numReplaced_2);
+  u_3(s_1, old_1, new_1, p_2, numReplaced_2) -> u_7(s_1, old_1, new_1, p_2, numReplaced_2)  [((((select(s_1, p_2) # 0) /\ (0 <= p_2 < size(s_1))) /\ (select(s_1, p_2) # old_1)) /\ (0 <= p_2 < size(s_1)))];
+  u_7(s_1, old_1, new_1, p_2, numReplaced_2) -> u_8(s_1, old_1, new_1, (p_2 + 1), numReplaced_2);
+  u_8(s_1, old_1, new_1, p_2, numReplaced_2) -> u_9(s_1, old_1, new_1, p_2, numReplaced_2);
+  u_9(s_1, old_1, new_1, p_2, numReplaced_2) -> u_3(s_1, old_1, new_1, p_2, numReplaced_2);
+  u_3(s_1, old_1, new_1, p_2, numReplaced_2) -> return_1(s_1, numReplaced_2)  [((select(s_1, p_2) = 0) /\ (0 <= p_2 < size(s_1)))];
+  errortest(error_1) -> false;
+  errortest(return_1(w_1, w_2)) -> true;
+
+QUERY do-simplify [main errortest] and equivalence errortest(main(s, old, new)) -><- true [length1 >= 1 /\ size(s) = length1 /\ select(s, length1 - 1) = 0]
+

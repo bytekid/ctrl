@@ -1,0 +1,34 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sumfrom, sum2, u, v, w, return, !INTEGER ;
+
+RULES
+  sumfrom(m, n)   -> return(0)               [m > n]  ;
+  sumfrom(m, n)   -> w(n, sumfrom(m, n - 1)) [m <= n] ;
+  w(m, return(n)) -> return(m + n)                    ;
+  sum2(m,n)       -> u(m,n,m,0)                       ;
+  u(m,n,i,total)  -> u(m,n,i + 1, total + i) [i <= n] ;
+  u(m,n,i,total)  -> return(total)     [not (i <= n)] ;
+
+QUERY user-equivalence sumfrom(x,y) -><- sum2(x,y) [true]
+
+END OF FILE
+
+Student program:
+
+int sum2(int m, int n)
+{
+  int i, total = 0;
+
+  i = m;
+  while(i <= n){
+    total = total + i;
+    i++;
+  }
+
+  return total;
+} 
+

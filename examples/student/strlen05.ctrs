@@ -1,0 +1,39 @@
+THEORY strings     ;
+LOGIC QF_INTARRAY  ;
+SOLVER arrsolver   ;
+
+SIGNATURE
+  err : result ;
+  return       ;
+  strlen       ;
+  u            ;
+  !ARRAY!Int   ;
+
+RULES
+  strlen(x) -> u(x,0,0);
+  u(x,k,count) -> u(x,k + 1,count + 1) [0 <= k /\ k < size(x) /\ select(x,k) # 0] ;
+  u(x,k,count) -> return(x,count)      [0 <= k /\ k < size(x) /\ select(x,k) = 0] ;
+
+  u(x,k,count) -> err [0 > k \/ k >= size(x)];
+
+QUERY equivalence strlen(x) -><- return(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+
+END OF FILE
+
+Student program:
+
+int mystrlen(char x[]){
+  int k,count=0;
+  for(k=0;x[k];k++){
+    count=count+1;
+  }
+  return count;
+}
+
+Comments:
+
+We fail to prove this result because two different counters are 
+used, i and len.  Unfortunately, generalising removes the relation
+between their initialisations, which correspondingly loses the 
+information that always i = len.
+

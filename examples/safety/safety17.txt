@@ -1,0 +1,18 @@
+/* SOURCE: https://github.com/sosy-lab/sv-benchmarks/blob/master/c/array-memsafety/strreplace-alloca_true-valid-memsafety.c */
+
+int main(char s[], char old, char new)
+{
+     int p = 0;
+     int numReplaced = 0;
+     while (s[p] != '\0') {
+       if (s[p] == old) {
+         s[p] = new;
+         numReplaced++;
+       }
+       p++;
+     }
+     return numReplaced;
+}
+
+[length1 >= 1 /\ size(s) = length1 /\ select(s, length1 - 1) = 0]
+

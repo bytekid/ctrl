@@ -1,0 +1,37 @@
+DECLARE
+  true     : Bool                             ;
+  false    : Bool                             ;
+  not      : Bool => Bool                     ;
+  /\       : Bool * Bool => Bool (l-infix 50) ;
+  \/       : Bool * Bool => Bool (l-infix 45) ;
+  xor      : Bool * Bool => Bool (l-infix 47) ;
+  =>       : Bool * Bool => Bool (r-infix 40) ;
+  <=>      : <Bool> => Bool      (infix 42)   ;
+  =        : <?A> => Bool        (infix 60)   ;
+  #        : <?A> => Bool        (infix 60)   ;
+  ite      : Bool * ?A * ?A => ?A             ;
+
+SMT-RENAMINGS
+  <=> -> =   ;
+  /\  -> and ;
+  \/  -> or  ;
+  #   -> distinct ;
+
+/* The SMT-renaming takes effect only when printing a term for the
+   SMT-library.  Then instead of (<=> x y z) we will print (= x y z).
+
+   An infix n-ary symbol requires the symbol to be put between all
+   arguments, e.g. a <=> b <=> c becomes <=>_{3}(a,b,c), while a = b
+   = c with a,b,c all ints becomes <=>_{int,3}(a,b,c).
+
+   There may only be sort variables in the logical alphabet, not in
+   the term alphabet, and in the rules it should always be clear what
+   type an occurrence of a logical symbol has.  This means for
+   instance that if the theory has both ints and reals, then a rule
+
+      f(x,y) -> true [x > y]
+
+   is only allowed if the sort of f is declared, so the type of f is
+   known!
+*/
+

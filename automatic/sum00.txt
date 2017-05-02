@@ -1,0 +1,6 @@
+int sum1(int n) {
+  int z = 0;
+  for (int i = 1; i <= n; i++)
+    z += i;
+  return z;
+}

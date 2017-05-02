@@ -1,0 +1,36 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE
+  sum, sum1, u : Int * Int => Result, v, w, return, !INTEGER ;
+
+RULES
+  sum(x)  -> return(0)         [x <= 0]      ;
+  sum(x)  -> w(x, sum(x - 1))  [0 <= x - 1]  ;
+  w(x, return(y)) -> return(x + y)           ;
+  sum1(n) -> u(n, rnd)                       ;
+  u(n, s) -> return(0)         [n < 0]       ;
+  u(n, s) -> v(n, 0)           [not (n < 0)] ;
+  v(n, s) -> v(n - 1, s + n)   [n > 0]       ;
+  v(n, s) -> return(s)         [not (n > 0)] ;
+
+QUERY equivalence sum(x) -><- sum1(x) [true]
+
+END OF FILE
+
+Student program:
+
+int sum1(int n){
+  int sum;
+  if(n<0){
+    return 0;
+  }
+
+  for(sum=0;n>0;n--){
+    sum+=n;
+  }
+
+  return sum;
+}
+

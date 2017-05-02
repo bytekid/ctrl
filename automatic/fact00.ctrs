@@ -1,0 +1,40 @@
+THEORY ints
+LOGIC  QF_NIA
+SOLVER internal
+SIGNATURE
+ 
+  fact ;
+  w    ;
+  return : Int => result;
+  error  : result;
+
+
+  fact1: Int => result;
+  u_1: Int * Int => result;
+  u_2: Int * Int * Int => result;
+  u_3: Int * Int * Int => result;
+  u_4: Int * Int * Int => result;
+  u_5: Int * Int * Int => result;
+  u_6: Int * Int => result;
+  return: Int => result;
+  error: result;
+
+RULES
+
+  fact(x)    -> return(1)            [x <= 0]       ;
+  fact(x)    -> w(x, fact(x - 1))      [x - 1 >= 0]   ;
+  w(x, return(y)) -> return(y * x)                ;
+  w(x, error) -> error                         ;
+
+
+  fact1(n_1) -> u_1(n_1, 1);
+  u_1(n_1, z_2) -> u_2(n_1, z_2, 1);
+  u_2(n_1, z_2, i_3) -> u_3(n_1, (z_2 * i_3), i_3)  [(i_3 <= n_1)];
+  u_3(n_1, z_2, i_3) -> u_4(n_1, z_2, i_3);
+  u_4(n_1, z_2, i_3) -> u_5(n_1, z_2, (i_3 + 1));
+  u_5(n_1, z_2, i_3) -> u_2(n_1, z_2, i_3);
+  u_2(n_1, z_2, i_3) -> u_6(n_1, z_2)  [(i_3 > n_1)];
+  u_6(n_1, z_2) -> return(z_2);
+
+QUERY  do-simplify [fact fact1] and equivalence fact(n) -><- fact1(n) [true]
+

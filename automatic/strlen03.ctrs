@@ -1,0 +1,35 @@
+THEORY strings
+LOGIC  QF_INTARRAY
+SOLVER arrsolver
+SIGNATURE
+
+
+
+  mystrlen: IntArray => result;
+  u_1: IntArray * Int => result;
+  u_2: IntArray * Int * Int => result;
+  u_3: IntArray * Int * Int => result;
+  error: result;
+  u_4: IntArray * Int * Int => result;
+  u_5: IntArray * Int * Int => result;
+  u_6: IntArray * Int * Int => result;
+  u_7: IntArray * Int * Int => result;
+  return: IntArray * Int => result;
+
+RULES
+
+
+
+  mystrlen(trg_1) -> u_1(trg_1, rnd_1);
+  u_1(trg_1, i_2) -> u_2(trg_1, i_2, 0);
+  u_2(trg_1, i_2, len_2) -> u_3(trg_1, 0, len_2);
+  u_3(trg_1, i_2, len_2) -> error  [(0 > i_2 \/ i_2 >= size(trg_1))];
+  u_3(trg_1, i_2, len_2) -> u_4(trg_1, i_2, (len_2 + 1))  [((select(trg_1, i_2) # 0) /\ (0 <= i_2 < size(trg_1)))];
+  u_3(trg_1, i_2, len_2) -> u_5(trg_1, i_2, len_2)  [((select(trg_1, i_2) = 0) /\ (0 <= i_2 < size(trg_1)))];
+  u_4(trg_1, i_2, len_2) -> u_6(trg_1, i_2, len_2);
+  u_6(trg_1, i_2, len_2) -> u_7(trg_1, (i_2 + 1), len_2);
+  u_7(trg_1, i_2, len_2) -> u_3(trg_1, i_2, len_2);
+  u_5(trg_1, i_2, len_2) -> return(trg_1, len_2);
+
+QUERY  do-simplify [mystrlen] and equivalence mystrlen(x) -><- return(x, n) [0 <= n < size(x) /\ nonzero(x, 0, n - 1) /\ select(x, n) = 0]
+

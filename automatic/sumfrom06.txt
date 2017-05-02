@@ -1,0 +1,27 @@
+int sum2(int a, int b)
+{
+  int c = 0;
+
+  if(a < b)
+    while(b >= a){
+      c = c + b;
+      b--;
+    }
+
+  return c;
+}
+
+/* original
+int sum2(int a, int b)
+{
+  int c = 0;
+
+  if(a < b)
+    while(b >= a){
+      c = c + b;
+      b = b--;
+    }
+
+  return c;
+}
+*/

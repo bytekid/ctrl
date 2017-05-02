@@ -1,0 +1,26 @@
+
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  f1 : Int => Int ;
+  f2 : Int => Int ;
+  u_13 : Int * Int * Int => Int ;
+  u_27 : Int * Int => Int ;
+  !INTEGER : Int ;
+
+RULES
+  f1(n) -> n [n <= 1] ;
+  f1(n) -> n + (n - 1) [n > 1 /\ n - 1 <= 1] ;
+  f1(n) -> u_13(n, n - 1, f1(n - 1 - 1)) [n > 1 /\ n - 1 > 1] ;
+  u_13(n, nx, w_4) -> n + (nx + w_4) ;
+  f2(n) -> n [n <= 1] ;
+  f2(n) -> u_27(n, f2(n - 2)) [n > 1] ;
+  u_27(n, w_6) -> n + (n - 1) + w_6 ;
+
+QUERY do-simplify [f1 f2] and equivalence f1(n) -><- f2(n) [true]
+
+This is a variant of llreve_rec_limit1unrolled.ctrs obtained by dropping
+"result" types. 
+

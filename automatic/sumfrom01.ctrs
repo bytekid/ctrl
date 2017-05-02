@@ -1,0 +1,75 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+SIGNATURE
+
+  sumfrom ;
+  w ;
+  return : Int => result;
+  error : result;
+
+
+  hikaku: Int * Int => result;
+  error: result;
+  return: Int => result;
+  max: Int * Int => result;
+  error: result;
+  return: Int => result;
+  min: Int * Int => result;
+  error: result;
+  return: Int => result;
+  sum2: Int * Int => result;
+  u_1: Int * Int * Int => result;
+  u_2: Int * Int * Int * Int => result;
+  u_3: Int * Int * Int * Int * Int => result;
+  error: result;
+  return: Int => result;
+  u_4: Int * Int * Int * Int * Int * result => result;
+  u_5: Int * Int * Int * Int * Int * Int => result;
+  u_6: Int * Int * Int * Int * Int => result;
+  u_7: Int * Int * Int * Int * Int => result;
+  u_8: Int * Int * Int * Int * Int => result;
+  u_9: Int * Int * Int * Int * Int * result => result;
+  u_10: Int * Int * Int * Int * Int * Int => result;
+  u_11: Int * Int * Int * Int * Int => result;
+  u_12: Int * Int * Int * Int * Int => result;
+  u_13: Int * Int * Int * Int * Int => result;
+  u_14: Int * Int * Int * Int * Int => result;
+
+RULES
+
+  sumfrom(m, n)   -> return(0)               [m > n];
+  sumfrom(m, n)   -> w(n, sumfrom(m, n - 1)) [m <= n] ;
+  w(m, return(n)) -> return(m + n)                ;
+  w(m, error) -> error                            ;
+
+
+  hikaku(x_1, y_1) -> return(1)  [(x_1 > y_1)];
+  hikaku(x_1, y_1) -> return((-1))  [((x_1 <= y_1) /\ (x_1 < y_1))];
+  hikaku(x_1, y_1) -> return(0)  [((x_1 <= y_1) /\ (x_1 >= y_1))];
+  max(x_1, y_1) -> return(x_1)  [(x_1 > y_1)];
+  max(x_1, y_1) -> return(y_1)  [(x_1 <= y_1)];
+  min(x_1, y_1) -> return(x_1)  [(y_1 > x_1)];
+  min(x_1, y_1) -> return(y_1)  [(y_1 <= x_1)];
+  sum2(x_1, y_1) -> u_1(x_1, y_1, 0);
+  u_1(x_1, y_1, t_2) -> u_2(x_1, y_1, t_2, rnd_1);
+  u_2(x_1, y_1, t_2, i_2) -> u_3(x_1, y_1, t_2, i_2, rnd_2);
+  u_3(x_1, y_1, t_2, i_2, m_2) -> return(0)  [(x_1 > y_1)];
+  u_3(x_1, y_1, t_2, i_2, m_2) -> u_4(x_1, y_1, t_2, i_2, m_2, min(x_1, y_1))  [(x_1 <= y_1)];
+  u_4(x_1, y_1, t_2, i_2, m_2, return(w_3)) -> u_5(x_1, y_1, t_2, i_2, m_2, w_3);
+  u_4(x_1, y_1, t_2, i_2, m_2, error) -> error;
+  u_5(x_1, y_1, t_2, i_2, m_2, w_3) -> u_6(x_1, y_1, t_2, i_2, w_3);
+  u_6(x_1, y_1, t_2, i_2, m_2) -> u_7(x_1, y_1, t_2, m_2, m_2);
+  u_7(x_1, y_1, t_2, i_2, m_2) -> u_8(x_1, y_1, (t_2 + i_2), i_2, m_2)  [(i_2 <= m_2)];
+  u_8(x_1, y_1, t_2, i_2, m_2) -> u_9(x_1, y_1, t_2, i_2, m_2, max(x_1, y_1));
+  u_9(x_1, y_1, t_2, i_2, m_2, return(w_4)) -> u_10(x_1, y_1, t_2, i_2, m_2, w_4);
+  u_9(x_1, y_1, t_2, i_2, m_2, error) -> error;
+  u_10(x_1, y_1, t_2, i_2, m_2, w_4) -> u_11(x_1, y_1, t_2, i_2, w_4);
+  u_11(x_1, y_1, t_2, i_2, m_2) -> u_12(x_1, y_1, t_2, i_2, m_2);
+  u_12(x_1, y_1, t_2, i_2, m_2) -> u_13(x_1, y_1, t_2, i_2, m_2);
+  u_13(x_1, y_1, t_2, i_2, m_2) -> u_14(x_1, y_1, t_2, (i_2 + 1), m_2);
+  u_14(x_1, y_1, t_2, i_2, m_2) -> u_7(x_1, y_1, t_2, i_2, m_2);
+  u_7(x_1, y_1, t_2, i_2, m_2) -> return(t_2)  [(i_2 > m_2)];
+
+QUERY  do-simplify [sumfrom sum2] and equivalence sumfrom(x,y) -><- sum2(x,y) [true]
+

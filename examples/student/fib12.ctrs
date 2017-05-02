@@ -1,0 +1,44 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE fib, fastfib, u : Int * Int * Int * Int * Int => Unit, v, w, return, !INTEGER ;
+
+RULES
+  fib(x)        -> return(0)                   [x <= 0]                         ;   
+  fib(1)        -> return(1)                                                    ;   
+  fib(x)        -> w(fib(x - 1), fib(x - 2))   [x - 2 >= 0]                     ;   
+  w(return(x), return(y)) -> return(x + y)                                      ;   
+  fastfib(num)   -> u(num, 1, 1, 0, rnd)                                        ;
+  u(num,a,b,c,i) -> return(1)                  [num = 1]                        ;
+  u(num,a,b,c,i) -> return(1)                  [not (num = 1) /\ num = 2]       ;
+  u(num,a,b,c,i) -> v(num,a,b,c,0)             [not (num = 1) /\ not (num = 2)] ;
+  v(num,a,b,c,i) -> v(num,b,a + b,a + b,i + 1) [i < num]                        ;
+  v(num,a,b,c,i) -> return(c)                  [not (i < num)]                  ;
+
+QUERY equivalence fastfib(n) -><- fib(n) [true]
+
+END OF FILE
+
+Student program:
+
+int fastfib(int num)
+{
+    int a=1, b=1, c=0, i;
+
+    if(num==1) return 1;
+    else if(num==2) return 1;
+    else{
+        for(i=0; i<num; i++){
+          c = a + b;
+          a = b;
+          b = c;
+        }
+        return c;
+    }
+}
+
+Comments:
+
+This implementation is incorrect; it fails for num = 3.
+

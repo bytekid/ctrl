@@ -1,0 +1,19 @@
+void mystrcpy(int trg[], int src[]){
+  int i;
+
+  for(i = 0; src[i] != 0; i++)
+    trg[i] = src[i];
+
+  trg[i] = 0;
+}
+
+/* original
+void mystrcpy(char trg[], char src[]){
+  int i;
+
+  for(i = 0; src[i] != '\0'; i++)
+    trg[i] = src[i];
+
+  trg[i] = '\0';
+}
+*/

@@ -1,0 +1,14 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE f, !INTEGER ;
+
+RULES
+  f(x) -> f(0 - x)  <-- [x > 0]
+
+QUERY termination
+
+END OF FILE
+
+This file demonstrates a termination argument with the dependency graph.

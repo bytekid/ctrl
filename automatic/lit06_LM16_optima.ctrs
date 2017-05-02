@@ -1,0 +1,57 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+
+SIGNATURE
+  main1 : Int * Int * Int => result ;
+  main2 : Int * Int * Int => result ;
+  return : Int * Int * Int => result ;
+  u_1 : Int * Int * Int => result ;
+  u_5 : Int * Int * Int => result ;
+  !INTEGER : Int ;
+
+RULES
+  main1(x, i, n) -> u_1(x, i, n) ;
+  u_1(x, i, n) -> u_1(i + 2, i + 1, n) [i < n] ;
+  u_1(x, i, n) -> return(x, i, n) [i >= n] ;
+  main2(x, i, n) -> u_5(x, i, n) ;
+  u_5(x, i, n) -> u_5(i + 1 + 2, i + 1 + 1, n) [i + 1 < n] ;
+  u_5(x, i, n) -> return(i + 2, i + 1, n) [i + 1 >= n /\ i < n] ;
+  u_5(x, i, n) -> return(x, i, n) [i + 1 >= n /\ i >= n] ;
+
+QUERY equivalence main1(x, i, n) -><- main2(x, i, n) [true]
+
+END OF FILE
+
+Here, the typo "i < n" in main2 has been fixed to "i+1 < n".
+
+/*
+   Example in Fig. 2 on p.2 from 
+     Nuno P. Lopes, Jose Monteiro:
+     Automatic equivalence checking of programs with uninterpreted
+     functions and integer arithmetic. 
+     STTT 18(4): 359-374 (2016)
+
+int main1(int x, int i, int n){
+  while( i < n ){
+    x = i + 2;
+    i = i + 1;
+  }
+  return x + i + n; /* dummy. Replaced by "return(x, i, n)" after conversion. */
+}
+
+int main2(int x, int i, int n){
+  while( i+1 < n ){ /* origianl is "i < n" that would be a typo. */
+    x = i + 2;
+    i = i + 1;
+    x = i + 2;
+    i = i + 1;
+  }
+  if( i < n ){
+    x = i + 2;
+    i = i + 1;
+  }
+  return x + i + n; /* dummy. Replaced by "return(x, i, n)" after conversion. */
+}
+
+*/

@@ -1,0 +1,20 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE sum, sumsum, sumsum1, u0, u1, !INTEGER, plus ;
+
+RULES
+  sum(x)         -> 0                           [x <= 0]       ;
+  sum(x)         -> plus(sum(x - 1), x)         [x - 1 >= 0]   ;
+  sumsum(x)      -> plus(sumsum(x - 1), sum(x)) [x - 1 >= 0]   ;
+  sumsum(x)      -> 0                           [x <= 0]       ;
+  sumsum1(x)     -> u0(x, 0, 0, 0)                             ;
+  u1(x, i, j, z) -> u0(x, i + 1, j, z)          [not (i >= j)] ;
+  u1(x, i, j, z) -> u1(x, i, j + 1, z + j)      [i >= j]       ;
+  u0(x, i, j, z) -> z                           [not (x >= i)] ;
+  u0(x, i, j, z) -> u1(x, i, 0, z)              [x >= i]       ;
+  plus(x,y) -> x + y
+
+QUERY normal form sumsum(5)
+

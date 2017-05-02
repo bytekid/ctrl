@@ -1,0 +1,37 @@
+THEORY ints
+LOGIC  QF_LIA
+SOLVER internal
+SIGNATURE
+
+  sum      ;
+  w        ;
+  return ;
+  sum1: Int => result;
+  u_1: Int * Int => result;
+  u_2: Int * Int * Int => result;
+  u_3: Int * Int * Int => result;
+  u_4: Int * Int * Int => result;
+  u_5: Int * Int * Int => result;
+  u_6: Int * Int * Int => result;
+  u_7: Int * Int * Int => result;
+  error: result;
+
+
+RULES
+
+  sum(x)            -> return(0)         [x <= 0]       ;
+  sum(x)            -> w(x, sum(x - 1))    [0 <= x - 1]   ;
+  w(x, return(y)) -> return(x + y)                    ;
+
+  sum1(n_1) -> u_1(n_1, rnd_1);
+  u_1(n_1, i_2) -> u_2(n_1, i_2, rnd_2);
+  u_2(n_1, i_2, sum_2) -> u_3(n_1, i_2, sum_2);
+  u_3(n_1, i_2, sum_2) -> u_4(n_1, n_1, sum_2);
+  u_4(n_1, i_2, sum_2) -> u_5(n_1, i_2, (sum_2 + i_2))  [(i_2 >= 0)];
+  u_5(n_1, i_2, sum_2) -> u_6(n_1, i_2, sum_2);
+  u_6(n_1, i_2, sum_2) -> u_7(n_1, (i_2 - 1), sum_2);
+  u_7(n_1, i_2, sum_2) -> u_4(n_1, i_2, sum_2);
+  u_4(n_1, i_2, sum_2) -> return(sum_2)  [(i_2 < 0)];
+
+QUERY  do-simplify [sum sum1] and equivalence sum(x) -><- sum1(x) [true]
+

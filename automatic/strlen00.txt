@@ -1,0 +1,13 @@
+int mystrlen(int str[]) {
+  for (int i = 0; 1; i++) {
+    if (str[i] == 0) return i;
+  }
+}
+
+/* original
+int strlen(char str[]) {
+  for (int i = 0; ; i++) {
+    if (str[i] == '\0') return i;
+  }
+}
+*/

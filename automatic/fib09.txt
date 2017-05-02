@@ -1,0 +1,20 @@
+int fastfib(int n){
+  int x=1,y=0,z,i;
+    
+  if(n <= 1){
+    if(n < 0){
+      n = 0;
+    }
+    return n;
+  }else
+    if(n >46){
+      return -1;
+    }else{
+      for(i=1;i<n;i++){
+        z = x;
+        x = x + y;
+        y = z;
+      }
+    }
+  return x;
+}
