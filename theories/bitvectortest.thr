@@ -1,54 +1,54 @@
 INCLUDE ints ;
 
 DECLARE
-  !BITVECTOR : BitVec                             ;
-  !=          : BitVec * BitVec => Bool (infix 70)    ;
-  i<=         : BitVec * BitVec => Bool (infix 70)    ;
-  i>=         : BitVec * BitVec => Bool (infix 70)    ;
-  i<          : BitVec * BitVec => Bool (infix 70)    ;
-  i>          : BitVec * BitVec => Bool (infix 70)    ;
-  u<=         : BitVec * BitVec => Bool (infix 70)    ;
-  u>=         : BitVec * BitVec => Bool (infix 70)    ;
-  u<          : BitVec * BitVec => Bool (infix 70)    ;
-  u>          : BitVec * BitVec => Bool (infix 70)    ;
+  !BITVECTOR : (BitVec _)                             ;
+  !=          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  i<=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  i>=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  i<          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  i>          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  u<=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  u>=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  u<          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  u>          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
 
-  ~           : BitVec => BitVec;
-  &           : BitVec * BitVec => BitVec (l-infix 150) ;
-  |           : BitVec * BitVec => BitVec (l-infix 100) ;
-  ^           : BitVec * BitVec => BitVec (l-infix 100) ;
+  ~           : (BitVec _) => (BitVec _);
+  &           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150) ;
+  |           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 100) ;
+  ^           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 100) ;
 
-  neg         : BitVec => BitVec;
-  +i          : BitVec * BitVec => BitVec (l-infix 100);
-  -i          : BitVec * BitVec => BitVec (l-infix 100);
-  <<          : BitVec * BitVec => BitVec (r-infix 100);
+  neg         : (BitVec _) => (BitVec _);
+  +i          : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 100);
+  -i          : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 100);
+  <<          : (BitVec _) * (BitVec _) => (BitVec _) (r-infix 100);
 
-  #x0: BitVec;
-  #x1: BitVec;
-  #xff: BitVec;
+  #x0: (BitVec _);
+  #x1: (BitVec _);
+  #xff: (BitVec _);
 
-  absbv : BitVec => BitVec ;
-  ashr_th : BitVec * BitVec => BitVec;
-  computeKnownZeroBits : BitVec => BitVec;
-  countLeadingZeros : BitVec => BitVec;
-  countTrailingZeros : BitVec => BitVec;
+  absbv : (BitVec _) => (BitVec _) ;
+  ashr_th : (BitVec _) * (BitVec _) => (BitVec _);
+  computeKnownZeroBits : (BitVec _) => (BitVec _);
+  countLeadingZeros : (BitVec _) => (BitVec _);
+  countTrailingZeros : (BitVec _) => (BitVec _);
   hasOneUse : Bool;
-  isPowerOf2 : BitVec => Bool;
-  isPowerOf2OrZero : BitVec => Bool;
-  isShiftedMask : BitVec => Bool;
-  isSignBit : BitVec => Bool;
-  lshr_th : BitVec * BitVec => BitVec;
-  log2 : BitVec => BitVec;
-  MaskedValueIsZero : BitVec * BitVec => Bool;
-  sext : BitVec => BitVec;
-  sext_i1 : BitVec => BitVec;
-  trunc : BitVec => BitVec;
-  umax : BitVec * BitVec => BitVec;
-  width : BitVec => BitVec;
-  WillNotOverflowSignedAdd : BitVec * BitVec => Bool;
-  WillNotOverflowSignedSub : BitVec * BitVec => Bool;
-  WillNotOverflowUnsignedAdd : BitVec * BitVec => Bool;
-  WillNotOverflowUnsignedSub : BitVec * BitVec => Bool;
-  zext_i1 : BitVec => BitVec;
+  isPowerOf2 : (BitVec _) => Bool;
+  isPowerOf2OrZero : (BitVec _) => Bool;
+  isShiftedMask : (BitVec _) => Bool;
+  isSignBit : (BitVec _) => Bool;
+  lshr_th : (BitVec _) * (BitVec _) => (BitVec _);
+  log2 : (BitVec _) => (BitVec _);
+  MaskedValueIsZero : (BitVec _) * (BitVec _) => Bool;
+  sext : (BitVec _) => (BitVec _);
+  sext_i1 : (BitVec _) => (BitVec _);
+  trunc : (BitVec _) => (BitVec _);
+  umax : (BitVec _) * (BitVec _) => (BitVec _);
+  width : (BitVec _) => (BitVec _);
+  WillNotOverflowSignedAdd : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowSignedSub : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowUnsignedAdd : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowUnsignedSub : (BitVec _) * (BitVec _) => Bool;
+  zext_i1 : (BitVec _) => (BitVec _);
 
 SMT-RENAMINGS
   i< 		-> bvslt;
