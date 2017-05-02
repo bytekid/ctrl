@@ -23,7 +23,7 @@ open Util;;
 
 (*** TYPES ********************************************************************)
 type sort = Sort.t
-type polsort = Mono of string | SVar of string;;
+type polsort = Mono of string | MonoIndexed of string * int | SVar of string;;
 type t = Known of polsort list * polsort | Unknown of polsort * polsort;;
 type sd = Sortdeclaration.t
 
@@ -97,21 +97,25 @@ let output_sort = function
 (* Manipulating polymorphic sorts *)
 
 let is_polymorphic = function
-  | Mono _ -> false
   | SVar _ -> true
+  | _ -> false
 ;;
 
 let pol_to_sort = function
   | Mono str -> Sort.from_string str
+  | MonoIndexed (str, n) -> Sort.from_indexed str n
   | SVar str -> failwith "Sort conversion requested for sort variable!"
 ;;
 
 let sort_to_pol sort = Mono (Sort.to_string sort);;
 
-let make_polsort str =
+let make_polsort str ?(index = None) =
   let len = String.length str in
   if str.[0] = '?' then SVar (String.sub str 1 (len - 1))
-  else Mono str
+  else
+    match index with
+      None -> Mono str
+    | Some i -> MonoIndexed(str,i)
 ;;
 
 (* Comparing to / turning into monomorphic fixed declarations *)

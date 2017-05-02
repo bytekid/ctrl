@@ -109,7 +109,7 @@ module type SPECIALDECLARATION = sig
   val output_sort : t -> polsort
   val is_normal_sortdec : t -> bool
   val make_normal_sortdec : t -> sd
-  val make_polsort : string -> polsort
+  val make_polsort : string -> ?index:int option -> polsort
   val sort_to_pol : sort -> polsort
   val pol_to_sort : polsort -> sort
   val is_polymorphic : polsort -> bool 

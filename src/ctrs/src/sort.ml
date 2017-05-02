@@ -32,10 +32,19 @@ let hash = Hashtbl.hash;;
 let compare = compare;;
 let equal f g = compare f g = 0;;
 
+let is_indexed = function Fixed _ -> false | _ -> true;;
+
+let index = function
+    Indexed (_ , i) -> i
+  | _ -> failwith "Index requested for unindexed sort has no index"
+;;
+
 (* Printers *)
 let to_string = function
     Fixed s -> s
-  | Indexed(s,i) -> "(_ " ^ s ^ " " ^ (string_of_int i) ^ ")"
+  | Indexed(s,i) ->
+    let j = if i < 0 then 8 else i in
+    "(_ " ^ s ^ " " ^ (string_of_int j) ^ ")"
 ;;
 
 let fprintf fmt f = Format.fprintf fmt "@[%s@]" (to_string f);;

@@ -297,9 +297,10 @@ module type SPECIALDECLARATION = sig
 
   (** {3 Dealing with polymorphic sorts} *)
 
-  val make_polsort : string -> polsort
-  (** [make_polsort str] makes a possibly polymorphic sort from the
-  given string; here, ?A maps to the sort variable A. *)
+  val make_polsort : string -> ?index:int option -> polsort
+  (** [make_polsort str i] makes a possibly polymorphic sort from the
+  given string; here, ?A maps to the sort variable A. The optional parameter
+  i allows to index the sort. *)
   val sort_to_pol : sort -> polsort
   (** [sort_to_pol str] creates a "polsort" from the given sort *)
   val pol_to_sort : polsort -> sort
