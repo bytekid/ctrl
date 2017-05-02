@@ -76,7 +76,10 @@ module State = struct
 end;;
 
 module Parser = Parsec.MakeStatefulCharParser(Parsec.StringInput)(State)
+
+(* abbreviation *)
 module P = Parser;;
+module Sdec = Specialdeclaration;;
 
 (* NOTE: the state is used to keep track of infix symbols and the
 corresponding chains.
@@ -118,6 +121,11 @@ let ident_with_array = (Parser.many1 (Parser.noneof " \t\n\r(),;[]") >>= functio
 ;;
 
 let number = Parser.many1 Parser.digit <?> "non-negative integer"
+
+let integer =
+  Parser.lex number >>= fun n ->
+  Parser.return (int_of_string (String.of_char_list n))
+;;
 
 let sortident = (Parser.many1 (Parser.noneof " \t\n\r(),.:;[]^*<>?") >>=
   fun i ->Parser.return i) <?> "sort"
@@ -424,7 +432,6 @@ let register_mixed bo bc normal special a =
 
 (* save the given symbol information in the alphabet *)
 let register_declaration name sd logical =
-  Format.printf "register %s\n%!" name;
   let variable, monomorphic, normal, special =
     match sd with
       | None -> (false, true, None, None)
@@ -505,8 +512,7 @@ let register_declaration name sd logical =
 (* infix = (infix <num>) | (l-infix <num>) | (r-infix <num>) *)
 let parse_infix name ret =
   let infix_main kind =
-    Parser.lex number >>= fun i ->
-    let n = int_of_string (String.of_char_list i) in
+    integer >>= fun n ->
     Parser.lex (Parser.char ')') >>= fun _ ->
     register_infix name (n, kind) >>
     Parser.return (name, ret)
@@ -531,12 +537,17 @@ let parse_infix name ret =
    converted to a normal declaration)
 *)
 let parse_sortdec =
+  let nums = integer <|> (P.char '_' >> P.return (-1)) in
   (* possibly polymorphic sort *)
   let psort =
-    P.lex (P.option [] (P.string "?") >>= fun p ->
-      parse_identifier sortident >>= fun id ->
-      P.return (Specialdeclaration.make_polsort (String.of_char_list p ^ id)))
-    <?> "sort"
+    let id = P.lex (parse_identifier sortident) in
+    P.lex (
+      ((P.option [] (P.string "?") >>= fun p -> id >>= fun n ->
+      P.return (Sdec.make_polsort (String.of_char_list p ^ n) ~index:None))
+        <?> "sort")
+      <|> (
+        P.char '(' >> id >>= fun n -> nums >>= fun i -> P.char ')' >>
+        P.return (Sdec.make_polsort n ~index:(Some i))))
   in
   let arglist =
     let star = P.lex (P.char '*') in
