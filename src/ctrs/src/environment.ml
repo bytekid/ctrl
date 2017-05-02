@@ -97,7 +97,7 @@ let generate_var_name bound sortname funnames env =
                    (not (mem_var_name name env)) in
   let letter =
     if sortname = "" then "x"
-    else String.sub sortname 0 1
+    else if String.get sortname 0 = '(' then "b" else String.sub sortname 0 1
   in
   let start = if bound then "_" ^ letter else letter in
   let rec attempt i =
