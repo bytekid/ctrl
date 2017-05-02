@@ -168,49 +168,22 @@ let print_as_smt term renamings translations e =
                print_exists term
 ;;
 
-
-(* turns the given expressions into an SMT-input file, using
-[tostr] as the method to convert an expression to SMT-format *)
-let create_smt_file env params exprs tostr logic =
-  let build_param var = "(" ^ (Variable.find_name var) ^
-       " " ^ (Sort.to_string (Environment.find_sort var env)) ^ ")"
-  in
-  let build_formula f = ":assumption " ^ (tostr f) in
-  let ret = "(benchmark none\n:logic " ^ logic ^ "\n:extrafuns (" in
-  let ret = ret ^ (List.implode build_param " " params) ^ ")\n" in
-  let ret = ret ^ (List.implode build_formula "\n" exprs) in
-  ret ^ "\n:formula true\n)\n"
-;;
-
-(* turns the given combination into an SMT-input file *)
-let print_file vars formulas logic =
-  let print_var_type (xname, xtype) = "(" ^ xname ^ " " ^ xtype ^ ")" in
-  let f formula rest = ":assumption " ^ formula ^ "\n" ^ rest in
-  let assumptions = List.fold_right f formulas "" in
-  "(benchmark none\n" ^
-  ":logic " ^ logic ^ "\n" ^
-  ":extrafuns (" ^ (List.implode print_var_type " " vars) ^ ")\n" ^
-  assumptions ^
-  ":formula true\n)"
-;;
-
-
 (* turns the given expressions into an SMT-input file, using
 [tostr] as the method to convert an expression to SMT-format, SMTLIB v.2.0 *)
-let create_smt_file2 env params exprs tostr logic =
+let create_smt_file env params exprs tostr logic =
   let build_param v =
     "(declare-const " ^ (Variable.find_name v) ^ " " ^
     (Sort.to_string (Environment.find_sort v env)) ^ ")\n"
   in
   let build_formula f = "(assert " ^ (tostr f) ^ ")\n" in
   (*"(set-logic " ^ logic ^ ")\n" ^*) (* skip logic for now *)
-  (List.implode build_param " " params) ^ ")\n" ^
+  (List.implode build_param " " params) ^ "\n" ^
   (List.implode build_formula "\n" exprs) ^
   "(check-sat)\n"
 ;;
 
 (* turns the given combination into SMTLIB v.2.0 *)
-let print_file2 vars formulas logic =
+let print_file vars formulas logic =
   let print_var_type (xn, xt) = "(declare-const " ^ xn ^ " " ^ xt ^ ")\n" in
   let f formula rest = "(assert " ^ formula ^ ")\n" ^ rest in
   let assertions = List.fold_right f formulas "" in
@@ -290,7 +263,7 @@ let check_formulas terms (solver, logic) renamings translations a e =
   let vars = List.unique (List.flat_map (get_variables e) terms) in
   let print term = print_as_smt term renamings translations e in
   let formulas = List.map print terms in
-  let contents = print_file2 vars formulas logic in
+  let contents = print_file vars formulas logic in
   check_smt_file_and_parse contents solver e a
 ;;
 
