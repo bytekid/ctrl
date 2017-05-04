@@ -43,7 +43,7 @@ let index = function
 let to_string = function
     Fixed s -> s
   | Indexed(s,i) ->
-    let j = if i < 0 then 8 else i in
+    let j = if i < 0 then 32 else i in
     "(_ " ^ s ^ " " ^ (string_of_int j) ^ ")"
 ;;
 
