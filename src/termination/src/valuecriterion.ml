@@ -476,7 +476,7 @@ let basic_process verbose prob =
                                        neg eq rel sort tstrict dps in
           let fullreqs = List.append basereqs dpreqs in
           match Solver.satisfiable_formulas fullreqs (smt ()) env with
-            | (Smtresults.SAT, gamma) -> 
+            | (Smtresults.SAT, gamma) ->
               let strictinfo =
                 let isset x =
                   Term.root (Substitution.find x gamma) = Some top in
@@ -490,8 +490,8 @@ let basic_process verbose prob =
                 Printf.printf "%s.\n" ("Failure using the basic " ^
                   "value criterion for sort " ^ (Sort.to_string sort)
                   ^ " and relation " ^ (Function.to_string rel)) ;
-              Environment.drop env ;
-              None
+              (*Environment.drop env ;*)
+              try_each_relation vee neg eq tl
       in
       try_each_relation vee neg eq (Alphabet.get_wellfounded sort alf)
   in
