@@ -1,54 +1,64 @@
 INCLUDE ints ;
 
 DECLARE
-  !BITVECTOR : BitVec                             ;
-  !=          : BitVec * BitVec => Bool (infix 70)    ;
-  i<=         : BitVec * BitVec => Bool (infix 70)    ;
-  i>=         : BitVec * BitVec => Bool (infix 70)    ;
-  i<          : BitVec * BitVec => Bool (infix 70)    ;
-  i>          : BitVec * BitVec => Bool (infix 70)    ;
-  u<=         : BitVec * BitVec => Bool (infix 70)    ;
-  u>=         : BitVec * BitVec => Bool (infix 70)    ;
-  u<          : BitVec * BitVec => Bool (infix 70)    ;
-  u>          : BitVec * BitVec => Bool (infix 70)    ;
+  !BITVECTOR : (BitVec _)                             ;
+  !=          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  i<=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  i>=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  i<          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  i>          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  u<=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  u>=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  u<          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
+  u>          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
 
-  ~           : BitVec => BitVec;
-  &           : BitVec * BitVec => BitVec (l-infix 150) ;
-  |           : BitVec * BitVec => BitVec (l-infix 100) ;
-  ^           : BitVec * BitVec => BitVec (l-infix 100) ;
+  ~           : (BitVec _) => (BitVec _);
+  &           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150) ;
+  |           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 100) ;
+  ^           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 100) ;
 
-  neg         : BitVec => BitVec;
-  +i          : BitVec * BitVec => BitVec (l-infix 100);
-  -i          : BitVec * BitVec => BitVec (l-infix 100);
-  <<          : BitVec * BitVec => BitVec (r-infix 100);
+  neg         : (BitVec _) => (BitVec _);
+  +i          : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 100);
+  -i          : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 100);
+  *i          : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150);
+  /           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150);
+  /u           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150);
+  %           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150);
+  %u           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150);
+  <<          : (BitVec _) * (BitVec _) => (BitVec _) (r-infix 100);
 
-  #x0: BitVec;
-  #x1: BitVec;
-  #xff: BitVec;
+  #x00000000: (BitVec _);
+  #x00000001: (BitVec _);
+  #x00000002: (BitVec _);
+  #x00000003: (BitVec _);
+  #xfffffffe: (BitVec _);
+  #xffffffff: (BitVec _);
 
-  absbv : BitVec => BitVec ;
-  ashr_th : BitVec * BitVec => BitVec;
-  computeKnownZeroBits : BitVec => BitVec;
-  countLeadingZeros : BitVec => BitVec;
-  countTrailingZeros : BitVec => BitVec;
+  abs_th : (BitVec _) => (BitVec _) ;
+  ashr_th : (BitVec _) * (BitVec _) => (BitVec _);
+  computeKnownZeroBits : (BitVec _) => (BitVec _);
+  countLeadingZeros : (BitVec _) => (BitVec _);
+  countTrailingZeros : (BitVec _) => (BitVec _);
   hasOneUse : Bool;
-  isPowerOf2 : BitVec => Bool;
-  isPowerOf2OrZero : BitVec => Bool;
-  isShiftedMask : BitVec => Bool;
-  isSignBit : BitVec => Bool;
-  lshr_th : BitVec * BitVec => BitVec;
-  log2 : BitVec => BitVec;
-  MaskedValueIsZero : BitVec * BitVec => Bool;
-  sext : BitVec => BitVec;
-  sext_i1 : BitVec => BitVec;
-  trunc : BitVec => BitVec;
-  umax : BitVec * BitVec => BitVec;
-  width : BitVec => BitVec;
-  WillNotOverflowSignedAdd : BitVec * BitVec => Bool;
-  WillNotOverflowSignedSub : BitVec * BitVec => Bool;
-  WillNotOverflowUnsignedAdd : BitVec * BitVec => Bool;
-  WillNotOverflowUnsignedSub : BitVec * BitVec => Bool;
-  zext_i1 : BitVec => BitVec;
+  isPowerOf2 : (BitVec _) => Bool;
+  isPowerOf2OrZero : (BitVec _) => Bool;
+  isShiftedMask : (BitVec _) => Bool;
+  isSignBit : (BitVec _) => Bool;
+  lshr_th : (BitVec _) * (BitVec _) => (BitVec _);
+  log2_th : (BitVec _) => (BitVec _);
+  MaskedValueIsZero : (BitVec _) * (BitVec _) => Bool;
+  trunc_th : (BitVec _) => (BitVec _);
+  width : (BitVec _) => (BitVec _);
+  WillNotOverflowSignedAdd : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowSignedMul : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowSignedSub : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowUnsignedAdd : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowUnsignedMul : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowUnsignedShl : (BitVec _) * (BitVec _) => Bool;
+  WillNotOverflowUnsignedSub : (BitVec _) * (BitVec _) => Bool;
+
+
+WELLFOUNDED i>, u> ;
 
 SMT-RENAMINGS
   i< 		-> bvslt;
@@ -62,33 +72,48 @@ SMT-RENAMINGS
 
   +i 		-> bvadd;
   -i  	-> bvsub;
+  *i 		-> bvmul;
+  / 		-> bvdiv;
+  /u 		-> bvudiv;
+  % 		-> bvsrem;
+  %u 		-> bvurem;
+
+  << 		-> bvshl;
 
   ~  	-> bvnot;
   &  	-> bvand;
   |  	-> bvor;
+  ^  	-> bvxor;
+
+  hasOneUse -> true;
 
 SMT-TRANSLATIONS
   !=(x, y) -> (not (= x y));
-  absbv(x,y) -> (ite (bvsgt x y) x y);    /* FIXME: is this really supposed to be signed? */
+  abs_th(x) -> (ite (bvuge x #x00000000) x (bvneg x)); /* only for constants, hence unsigned */
   ashr_th(x,y) -> (bvashr x y);           /* not in SMT-LIB but accepted by Z3 */
-  computeKnownZeroBits(x) -> (bvadd #x0 #x0);         /* FIXME: how to do better? */
-  countLeadingZeros(x) -> (+ 0 0);              /* FIXME: how to do better? */
-  countTrailingZeros(x) -> (+ 0 0);             /* FIXME: how to do better? */
-  isPowerOf2(x) -> (and (= (bvand x (bvsub x #x1)) #x0) (not (= x #x0))) ;
-  isPowerOf2OrZero(x) -> (= (bvand x (bvsub x #x1)) #x0);
-  isShiftedMask(x) -> (= x x);              /* FIXME: how to write true or do better? */
-  isSignBit(x) -> (= 1 (sign x));
-  log2(x) -> (ite (= x #x1) #x0 (ite (= x #x2) #x1 (ite (= x #x4) #x2 (ite (= x #x8) #x3 (ite (= x #x10) #x4 (ite (= x #20) #x5 (ite (= x #40) #x6 #x7)))))))
+  computeKnownZeroBits(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
+  countLeadingZeros(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
+  countTrailingZeros(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
+  isPowerOf2(x) -> (and (= (bvand x (bvsub x #x00000001)) #x00000000) (not (= x #x00000000))) ;
+  isPowerOf2OrZero(x) -> (= (bvand x (bvsub x #x00000001)) #x00000000) ;
+  isShiftedMask(x) -> (let ((vv (bvor (bvsub x #x00000001) x))) (and (not (= vv #x00000000)) (= #x00000000 (bvand vv (bvadd vv #x00000001)))));
+  isSignBit(x) -> (= ((_ extract 7 7) x) #x1);
+  log2_th(x) -> (ite (= x #x00000001) #x00000000 #x00000000);
   lshr_th(x,y) -> (bvlshr x y);
+  MaskedValueIsZero(x,y) -> (= (bvand x y) #x00000000);
   neg(x) -> (bvneg x) ;
-  MaskedValueIsZero(x, m) -> (= (bvand x m) (nat2bv8 0));
-  sign(x) -> (extract 7 7 x) ;
-  WillNotOverflowSignedAdd(x,y) -> (not (and (= (sign x) #x0) (= (sign y) #x0) (= (sign (bvadd x y)) #x1) ) );
-  WillNotOverflowSignedSub(x,y) -> (not (and (= (sign x) #x1) (= (sign y) #x0) (= (sign (bvadd x y)) #x0) ) );
-  WillNotOverflowUnsignedAdd(x,y) -> (not (and (or (= (sign x) #x1) (= (sign y) #x1)) (= (sign (bvadd x y)) #x0) ) );
-  WillNotOverflowUnsignedSub(x,y) -> (not (and (or (= (sign x) #x0) (= (sign y) #x1)) (= (sign (bvadd x y)) #x1) ) );
-  sext(x) -> x ; /* FIXME: how to deal with bitvectors of different sizes? */
-  sext_i1(x) -> x ; /* FIXME: how to deal with bitvectors of different sizes? */
-  zext_i1(x) -> x ; /* FIXME: how to deal with bitvectors of different sizes? */
-  trunc(x) -> x ; /* FIXME: how to deal with bitvectors of different sizes? */
-  width(x) -> #x8; /* FIXME: how to deal with bitvectors of different sizes? */
+  WillNotOverflowSignedAdd(x,y) -> (= (bvadd ((_ sign_extend 1) x) ((_ sign_extend 1) y)) ((_ sign_extend 1) (bvadd x y)));
+  WillNotOverflowUnsignedAdd(x,y) -> (= (bvadd ((_ zero_extend 1) x) ((_ zero_extend 1) y)) ((_ zero_extend 1) (bvadd x y)));
+  WillNotOverflowSignedSub(x,y) -> (= (bvsub ((_ sign_extend 1) x) ((_ sign_extend 1) y)) ((_ sign_extend 1) (bvsub x y)));
+  WillNotOverflowUnsignedSub(x,y) -> (= (bvsub ((_ zero_extend 1) x) ((_ zero_extend 1) y)) ((_ zero_extend 1) (bvsub x y)));
+  WillNotOverflowSignedMul(x,y) -> (= (bvmul ((_ sign_extend 32) x) ((_ sign_extend 32) y)) ((_ sign_extend 32) (bvmul x y)));
+  WillNotOverflowUnsignedMul(x,y) -> (= (bvmul ((_ zero_extend 32) x) ((_ zero_extend 32) y)) ((_ zero_extend 32) (bvmul x y)));
+
+  sext_i1(x) -> ((_ sign_extend 7) x);
+  zext_i1(x) -> ((_ zero_extend 7) x);
+  sexti11(x) -> ((_ sign_extend 7) x);
+  zexti11(x) -> ((_ zero_extend 7) x);
+
+  trunc_th(x) -> ((_ zero_extend 0) x) ; /* FIXME: how to deal with bitvectors of different sizes? */
+  width(x) -> ((_ zero_extend 0) #x00000020); /* FIXME: how to deal with bitvectors of different sizes? */
+  
