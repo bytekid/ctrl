@@ -1,8 +1,8 @@
 **/build/*
 **/build/*/*
-*.cmi
-*.cmx
-*.log
+**/*.cmi
+**/*.cmx
+**/*.log
 **/*.o
 **/*.a
 
