@@ -86,6 +86,14 @@ let of_function f =
   gen 0
 ;;
 
+let of_function_with f init =
+  let rec gen xs i = lazy(match f i xs with
+    | Some x -> Cons(x,gen x (i+1))
+    | None   -> Nil
+  ) in
+  gen init 0
+;;
+
 let of_string s = of_function(fun i ->
   if i < String.length s then Some(s.[i])
                          else None

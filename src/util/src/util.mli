@@ -1951,6 +1951,11 @@ module LazyList : sig
  [0], [1], [2], ... As long as [f i] generates [Some x], [x] is
  used as [i]th element of the resulting lazy list. The list ends
  as soon as [None] is returned. *)
+ val of_function_with : (int -> 'a -> 'a option) -> 'a -> 'a t
+ (** [of_function f init] applies the function [f] in turn to the values
+ [0] and [init], [1] and [Option.the (f 0)], [2] and [Option.the (f 1)], ... .
+ As long as [f] generates [Some x], [x] is used as [i]th element of the
+ resulting lazy list. The list ends as soon as [None] is returned. *)
  val of_list : 'a list -> 'a t
  (** [of_list xs] transforms the given list [xs] into a lazy list. *)
  val of_string : string -> char t
