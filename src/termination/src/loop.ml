@@ -106,16 +106,28 @@ let small c (st,_,_) =
 (* Checking whether the sequence does not exceed the maximal length. *)
 let short c (_,rs,_) = List.length rs <= c.max_length
 
+(* Check whether constraints cs are satisfiable. *)
+let constr_sat ctxt cs =
+  let mk_fun = Term.make_function ctxt.alph ctxt.env in
+  let conj = Alph.get_and_symbol ctxt.alph in
+  let top = mk_fun (Alph.get_top_symbol ctxt.alph) [] in
+  let conj_cs = List.fold_left (fun a b -> mk_fun conj [a; b]) top cs in
+  if Term.check_logical_term ctxt.alph conj_cs <> None then false
+  else Smt.Solver.satisfiable [conj_cs] (smt ()) ctxt.env
+;;
+
 (* Do forward narrowing from last terms in sequences, trying all possible
    rules and positions but eliminating sequences that exceed the bounds. *)
 let all_forward c trs _ seqs =
-  let seqs' = LL.filter (fun seq -> small c seq && short c seq) seqs in
+  let cs (rl,_,tau) = L.map (Sub.apply_term tau) (Rule.constraints rl) in
+  let useful seq = small c seq && short c seq && (constr_sat c (cs seq)) in
+  let seqs' = LL.filter useful seqs in
   let seqs'' = LL.concat (LL.map (forward c trs) seqs') in
   if LL.null seqs'' then None else Some seqs''
 ;;
 
 (* Given constraints cs, check whether cs => cs sigma is valid. *)
-let constr_imp_valid ctxt cs sigma =
+let subst_constr_valid ctxt cs sigma =
   let mk_fun = Term.make_function ctxt.alph ctxt.env in
   let conj = Alph.get_and_symbol ctxt.alph in
   let disj = Alph.get_or_symbol ctxt.alph in
@@ -136,18 +148,20 @@ let check ctxt ((rule, rs, sigma) as seq) =
   (*Format.printf "check %s\n%!" (sequence_to_string seq);*)
   let (s, t) = Rule.to_terms rule in
   let cs = Rule.constraints rule in
-  let check t' =
-    try
-      let tau = Elogic.match_term t' s in
-      let sigma' = Sub.compose Sub.apply_term sigma tau in
-      if constr_imp_valid ctxt cs sigma' then [seq]
-      else
-        let tau =  Elogic.unify s t' in
+  if not (constr_sat ctxt cs) then LL.empty
+  else
+    let check t' =
+      try
+        let tau = Elogic.match_term t' s in
         let sigma' = Sub.compose Sub.apply_term sigma tau in
-        if not (constr_imp_valid ctxt cs sigma') then []
-        else [ Rule.apply_sub tau rule, rs, sigma' ]
+        if subst_constr_valid ctxt cs sigma' then [seq]
+        else
+          let tau =  Elogic.unify s t' in
+          let sigma' = Sub.compose Sub.apply_term sigma tau in
+          if not (subst_constr_valid ctxt cs sigma') then []
+          else [ Rule.apply_sub tau rule, rs, sigma' ]
       with Elogic.Not_unifiable | Elogic.Not_matchable -> []
-  in LL.of_list (L.flat_map check (Term.subterms t))
+    in LL.of_list (L.flat_map check (Term.subterms t))
 ;;
 
 (* The initial sequence, starting from a rule. *)
@@ -165,6 +179,7 @@ let generate_loops ctxt rules step =
 
 (* Main functionality *)
 let process verbose prob =
+  (*Format.printf "Go looping!\n%!";*)
   let rules = Dpproblem.get_dps prob in (* FIXME incorporate weak rules *)
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
@@ -173,8 +188,12 @@ let process verbose prob =
   if LL.null loops then 
     None
   else (
-    let s = explanation ( LL.hd loops) in
-    Format.printf "%s\n" s;
-    Some ([ ], s))
+    (*let rec print xs =
+      if not (LL.null xs) then
+      let s = explanation (LL.hd xs) in
+      (*Format.printf "%s\n" s;*)
+      print (LL.tl xs)
+    in print loops;*)
+    Some ([ ],  explanation (LL.hd loops)))
 ;;
 
