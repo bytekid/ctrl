@@ -6,6 +6,7 @@ FILES := \
   dpgraph.ml \
   dpframework.ml \
   dpproblem.ml \
+  loop.ml \
   subtermcriterion.ml \
   terminator.ml \
   valuecriterion.ml

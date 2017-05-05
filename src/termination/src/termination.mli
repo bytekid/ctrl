@@ -221,6 +221,13 @@ module Subtermcriterion : sig
   processor on the given problem *)
 end
 
+(** {2 Module Loop} *)
+
+module Loop : sig
+  val process : bool -> Dpproblem.t -> (Dpproblem.t list * string) option
+  (* [process verbose prob] applies the loop processor on the given problem *)
+end
+
 (** {2 Module Terminator} *)
 
 (** This module is used to interface with the SMT-solver. *)

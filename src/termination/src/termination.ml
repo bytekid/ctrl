@@ -23,5 +23,6 @@ module Chainer = Terminationx.Chainer;;
 module Valuecriterion = Terminationx.Valuecriterion;;
 module Subtermcriterion = Terminationx.Subtermcriterion;;
 module Dpframework = Terminationx.Dpframework;;
+module Loop = Terminationx.Loop;;
 module Terminator = Terminationx.Terminator;;
 
