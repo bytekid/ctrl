@@ -63,7 +63,6 @@ let run _ =
       Printer.print_constrained_reduction reduction ;
       Printer.flush ()
     | Reader.Termination full ->
-      Format.printf "termination\n%!";
       let verbose = Util.query_debugging () in
       let trs = Trs.get_current () in
       let (answer, comments) = Terminator.check verbose full trs in
