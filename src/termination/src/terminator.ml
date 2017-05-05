@@ -29,12 +29,14 @@ type possible_results = TERMINATING | NONTERMINATING | UNKNOWN;;
 
 (*** FUNCTIONS ***************************************************************)
 
-let processor_order = [Dpproblem.graph_proc;
-                       (*Chainer.gcnf_process;*)
-                       Valuecriterion.basic_process;
-                       Valuecriterion.reverse_process;
-                       Subtermcriterion.process;
-                       Valuecriterion.extended_process];;
+let termination_procs = [Dpproblem.graph_proc;
+                         (*Chainer.gcnf_process;*)
+                         Valuecriterion.basic_process;
+                         Valuecriterion.reverse_process;
+                         Subtermcriterion.process;
+                         Valuecriterion.extended_process];;
+let nontermination_procs = [Dpproblem.graph_proc;
+                            Loop.process];;
 
 let check_dps framework original_rules verbose =
   let rec try_p lst (problem : Dpproblem.t) =
@@ -46,8 +48,8 @@ let check_dps framework original_rules verbose =
           | None -> try_p rest problem
     )
   in
-  let rec repeat f dpf txt =
-    if Dpframework.solved dpf then (TERMINATING, txt)
+  let rec repeat f dpf txt answer =
+    if Dpframework.solved dpf then (answer, txt)
     else
       let (problem, dp) = Dpframework.pop dpf in
       let probdesc = Dpproblem.tostring problem in
@@ -58,7 +60,7 @@ let check_dps framework original_rules verbose =
           if verbose then Printf.printf "We cannot handle this DP problem.\n" ;
           (UNKNOWN, txt)
         | Some (result, expl) ->
-          repeat f (Dpframework.push_all dp result) (txt ^ expl)
+          repeat f (Dpframework.push_all dp result) (txt ^ expl) answer
   in
   let init_innermost framework =
     if Dpframework.solved framework then ("", framework) else
@@ -69,7 +71,11 @@ let check_dps framework original_rules verbose =
         (expl, Dpframework.push_all framework result)
   in
   let (txt, framework) = init_innermost framework in
-  repeat (try_p processor_order) framework txt
+  let ((answer,_) as res) =
+    repeat (try_p termination_procs) framework txt TERMINATING
+  in 
+  if answer <> UNKNOWN then res
+  else repeat (try_p nontermination_procs) framework txt NONTERMINATING
 ;;
 
 let check_extended verbose trs rules =
