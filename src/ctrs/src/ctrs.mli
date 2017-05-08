@@ -993,6 +993,9 @@ module type TERM = sig
   (** [subterm_with_binders p t] returns the subterm of [t] at position [p],
   together with a list of variables which are free in the subterm but bound
   in the original *)
+  val logical_cap : Alphabet.t -> Environment.t -> t -> t
+  (** [logical_cap alph env t] replaces all non-variable subterms of nonlogical
+  sort by a fresh variable. *)
 
   (** {3 Term Symbols} *)
 

@@ -310,6 +310,7 @@ module type TERM = sig
   val reverse : t -> t
   val subterm : Position.t -> t -> t
   val subterm_with_binders : Position.t -> t -> Variable.t list * t
+  val logical_cap : Alphabet.t -> Environment.t -> t -> t
   val cons : t -> func list
   val funs : t -> func list
   val root : t -> func option

@@ -538,6 +538,22 @@ let make_function a e f ts =
       make_instance f ts sd
 ;;
 
+let rec logical_cap alph env t =
+  let s = get_sort alph env t in
+  let var () = make_var (Environment.create_sorted_var s [] env) in
+  if not (List.mem s (Alphabet.find_logical_sorts alph)) then var ()
+  else match t with
+    | Var _ -> t
+    | Fun (f, ts) ->
+      if (Alphabet.find_symbol_kind f alph) = Alphabet.Terms then var ()
+      else Fun (f, List.map (logical_cap alph env) ts)
+    | InstanceFun (f, ts, d) ->
+      if (Alphabet.find_symbol_kind f alph) = Alphabet.Terms then var ()
+      else InstanceFun (f, List.map (logical_cap alph env) ts, d)
+    | Forall (x,t) -> Forall (x, logical_cap alph env t)
+    | Exists (x,t) -> Exists (x, logical_cap alph env t)
+;;
+
 (* Parsers *)
 
 let (>>=) = Parser.(>>=);;
