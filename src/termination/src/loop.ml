@@ -27,6 +27,7 @@ module Sub = Substitution
 module P = Io.Printer
 module Alph = Alphabet
 module Rewriter = Rewriting.Rewriter
+module Pos = Position
 
 (*** TYPES ********************************************************************)
 (* context *)
@@ -93,9 +94,11 @@ let narrow c ((st, rs,sigma) as seq) p rule =
 
 (* Do forward narrowing using rules in trs from last terms in sequence, trying
    all possible rules and positions. *)
-let forward c trs ((st,rs,_) as seq) =
-  let at_pos p = L.flat_map (narrow c seq p) trs in
-  LL.of_list (L.flat_map at_pos (Term.funs_pos (Rule.rhs st)))
+let forward c (rules_root, rules_below) ((st,rs,_) as seq) =
+  let rlps_root = List.map (Util.Pair.make Pos.root) rules_root in
+  let ps = L.remove Pos.root (Term.funs_pos (Rule.rhs st)) in
+  let rlps = rlps_root @ (L.product ps rules_below) in
+  LL.of_list (L.flat_map (fun (p,rl) -> narrow c seq p rl) rlps)
 ;;
 
 (* Checking whether the sequence does not exceed the maximal term size. *)
@@ -118,11 +121,11 @@ let constr_sat ctxt cs =
 
 (* Do forward narrowing from last terms in sequences, trying all possible
    rules and positions but eliminating sequences that exceed the bounds. *)
-let all_forward c trs _ seqs =
+let all_forward c rules _ seqs =
   let cs (rl,_,tau) = L.map (Sub.apply_term tau) (Rule.constraints rl) in
   let useful seq = small c seq && short c seq && (constr_sat c (cs seq)) in
   let seqs' = LL.filter useful seqs in
-  let seqs'' = LL.concat (LL.map (forward c trs) seqs') in
+  let seqs'' = LL.concat (LL.map (forward c rules) seqs') in
   if LL.null seqs'' then None else Some seqs''
 ;;
 
@@ -170,8 +173,8 @@ let init_seq rule = (rule, [rule, Position.root], Sub.empty)
 (* Generates loops, starting from rule set rules and using the step function
    to extend sequences.
 *)
-let generate_loops ctxt rules step =
-  let init_seqs = LL.of_list (List.map init_seq rules) in
+let generate_loops ctxt start_rules step =
+  let init_seqs = LL.of_list (List.map init_seq start_rules) in
   let seqs = LL.concat (LL.of_function_with step init_seqs) in
   let loops = LL.concat (LL.map (check ctxt) (LL.append init_seqs seqs)) in
   loops
@@ -180,20 +183,21 @@ let generate_loops ctxt rules step =
 (* Main functionality *)
 let process verbose prob =
   (*Format.printf "Go looping!\n%!";*)
-  let rules = Dpproblem.get_dps prob in (* FIXME incorporate weak rules *)
+  let dps = Dpproblem.get_dps prob in
+  let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let ctxt = mk_ctxt alph env 3 25 in
-  let loops = generate_loops ctxt rules (all_forward ctxt rules) in
+  let ctxt = mk_ctxt alph env 2 25 in
+  let loops = generate_loops ctxt dps (all_forward ctxt (dps, rules)) in
   if LL.null loops then 
     None
   else (
-    (*let rec print xs =
+    let rec print xs =
       if not (LL.null xs) then
       let s = explanation (LL.hd xs) in
-      (*Format.printf "%s\n" s;*)
+      Format.printf "%s\n" s;
       print (LL.tl xs)
-    in print loops;*)
+    in print loops;
     Some ([ ],  explanation (LL.hd loops)))
 ;;
 
