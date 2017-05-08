@@ -47,6 +47,7 @@ DECLARE
   lshr_th : (BitVec _) * (BitVec _) => (BitVec _);
   log2_th : (BitVec _) => (BitVec _);
   MaskedValueIsZero : (BitVec _) * (BitVec _) => Bool;
+  sext_th : (BitVec _) => (BitVec _);
   trunc_th : (BitVec _) => (BitVec _);
   width : (BitVec _) => (BitVec _);
   WillNotOverflowSignedAdd : (BitVec _) * (BitVec _) => Bool;
@@ -56,6 +57,7 @@ DECLARE
   WillNotOverflowUnsignedMul : (BitVec _) * (BitVec _) => Bool;
   WillNotOverflowUnsignedShl : (BitVec _) * (BitVec _) => Bool;
   WillNotOverflowUnsignedSub : (BitVec _) * (BitVec _) => Bool;
+  zext_th : (BitVec _) => (BitVec _);
 
 
 WELLFOUNDED i>, u> ;
