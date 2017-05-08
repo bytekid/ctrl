@@ -66,9 +66,10 @@ let constraints_to_string = function
 
 (* String representation of loop, with explanation. *)
 let explanation ((rl,_,_) as loop) =
+  let cs = Rule.constraints rl in
   "We use the loop processor to conclude nontermination.\n" ^
   "The loop is given by the sequence \n" ^ (sequence_to_string loop) ^ "\n" ^
-  "with constraints " ^ (constraints_to_string (Rule.constraints rl))
+  (if cs = [] then "" else " with constraints " ^ (constraints_to_string cs))
 ;;
 
 (* Shorthand to rename a rule. *)
@@ -107,7 +108,7 @@ let small c (st,_,_) =
 ;;
 
 (* Checking whether the sequence does not exceed the maximal length. *)
-let short c (_,rs,_) = List.length rs <= c.max_length
+let short c (_,rs,_) = List.length rs < c.max_length
 
 (* Check whether constraints cs are satisfiable. *)
 let constr_sat ctxt cs =
@@ -115,8 +116,14 @@ let constr_sat ctxt cs =
   let conj = Alph.get_and_symbol ctxt.alph in
   let top = mk_fun (Alph.get_top_symbol ctxt.alph) [] in
   let conj_cs = List.fold_left (fun a b -> mk_fun conj [a; b]) top cs in
-  if Term.check_logical_term ctxt.alph conj_cs <> None then false
-  else Smt.Solver.satisfiable [conj_cs] (smt ()) ctxt.env
+  let not_logical = Term.check_logical_term ctxt.alph conj_cs <> None in
+  (*Format.printf " %s\n  logical? %i %!\n" (P.to_string_term conj_cs)
+    (if not_logical then 0 else 1);*)
+  if not_logical then false
+  else (
+     let r = Smt.Solver.satisfiable [conj_cs] (smt ()) ctxt.env in
+     (*Format.printf "  sat ? %i\n%!" (if r then 1 else 0);*)
+     r)
 ;;
 
 (* Do forward narrowing from last terms in sequences, trying all possible
@@ -129,41 +136,67 @@ let all_forward c rules _ seqs =
   if LL.null seqs'' then None else Some seqs''
 ;;
 
-(* Given constraints cs, check whether cs => cs sigma is valid. *)
-let subst_constr_valid ctxt cs sigma =
+let conjunction ctxt =
   let mk_fun = Term.make_function ctxt.alph ctxt.env in
   let conj = Alph.get_and_symbol ctxt.alph in
+  let top = mk_fun (Alph.get_top_symbol ctxt.alph) [] in
+  function
+    | [] -> top
+    | c :: cs -> List.fold_left (fun a b -> mk_fun conj [a; b]) c cs
+;;
+
+(* Given constraints cs, check whether cs => cs sigma is valid. *)
+let subst_constr_valid ctxt cs sigma =
+  (*Sub.iter (fun x t -> Format.printf " %s -> %s\n"
+    (P.to_string_term (Term.make_var x)) (P.to_string_term t)) sigma;*)
+  let mk_fun = Term.make_function ctxt.alph ctxt.env in
   let disj = Alph.get_or_symbol ctxt.alph in
   let neg = Alph.get_not_symbol ctxt.alph in
-  let top = mk_fun (Alph.get_top_symbol ctxt.alph) [] in 
-  let conjunction = List.fold_left (fun a b -> mk_fun conj [a; b]) top in
-  let c1 = conjunction cs in
+  let c1 = conjunction ctxt cs in
   let c2 = Sub.apply_term sigma c1 in
   let c = mk_fun disj [mk_fun neg [c1]; c2] in
-  (*Format.printf "checking %s\n%!" (P.to_string_term c);*)
-  Smt.Solver.valid [c] (smt ()) ctxt.env
+  let r = Smt.Solver.valid [c] (smt ()) ctxt.env in
+  r
+;;
+
+let refined_subst_constr_valid ctxt cs sigma =
+  let mk_fun = Term.make_function ctxt.alph ctxt.env in
+  let eq = Alph.get_equal_symbol ctxt.alph in
+  let app x t cs = (mk_fun eq [Term.make_var x; t]) :: cs in
+  let c = conjunction ctxt (Sub.fold app sigma []) in
+  let c_cap = Term.logical_cap ctxt.alph ctxt.env c in
+  let r = Smt.Solver.satisfiable [c_cap] (smt ()) ctxt.env in
+  r
 ;;
 
 (* Check whether the given rewrite sequence constitutes a loop; to that end
    it is checked whether the initial term unifies with (a subterm of) the final
    term, and constraint conditions are satisfied. *)
 let check ctxt ((rule, rs, sigma) as seq) =
-  (*Format.printf "check %s\n%!" (sequence_to_string seq);*)
   let (s, t) = Rule.to_terms rule in
   let cs = Rule.constraints rule in
+
+  let check' get_subst t' b =
+    try
+      let tau = get_subst t' s in
+      let sigma' = Sub.compose Sub.apply_term sigma tau in
+      let rule' = if b then Rule.apply_sub tau rule else rule in
+      if subst_constr_valid ctxt cs sigma' then
+        Some (rule', rs, sigma')
+      else if refined_subst_constr_valid ctxt cs sigma' then
+        Some (rule', rs, sigma') (* FIXME fix substitution *)
+      else None
+    with Elogic.Not_unifiable | Elogic.Not_matchable -> None
+  in
+
   if not (constr_sat ctxt cs) then LL.empty
   else
     let check t' =
-      try
-        let tau = Elogic.match_term t' s in
-        let sigma' = Sub.compose Sub.apply_term sigma tau in
-        if subst_constr_valid ctxt cs sigma' then [seq]
-        else
-          let tau =  Elogic.unify s t' in
-          let sigma' = Sub.compose Sub.apply_term sigma tau in
-          if not (subst_constr_valid ctxt cs sigma') then []
-          else [ Rule.apply_sub tau rule, rs, sigma' ]
-      with Elogic.Not_unifiable | Elogic.Not_matchable -> []
+      match check' Elogic.match_term t' false with
+        | Some loop -> [loop]
+        | None -> ( match check' Elogic.unify t' true with
+          | Some loop -> [loop]
+          | None -> [])
     in LL.of_list (L.flat_map check (Term.subterms t))
 ;;
 
@@ -197,7 +230,7 @@ let process verbose prob =
       let s = explanation (LL.hd xs) in
       Format.printf "%s\n" s;
       print (LL.tl xs)
-    in print loops;
+    in (*print loops;*)
     Some ([ ],  explanation (LL.hd loops)))
 ;;
 
