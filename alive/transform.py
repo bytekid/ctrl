@@ -7,6 +7,13 @@ from pyparsing import Word, alphas, ParseException, Literal, CaselessLiteral \
 
 # globals
 funapp_modifiers = set()
+logical_terms = {}
+
+def id(x):
+  return x
+
+def const(c):
+  return (lambda x: c)
 
 # util
 def tohex(val, nbits):
@@ -20,7 +27,7 @@ class Expr:
   def toString(self):
     return ""
 
-  def visit(self, visit_var, visit_fun):
+  def visit(self, vvar, vfun, vbinop, rec):
     return self
 
 
@@ -64,8 +71,8 @@ class Ident(Expr):
   def toString(self):
     return self.val
 
-  def visit(self, visit_var, visit_fun):
-    return visit_var(self.val)
+  def visit(self, vvar, vfun, vbinop, rec):
+    return vvar(self)
 
 
 class Unop(Expr):
@@ -80,8 +87,8 @@ class Unop(Expr):
   def toString(self):
     return self.op + "(" + self.val.toString() + ")"
 
-  def visit(self, visit_var, visit_fun):
-    return Unop(self.op, self.val.visit(visit_var, visit_fun))
+  def visit(self, vvar, vfun, vbinop, rec):
+    return Unop(self.op, self.val.visit(vvar, vfun, vbinop, rec))
 
 
 class Binop(Expr):
@@ -102,9 +109,13 @@ class Binop(Expr):
     return "(" + self.val1.toString() + " " + op + " " + \
 		       self.val2.toString() + ")"
 
-  def visit(self, visit_var, visit_fun):
-    return Binop(self.op, self.val1.visit(visit_var, visit_fun), \
-                 self.val2.visit(visit_var, visit_fun))
+  def visit(self, vvar, vfun, vbinop, rec):
+    if rec(self):
+      b = Binop(self.op, self.val1.visit(vvar, vfun, vbinop, rec), \
+                self.val2.visit(vvar, vfun, vbinop, rec))
+      return vbinop(b)
+    else:
+      return vbinop(self)
 
 
 class FunApp(Expr):
@@ -123,6 +134,9 @@ class FunApp(Expr):
   def setArgs(self, args):
     self.args = args
 
+  def getName(self):
+    return self.name
+
   def isTerm(self):
     return self.is_term
 
@@ -139,11 +153,14 @@ class FunApp(Expr):
                                e.toString(), self.args, "") + ")"
     return self.name + args
   
-  def visit(self, visit_var, visit_fun):
-    rs = reduce(lambda rs, a: rs + [a.visit(visit_var,visit_fun)], self.args,[])
-    f = FunApp(visit_fun(self.name, self.is_term), self.is_term)
-    f.setArgs(rs)
-    return f
+  def visit(self, vvar, vfun, vbinop, rec):
+    if rec(self):
+      rs = reduce(lambda rs, a: rs + [a.visit(vvar, vfun, vbinop, rec)], self.args,[])
+      f = FunApp(self.name, self.is_term)
+      f.setArgs(rs)
+      return vfun(f)
+    else:
+      return vfun(self)
 
 
 class Rule:
@@ -183,7 +200,7 @@ def printLCTRS(rules):
   print("\nRULES")
   for r in rules:
     print("  " + r.toString() + ";")
-  print("\nNON-STANDARD")
+  print("\nNON-STANDARD IRREGULAR")
   print("\nQUERY termination")
 
 lctrs = []
@@ -212,7 +229,11 @@ def pushFun(toks, is_term):
   assert isinstance(name, basestring)
   f = FunApp(name, is_term)
   if len(toks) > 1:
-    f.setArgs(toks[len(toks) - 1])
+    args = toks[len(toks) - 1]
+    f.setArgs(args)
+    #for a in args:
+    #  if is_term and ((isinstance(a, FunApp) and not a.isTerm()) or isinstance(a, Binop)):
+    #    print "argument "+ a.toString() + " is alien!" + toks['pre']
   if len(toks) == 3:
     f.setMod(toks[1])
   return [f]
@@ -246,30 +267,65 @@ def clearVars():
   variables.clear()
 
 def replaceIdent(id):
+  assert(isinstance(id, Ident))
   global variables
-  val = variables.get(id)
+  val = variables.get(id.toString())
   if val:
     return val
-  return Ident(id)
+  return id
 
-def replaceTheorySymsPre(n,t):
+def replaceTheorySymsPre(funapp):
   # types are not checked as this function is only applied to precondition
   replace_names = [ "abs", "ashr", "log2", "lshr", "sext", "trunc", "zext" ]
-  return n + "_th" if n in replace_names else n
-         
+  #
+  n = funapp.getName()
+  if n in replace_names:
+    f = FunApp(n + "_th", funapp.isTerm())
+    f.setArgs(funapp.args)
+    return f
+  else:
+    return funapp
 
 def mkIdent(toks):
-  return [ replaceIdent(toks[0]) ]
+  global variables
+  val = variables.get(toks[0])
+  if val:
+    return val
+  return Ident(toks[0])
+
+def replaceBinOp(e):
+  assert(isinstance(e, Binop))
+  global logical_terms
+  if logical_terms.get(e.toString()):
+    return logical_terms[e.toString()][0]
+  else:
+    x = Ident("CL" + str(len(logical_terms)))
+    logical_terms[e.toString()] = [x,e]
+    #print("replace " + e.toString() + " by " + x.toString())
+    return x
 
 def addRule(toks):
   global lctrs
-  # (1) substitute temp vars in precondition
-  pre = toks.get("pre").visit(replaceIdent, lambda n,t: n) if toks.get("pre") else None
-  # (2) replace lshr, ashr by theory counterparts in precondition
-  pre = pre.visit(lambda x: Ident(x), replaceTheorySymsPre) if toks.get("pre") else None
+  global logical_terms
+  logical_terms = {}
   lhs = toks["lhs"].pop()
   rhs = toks["rhs"].pop()
-  rule = Rule(toks["name"], lhs["expr"], rhs["expr"], pre if pre else None)
+  lexp = lhs["expr"].visit(id, id, replaceBinOp, lambda e: isinstance(e,FunApp))
+  rexp = rhs["expr"].visit(id, id, replaceBinOp, lambda e: isinstance(e,FunApp))
+  # concat additional preconditions
+  pre = toks.get("pre") if toks.get("pre") else None
+  for key in logical_terms:
+    eq = logical_terms[key]
+    p = Binop("==", eq[1], eq[0])
+    pre = p if pre == None else Binop("&&", p, pre)
+  #
+  if pre != None:
+    # (1) substitute temp vars in precondition
+    pre = pre.visit(replaceIdent, id, id, const(True))
+    # (2) replace lshr, ashr by theory counterparts in precondition
+    pre = pre.visit(id, replaceTheorySymsPre, id, const(True))
+  #
+  rule = Rule(toks["name"], lexp, rexp, pre if pre else None)
   if lhs["var"] != rhs["var"]:
     print("ERROR: " + lhs["var"] + " == " + rhs["var"])
   lctrs = lctrs + [rule]
