@@ -41,15 +41,23 @@ module SmtResultReader = struct
     let ident = P.many1 (P.noneof " \t\n\r(),:;[]{}") >>= fun i -> P.return i in
     let no_rparen = P.many (P.noneof ")") in
     let psort = P.lex (P.between (P.char '(') no_rparen (P.char ')')) in
-    let sort = psort <|> ident in
-    let num = P.many1 P.digit >>= fun cs -> P.return (String.of_char_list cs) in
+    let num =
+      P.string "Int" >> P.spaces >>
+      P.many1 P.digit >>= fun cs -> P.return (String.of_char_list cs)
+    in
+    let boolval =
+      P.string "Bool" >> P.spaces >>
+      (P.string "true" <|> P.string "false") >>= fun b ->
+      P.return (String.of_char_list b)
+    in
     let hexdec =
+      psort >> P.spaces >>
       P.string "#x" >> P.many1 (P.oneof "0123456789abcdef") >>= fun n ->
       P.return ("#x" ^ (String.of_char_list n))
     in
     P.lex (P.string "(define-fun" >> P.spaces >> ident >>= fun id ->
           P.spaces >> P.string "()" >>
-          P.spaces >> sort >> (num <|> hexdec) >>= fun v ->
+          P.spaces >> (num <|> hexdec <|> boolval) >>= fun v ->
           P.char ')' >> P.return (String.of_char_list id, v))
   ;;
 
@@ -317,6 +325,7 @@ let check_formulas terms get_model (solver, logic) renamings translations a e =
   let print term = print_as_smt term renamings translations e in
   let formulas = List.map print terms in
   let contents = print_file vars formulas logic get_model in
+  (*Format.printf "SMT checks %s\n%!" contents;*)
   check_smt_file_and_parse contents solver e a
   with Not_found -> failwith "Not_found in check_formulas"
 ;;
