@@ -95,7 +95,7 @@ SMT-RENAMINGS
 
 SMT-TRANSLATIONS
   !=(x, y) -> (not (= x y));
-  Abs_th(x) -> (ite (bvuge x #x00000000) x (bvneg x)); /* only for constants, hence unsigned */
+  Abs_th(x) -> (ite (bvsge x #x00000000) x (bvneg x));
   ashr_th(x,y) -> (bvashr x y);           /* not in SMT-LIB but accepted by Z3 */
   computeKnownZeroBits(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
   countLeadingZeros(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
