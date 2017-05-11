@@ -201,7 +201,7 @@ def printLCTRS(rules):
   for r in rules:
     print("  " + r.toString() + ";")
   print("\nNON-STANDARD IRREGULAR")
-  print("\nQUERY termination")
+  print("\nQUERY loops")
 
 lctrs = []
 variables = {}

@@ -35,8 +35,9 @@ let termination_procs = [Dpproblem.graph_proc;
                          Valuecriterion.reverse_process;
                          Subtermcriterion.process;
                          Valuecriterion.extended_process];;
-let nontermination_procs = [Dpproblem.graph_proc;
-                            Loop.process];;
+
+let nontermination_procs = [(Dpproblem.graph_proc, TERMINATING);
+                            (Loop.process, NONTERMINATING)];;
 
 let check_dps framework original_rules verbose =
   let rec try_p lst (problem : Dpproblem.t) =
@@ -48,8 +49,8 @@ let check_dps framework original_rules verbose =
           | None -> try_p rest problem
     )
   in
-  let rec repeat f dpf txt answer =
-    if Dpframework.solved dpf then (answer, txt)
+  let rec repeat f dpf txt =
+    if Dpframework.solved dpf then (TERMINATING, txt)
     else
       let (problem, dp) = Dpframework.pop dpf in
       let probdesc = Dpproblem.tostring problem in
@@ -60,7 +61,7 @@ let check_dps framework original_rules verbose =
           if verbose then Printf.printf "We cannot handle this DP problem.\n" ;
           (UNKNOWN, txt)
         | Some (result, expl) ->
-          repeat f (Dpframework.push_all dp result) (txt ^ expl) answer
+          repeat f (Dpframework.push_all dp result) (txt ^ expl)
   in
   let init_innermost framework =
     if Dpframework.solved framework then ("", framework) else
@@ -71,11 +72,7 @@ let check_dps framework original_rules verbose =
         (expl, Dpframework.push_all framework result)
   in
   let (txt, framework) = init_innermost framework in
-  let ((answer,_) as res) =
-    repeat (try_p termination_procs) framework txt TERMINATING
-  in 
-  if answer <> UNKNOWN then res
-  else repeat (try_p nontermination_procs) framework txt NONTERMINATING
+  repeat (try_p termination_procs) framework txt
 ;;
 
 let check_extended verbose trs rules =
@@ -89,5 +86,38 @@ let check_extended verbose trs rules =
 let check verbose full trs =
   let framework = Dpframework.generate trs full in
   check_dps framework (Trs.get_rules trs) verbose
+;;
+
+
+let check_dps_nonterm framework original_rules verbose =
+  let rec try_p lst (problem : Dpproblem.t) =
+    match lst with
+      | [] -> None
+      | (processor, a) :: rest -> (
+        match processor verbose problem with
+          | Some (x, y) -> Some (x, y, a)
+          | None -> try_p rest problem
+    )
+  in
+  let rec repeat f dpf txt answer =
+    if Dpframework.solved dpf then (answer, txt)
+    else
+      let (problem, dp) = Dpframework.pop dpf in
+      let probdesc = Dpproblem.tostring problem in
+      if verbose then Printf.printf "%s%!" probdesc ;
+      Format.printf "subproblem\n%!";
+      match f problem with
+        | None -> repeat f dp txt answer
+        | Some (result, expl, a) ->
+          let a = if result = [] then a else answer in
+          repeat f (Dpframework.push_all dp result) (txt ^ probdesc ^ expl) a
+  in
+  if Dpframework.solved framework then (TERMINATING, "")
+  else repeat (try_p nontermination_procs) framework "" UNKNOWN
+;;
+
+let check_nontermination verbose trs =
+  let framework = Dpframework.generate trs true in
+  check_dps_nonterm framework (Trs.get_rules trs) verbose
 ;;
 
