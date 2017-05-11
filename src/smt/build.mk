@@ -1,6 +1,6 @@
 DIR   := src/smt
 PACK  := Smt
-DEP   := Util Ctrs
+DEP   := Util Ctrs Parsec
 FILES := \
   externalsolver.ml \
   internalsolver.ml \

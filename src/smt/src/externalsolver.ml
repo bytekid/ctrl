@@ -30,6 +30,49 @@ type renaming = (string * string) list;;
 type translation = (string * (string,int) Util.either list) list;;
 
 (*** MODULES *****************************************************************)
+module SmtResultReader = struct
+  module P = Parsec.MakeCharParser(Parsec.StringInput)
+
+  let (>>=) = P.(>>=)
+  let (>>) = P.(>>)
+  let (<|>) = P.(<|>)
+
+  let assign =
+    let ident = P.many1 (P.noneof " \t\n\r(),:;[]{}") >>= fun i -> P.return i in
+    let no_rparen = P.many (P.noneof ")") in
+    let psort = P.lex (P.between (P.char '(') no_rparen (P.char ')')) in
+    let sort = psort <|> ident in
+    let num = P.many1 P.digit >>= fun cs -> P.return (String.of_char_list cs) in
+    let hexdec =
+      P.string "#x" >> P.many1 (P.oneof "0123456789abcdef") >>= fun n ->
+      P.return ("#x" ^ (String.of_char_list n))
+    in
+    P.lex (P.string "(define-fun" >> P.spaces >> ident >>= fun id ->
+          P.spaces >> P.string "()" >>
+          P.spaces >> sort >> (num <|> hexdec) >>= fun v ->
+          P.char ')' >> P.return (String.of_char_list id, v))
+  ;;
+
+  let parse_smt2_result =
+    (P.lex (P.many1 P.letter) >>= function
+      | ['u'; 'n';'s';'a';'t'] -> P.return (UNSAT, [])
+      | ['s';'a';'t'] ->
+        let model =
+          P.spaces >> P.lex (P.string "(model") >>
+          P.many assign >>= fun vals -> P.char ')' >> P.return vals
+        in
+        P.option [] model >>= fun vals -> P.return (SAT, vals)
+      | _ -> P.return (UNKNOWN, []))
+      <|> (P.return (UNKNOWN, []))
+  ;;
+
+  let read txt =
+    let m = parse_smt2_result >>= P.return in
+    match P.run m () (Parsec.StringInput.of_string txt) with
+      | Left e -> failwith (Parsec.Error.to_string e)
+      | Right answer -> answer
+;;
+end
 
 (*** FUNCTIONS ***************************************************************)
 
@@ -49,10 +92,10 @@ let read_file filename =
   try
     while true; do
       lines := input_line chan :: !lines
-    done; []
+    done; ""
   with End_of_file ->
     close_in chan;
-    List.rev !lines
+    List.fold_right (fun l s -> l ^ "\n" ^ s) (List.rev !lines) ""
 ;;
 
 (* this method replaces for instance "- 1" by "-1" *)
@@ -65,6 +108,7 @@ let fix_integers str =
 (* maps a sequence of lines of the form "a b" into a sequence of pairs
 ("a","b") *)
 let variable_assignments lst =
+  (* FIXME: not needed; but is currently used stuff complete?*)
   let maketuple txt =
     let lst = String.split ~d:" " txt in
     if List.length lst < 3 then [] else
@@ -91,13 +135,8 @@ let call_solver problem solver =
         "SMT-solver has trouble with the following problem:" problem ;
     (UNKNOWN, [])
   in
-  (*Format.printf "call solver on %s\n%!" problem;*)
-  match ret with
-    | [] -> trouble ()
-    | head :: tail ->
-      if head = "sat" then (SAT, tail)
-      else if head = "unsat" then (UNSAT, [])
-      else trouble ()
+  let res = SmtResultReader.read ret in
+  if fst res = UNKNOWN then trouble () else res
 ;;
 
 (* runs the smt-solver on the given problem and returns the list of
@@ -105,7 +144,7 @@ variable assignments parsed into string * string tuples *)
 let check_smt_file problem solver =
   let (satisfiability, varass) = call_solver problem solver in
   if satisfiability <> SAT then (satisfiability, [])
-  else (satisfiability, variable_assignments varass)
+  else (satisfiability, varass)
 ;;
 
 (* ========== translating between terms / formulas and smt-format ========== *)
@@ -183,14 +222,14 @@ let create_smt_file env params exprs tostr logic =
 ;;
 
 (* turns the given combination into SMTLIB v.2.0 *)
-let print_file vars formulas logic =
+let print_file vars formulas logic get_model =
   let print_var_type (xn, xt) = "(declare-const " ^ xn ^ " " ^ xt ^ ")\n" in
   let f formula rest = "(assert " ^ formula ^ ")\n" ^ rest in
   let assertions = List.fold_right f formulas "" in
   (*"(set-logic " ^ logic ^ ")\n" ^*) (* skip logic for now *)
   (List.implode print_var_type " " vars) ^
   assertions ^
-  "(check-sat)\n"
+  "(check-sat)\n" ^ (if get_model then "(get-model)\n" else "")
 ;;
 
 (* returns variable / sort pairs for all variables in the given
@@ -216,7 +255,19 @@ let check_smt_file_and_parse problem solver env alf =
         try
           let x = Environment.find_var var env in
           let xsort = Environment.find_sort x env in
-          let term = value_to_term value alf xsort in
+          let term =
+            try
+              value_to_term value alf xsort
+            with _ ->
+              if String.get value 0 == '#' && String.get value 1 == 'x'  then
+                let csort = Sortdeclaration.create [] xsort in
+                let c = Alphabet.create_fun csort value alf in
+                Alphabet.add_symbol_kind c Alphabet.Logical alf;
+                Term.Fun (c,[])
+              else
+                let ival = int_of_string value in
+                Term.Fun (Function.integer_symbol ival,[])
+          in
           update (Substitution.add x term gamma) tail
         with Not_found -> update gamma tail
     in
@@ -227,13 +278,14 @@ let check_smt_file_and_parse problem solver env alf =
 (* ========== doing calculations ========== *)
 
 let calculate term (solver, logic) renamings translations a e =
-  Format.printf "calculate\n%!";
   let sort = Term.get_sort a e term in
   let vars = get_variables e term in
   let printed = print_as_smt term renamings translations e in
   let formula = "(= SMT_MODULE_SOLUTION " ^ printed ^ ")" in
   let termsort = Sort.to_string (Term.get_sort a e term) in
-  let contents = print_file (("SMT_MODULE_SOLUTION",termsort) :: vars) [formula] logic in
+  let contents =
+    print_file (("SMT_MODULE_SOLUTION",termsort) :: vars) [formula] logic true
+  in
   let (satisfiability, assignment) = check_smt_file contents solver in
   if satisfiability <> SAT then
     failwith ("Could not calculate " ^ printed ^ ": SMT-solver fails")
@@ -246,7 +298,7 @@ let calculate term (solver, logic) renamings translations a e =
 let get_value sort (solver, logic) a =
   let sortstring = Sort.to_string sort in
   let contents = print_file ["SMT1", sortstring; "SMT2", sortstring ]
-                            ["(= SMT1 SMT2)"] logic in
+                            ["(= SMT1 SMT2)"] logic true in
   let (satisfiability, assignment) = check_smt_file contents solver in
   if satisfiability <> SAT then
     failwith ("Could not calculate value of sort " ^ (Sort.to_string sort) ^
@@ -259,15 +311,17 @@ let get_value sort (solver, logic) a =
 
 (* ========== testing satisfiability ========== *)
 
-let check_formulas terms (solver, logic) renamings translations a e =
+let check_formulas terms get_model (solver, logic) renamings translations a e =
+  try
   let vars = List.unique (List.flat_map (get_variables e) terms) in
   let print term = print_as_smt term renamings translations e in
   let formulas = List.map print terms in
-  let contents = print_file vars formulas logic in
+  let contents = print_file vars formulas logic get_model in
   check_smt_file_and_parse contents solver e a
+  with Not_found -> failwith "Not_found in check_formulas"
 ;;
 
-let check_formula term = check_formulas [term];;
+let check_formula term get_model = check_formulas [term] get_model;;
 
 (* ========== testing validity ========== *)
 

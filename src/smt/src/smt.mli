@@ -120,21 +120,21 @@ module Externalsolver : sig
   val get_value : Sort.t -> solverdata -> Alphabet.t -> Term.t
   (** [get_value s t a] asks the SMT-solver with data [t] for a value
   of sort [s], using [a] to parse the result into a value. *)
-  val check_formula : Term.t -> solverdata -> renaming -> translation ->
+  val check_formula : Term.t -> bool -> solverdata -> renaming -> translation ->
                       Alphabet.t -> Environment.t ->
                       possible_results * Substitution.t
-  (** [check_formula form data ren tra a e] checks the formula [form]
+  (** [check_formula form get_model data ren tra a e] checks the formula [form]
   using the SMT-solverdata [data] and renamings [ren] and translations
   [tra]; for sorts and names of variables in [form] the environment
   [e] is consulted.  If the formula is satisfiable, then a pair (SAT,
   gamma) is returned, where gamma maps all variables in [form] to
-  terms.  If the formula is not satisfiable, or the SMT-solver cannot
-  figure it out, then a pair (UNSAT, gamma) or (UNKNOWN, gamma) is
-  returned where gamma is the empty substitution *)
-  val check_formulas : Term.t list -> solverdata -> renaming ->
+  terms if the flag get_model is set.  If the formula is not satisfiable, or
+  the SMT-solver cannot figure it out, then a pair (UNSAT, gamma) or
+  (UNKNOWN, gamma) is returned where gamma is the empty substitution *)
+  val check_formulas : Term.t list -> bool -> solverdata -> renaming ->
                        translation -> Alphabet.t -> Environment.t ->
                        possible_results * Substitution.t
-  (** [check_formulas [form1;...;formn] data ren tra a e] checks the
+  (** [check_formulas [form1;...;form] get_model data ren tra a e] checks the
   formula [form1] AND ... AND [formn] using the SMT-solverdata [data];
   for sorts and names of variables in [forms] the environment [e] is
   consulted.  If the formulas are all satisfiable together, then a

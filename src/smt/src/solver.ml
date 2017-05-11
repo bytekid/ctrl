@@ -161,11 +161,11 @@ let get_value sort t =
 
 (* more advanced calculations *)
 
-let satisfiable_formulas formulas t e =
+let satisfiable_formulas' formulas get_model t e =
   let a = Trs.get_alphabet (Trs.get_current ()) in
   internal_or_external t a e
     (Internalsolver.solve_satisfiability formulas "intsolver")
-    (Externalsolver.check_formulas formulas)
+    (Externalsolver.check_formulas formulas get_model)
     (Manualsolver.satisfiability formulas)
 ;;
 
@@ -181,7 +181,9 @@ let valid_formulas formulas t e =
       | [] -> SAT
       | head :: tail ->
         let negated = Term.make_function a e negation [head] in
-        let (result, _) = Externalsolver.check_formula negated data ren tr a e in
+        let (result, _) =
+          Externalsolver.check_formula negated false data ren tr a e
+        in
         if result = SAT then UNSAT
         else if result = UNSAT then exter tail data ren tr a e
         else UNKNOWN
@@ -192,11 +194,13 @@ let valid_formulas formulas t e =
     (Manualsolver.validity formulas)
 ;;
 
-let satisfiable fs t e = fst (satisfiable_formulas fs t e) = SAT;;
-let unsatisfiable fs t e = fst (satisfiable_formulas fs t e) = UNSAT;;
+let satisfiable fs t e = fst (satisfiable_formulas' fs false t e) = SAT;;
+let unsatisfiable fs t e = fst (satisfiable_formulas' fs false t e) = UNSAT;;
 let valid fs t e = valid_formulas fs t e = SAT;;
-
 (* existential validity *)
+
+let satisfiable_formulas formulas t e = satisfiable_formulas' formulas true t e
+
 
 (* returns the alphabet, and the important core symbols *)
 let alphabet_data trs =
