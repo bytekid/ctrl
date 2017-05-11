@@ -33,6 +33,12 @@ let initialise _ =
   Rewriter.set_current rewriter
 ;;
 
+let txt_answer = function
+  | Terminator.TERMINATING -> "YES"
+  | Terminator.NONTERMINATING -> "NO"
+  | Terminator.UNKNOWN -> "MAYBE"
+;;
+
 let run _ =
   let filename = ref "" in
   let options = Arg.align 
@@ -65,13 +71,13 @@ let run _ =
     | Reader.Termination full ->
       let verbose = Util.query_debugging () in
       let trs = Trs.get_current () in
-      let (answer, comments) = Terminator.check verbose full trs in
-      let txtanswer = match answer with
-        | Terminator.TERMINATING -> "YES"
-        | Terminator.NONTERMINATING -> "NO"
-        | Terminator.UNKNOWN -> "MAYBE"
-      in
-      Printf.printf "%s\n%s" txtanswer (if verbose then "" else comments)
+      let (ans, comments) = Terminator.check verbose full trs in
+      Printf.printf "%s\n%s" (txt_answer ans) (if verbose then "" else comments)
+    | Reader.Nontermination ->
+      let verbose = Util.query_debugging () in
+      let trs = Trs.get_current () in
+      let (ans, comments) = Terminator.check_nontermination verbose trs in
+      Printf.printf "%s\n%s" (txt_answer ans) (if verbose then "" else comments)
     | Reader.Confluence ->
       if Confluencechecker.weak_orthogonal (Trs.get_current ()) then
         Printf.printf "YES\n"
