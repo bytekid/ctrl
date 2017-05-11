@@ -120,7 +120,7 @@ class Binop(Expr):
 
 class FunApp(Expr):
   replace_name = { "and" : "And",  "xor" : "Xor", "not" : "Not", "or" : "Or", \
-                   "true" : "True", "false" : "False" }
+                   "true" : "True", "false" : "False", "abs" : "Abs" }
   # hasOneUse tends to have non-logical terms as arguments
   # since we can not faithfully encode it anyway, suppress for now
   suppress_args = { "hasOneUse" : True }
@@ -219,8 +219,6 @@ def pushExpr0(create):
 def pushExpr1(create):
   return (lambda toks: pushExpr(create(toks[0], toks[1])))
 
-  replace_name = { "abs" : "absbv", "xor" : "xxor", "not" : "nnot", "true" : "ttrue", \
-                   "false" : "ffalse" }
 def pushExpr2(create):
   return (lambda toks: pushExpr(create(toks[1], toks[0], toks[2])))
 
@@ -276,7 +274,7 @@ def replaceIdent(id):
 
 def replaceTheorySymsPre(funapp):
   # types are not checked as this function is only applied to precondition
-  replace_names = [ "abs", "ashr", "log2", "lshr", "sext", "trunc", "zext" ]
+  replace_names = [ "Abs", "ashr", "log2", "lshr", "sext", "trunc", "zext" ]
   #
   n = funapp.getName()
   if n in replace_names:
