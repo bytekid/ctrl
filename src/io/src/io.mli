@@ -130,6 +130,7 @@ module Reader : sig
   type query = NormalForm of Term.t |
                ConstrainedNormalForm of Term.t * Term.t |
                Termination of bool |
+               Nontermination |
                Confluence |
                SimplifiedLctrs of Function.t list * String.t |
                Equivalence of Rule.t list |

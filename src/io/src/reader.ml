@@ -26,7 +26,7 @@ open Util;;
 (*** TYPES *******************************************************************)
 
 type query = NormalForm of Term.t | ConstrainedNormalForm of Term.t * Term.t |
-             Termination of bool | Confluence |
+             Termination of bool | Nontermination | Confluence |
              SimplifiedLctrs of Function.t list * String.t |
              Equivalence of Rule.t list | AssistEquivalence of Rule.t list |
              NoQuery | Smt of Term.t list
@@ -1303,6 +1303,9 @@ let rec parse_query filename _ =
   ) <|>
   ( Parser.lex (Parser.string "termination") >>= fun _ ->
     set_query (Termination true)
+  ) <|>
+  ( Parser.lex (Parser.string "loops") >>= fun _ ->
+    set_query Nontermination
   ) <|>
   ( Parser.lex (Parser.string "innermost-termination") >>= fun _ ->
     set_query (Termination false)
