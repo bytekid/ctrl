@@ -26,6 +26,8 @@ DECLARE
   %           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150);
   %u           : (BitVec _) * (BitVec _) => (BitVec _) (l-infix 150);
   <<          : (BitVec _) * (BitVec _) => (BitVec _) (r-infix 100);
+  u>>          : (BitVec _) * (BitVec _) => (BitVec _) (r-infix 100);
+  >>          : (BitVec _) * (BitVec _) => (BitVec _) (r-infix 100);
 
   #x00000000: (BitVec _);
   #x00000001: (BitVec _);
@@ -81,6 +83,8 @@ SMT-RENAMINGS
   %u 		-> bvurem;
 
   << 		-> bvshl;
+  u>> 	-> bvlshr;
+  >> 	  -> bvashr;
 
   ~  	-> bvnot;
   &  	-> bvand;
