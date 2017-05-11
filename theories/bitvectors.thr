@@ -34,7 +34,7 @@ DECLARE
   #xfffffffe: (BitVec _);
   #xffffffff: (BitVec _);
 
-  abs_th : (BitVec _) => (BitVec _) ;
+  Abs_th : (BitVec _) => (BitVec _) ;
   ashr_th : (BitVec _) * (BitVec _) => (BitVec _);
   computeKnownZeroBits : (BitVec _) => (BitVec _);
   countLeadingZeros : (BitVec _) => (BitVec _);
@@ -91,7 +91,7 @@ SMT-RENAMINGS
 
 SMT-TRANSLATIONS
   !=(x, y) -> (not (= x y));
-  abs_th(x) -> (ite (bvuge x #x00000000) x (bvneg x)); /* only for constants, hence unsigned */
+  Abs_th(x) -> (ite (bvuge x #x00000000) x (bvneg x)); /* only for constants, hence unsigned */
   ashr_th(x,y) -> (bvashr x y);           /* not in SMT-LIB but accepted by Z3 */
   computeKnownZeroBits(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
   countLeadingZeros(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
