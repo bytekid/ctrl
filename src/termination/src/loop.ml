@@ -41,7 +41,10 @@ type t = {
 (* loop candidate *)
 type seq = Rule.t * (Rule.t * Pos.t * Term.t) list * Sub.t
 
-let check_time = ref 0.
+let check_time = ref 0.;;
+let loop_count = ref 0;;
+let seq_cache : (int, seq list) Hashtbl.t = Hashtbl.create 5096;;
+let constr_sat_cache : (Term.t, bool) Hashtbl.t = Hashtbl.create 1024;;
 
 (* Create a context record. *)
 let mk_ctxt a e ml ms = { alph = a; env = e; max_length = ml; max_size = ms } 
@@ -79,6 +82,20 @@ let explanation ((rl,_,_) as loop) =
   "We use the loop processor to conclude nontermination.\n" ^
   "The loop is given by the sequence \n" ^ (sequence_to_string loop) ^
   (if cs = [] then "" else " if " ^ (constraints_to_string cs) ^ " (" ^ (string_of_float !check_time) ^ ")\n" )
+;;
+
+let show loop =
+  let s = explanation loop in
+  Format.printf "%d. %s\n%!" !loop_count s;
+  loop_count := !loop_count + 1
+;;
+
+let explain_all loops =
+  let rec explain_all xs =
+    if xs <> [] then (
+    show (L.hd xs);
+    explain_all (L.tl xs))
+  in explain_all loops
 ;;
 
 let substr sigma =
@@ -187,9 +204,12 @@ let constr_sat ctxt cs =
   let conj = Alph.get_and_symbol ctxt.alph in
   let top = mk_fun (Alph.get_top_symbol ctxt.alph) [] in
   let conj_cs = List.fold_left (fun a b -> mk_fun conj [a; b]) top cs in
-  logical_sat ctxt conj_cs
+  try Hashtbl.find constr_sat_cache conj_cs
+  with Not_found ->
+    let res = logical_sat ctxt conj_cs in
+    Hashtbl.add constr_sat_cache conj_cs res;
+    res
 ;;
-
 
 (* Check whether the given rewrite sequence constitutes a loop; to that end
    it is checked whether the initial term unifies with (a subterm of) the final
@@ -213,7 +233,7 @@ let check ctxt (rule, rs, sigma) =
             Some (rule'', rs, Sub.compose Sub.apply_term sigma' rho))
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
-  if not (constr_sat ctxt cs) then LL.empty
+  if not (constr_sat ctxt cs) then []
   else
     let check t' =
       match check' Elogic.match_term t' false with
@@ -222,8 +242,9 @@ let check ctxt (rule, rs, sigma) =
           | Some loop -> [loop]
           | None -> [])
     in
-    let res = LL.of_list (L.flat_map check (Term.subterms t)) in
+    let res = L.flat_map check (Term.subterms t) in
     check_time := !check_time +. Unix.gettimeofday () -. start;
+    explain_all res;
     res
 ;;
 
@@ -250,6 +271,7 @@ let narrow c ((st, rs,sigma) as seq) p rule =
 let last (_,rs,_) c = List.length rs + 1 = c.max_length
 
 let diff_root (rl, _ , _) = Term.root (Rule.lhs rl) <> Term.root (Rule.rhs rl)
+let same_root rl rl' = Term.root (Rule.rhs rl) = Term.root (Rule.lhs rl')
 
 (* Do forward narrowing using rules in trs from last terms in sequence, trying
    possible rules and positions. For the rules to be applied at the root
@@ -259,14 +281,12 @@ let diff_root (rl, _ , _) = Term.root (Rule.lhs rl) <> Term.root (Rule.rhs rl)
    representations of same loop that start at different term. *)
 let forward c (rules_root, rules_below) ((st,rs,_) as seq) =
   let r0,_,_ = L.nth rs 0 in
-  let rsrt = (L.filter (fun r -> Rule.compare r r0 <= 0) rules_root) in
-  let rlps_root =if last seq c && diff_root seq then [] else 
-    (List.map (Util.Pair.make Pos.root) rsrt) in
+  let rsrt = L.filter (fun r -> Rule.compare r r0 <= 0 && same_root st r) rules_root in
+  let rlps_root = (List.map (Util.Pair.make Pos.root) rsrt) in
   let ps = L.remove Pos.root (Term.funs_pos (Rule.rhs st)) in
   let rlps = rlps_root @ (L.product ps rules_below) in
-  (* do not process already found loops further *)
-  if not (LL.null (check c seq)) then LL.empty
-  else LL.of_list (L.flat_map (fun (p,rl) -> narrow c seq p rl) rlps)
+  let seqs = L.flat_map (fun (p,rl) -> narrow c seq p rl) rlps in
+  L.partition (fun seq -> check c seq <> []) seqs
 ;;
 
 (* Checking whether the sequence does not exceed the maximal term size. *)
@@ -274,17 +294,22 @@ let small c (st,_,_) =
   Term.size (Rule.lhs st) <= c.max_size && Term.size (Rule.lhs st) <= c.max_size
 ;;
 
-(* Checking whether the sequence does not exceed the maximal length. *)
-let short c (_,rs,_) = List.length rs < c.max_length
-
 (* Do forward narrowing from last terms in sequences, trying all possible
    rules and positions but eliminating sequences that exceed the bounds. *)
-let all_forward c rules _ seqs =
-  let cs (rl,_,tau) = L.map (Sub.apply_term tau) (Rule.constraints rl) in
-  let useful seq = small c seq && short c seq && (constr_sat c (cs seq)) in
-  let seqs' = LL.filter useful seqs in
-  let seqs'' = LL.concat (LL.map (forward c rules) seqs') in
-  if LL.null seqs'' then None else Some seqs''
+let rec all_forward c rules i (loops,seqs) =
+  if i+1 > c.max_length then loops
+  else (
+    Format.printf "Looking for sequences of length %d\n%!" (i+1);
+    let cs (rl,_,tau) = L.map (Sub.apply_term tau) (Rule.constraints rl) in
+    let useful seq = small c seq && (constr_sat c (cs seq)) in
+    let fw (loops', seqs') seq =
+      let lps, sqs = forward c rules seq in
+      L.rev_append lps loops', L.rev_append sqs seqs'
+    in
+    let loops, seqs' = L.fold_left fw (loops,[]) seqs in
+    let seqs'' = L.filter useful seqs' in
+    Format.printf "Found %d sequences of length %d\n%!" (L.length seqs'') (i+1);
+    if seqs'' = [] then loops else all_forward c rules (i+1) (loops,seqs''))
 ;;
 
 (* The initial sequence, starting from a rule. *)
@@ -294,9 +319,9 @@ let init_seq rule = (rule, [rule, Position.root, Rule.rhs rule], Sub.empty)
    to extend sequences.
 *)
 let generate_loops ctxt start_rules step =
-  let init_seqs = LL.of_list (List.map init_seq start_rules) in
-  let seqs = LL.concat (LL.of_function_with step init_seqs) in
-  let loops = LL.concat (LL.map (check ctxt) (LL.append init_seqs seqs)) in
+  let init_seqs = List.map init_seq start_rules in
+  let lps, seqs = L.partition (fun seq -> check ctxt seq <> []) init_seqs in
+  let loops = step 1 (lps, seqs) in
   loops
 ;;
 
@@ -307,16 +332,9 @@ let process verbose prob =
   let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let ctxt = mk_ctxt alph env 3 25 in
-  let loops = generate_loops ctxt dps (all_forward ctxt (dps, rules)) in
-  if LL.null loops then None
-  else (
-    let rec print i xs =
-      if not (LL.null xs) then
-      let s = explanation (LL.hd xs) in
-      Format.printf "%d. %s\n%!" i s;
-      print (i+1) (LL.tl xs)
-    in print 0 loops;
-    Some ([ ],  explanation (LL.hd loops)))
+  let ctxt = mk_ctxt alph env 2 25 in
+  let loops = generate_loops ctxt (dps) (all_forward ctxt (dps, rules)) in
+  if loops = [] then None
+  else Some ([ ],  explanation (L.hd loops))
 ;;
 

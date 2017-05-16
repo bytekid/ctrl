@@ -133,6 +133,7 @@ let variable_assignments lst =
 (* runs the smt-solver on the given problem and returns the list of
 variable assignments *)
 let call_solver problem solver =
+  let _ = Unix.system "touch tmp.smt" in
   write_file "tmp.smt" problem ;
   let _ = Unix.system ("timeout 3 ./" ^ solver ^ " tmp.smt > smt-output") in
   let ret = read_file "smt-output" in
