@@ -104,8 +104,8 @@ let check_dps_nonterm framework original_rules verbose =
     else
       let (problem, dp) = Dpframework.pop dpf in
       let probdesc = Dpproblem.tostring problem in
-      if verbose then Printf.printf "%s%!" probdesc ;
       Format.printf "subproblem\n%!";
+      if verbose then Printf.printf "%s%!" probdesc ;
       match f problem with
         | None -> repeat f dp txt answer
         | Some (result, expl, a) ->

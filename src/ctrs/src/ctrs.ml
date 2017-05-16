@@ -69,6 +69,7 @@ module type SORT = sig
  
   val copy : t -> t
   val hash : t -> int
+  val index : t -> int
   val compare : t -> t -> int
   val equal : t -> t -> bool
   val fprintf : Format.formatter -> t -> unit

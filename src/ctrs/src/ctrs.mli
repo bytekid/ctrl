@@ -176,6 +176,10 @@ module type SORT = sig
   val hash : t -> int
   (** [hash f] returns a hash value for [f]. It is not guaranteed that
   [hash f = hash g] if and only if [compare f g = 0]. *)
+  val index : t -> int
+  (** [index s] returns the index associated with [s], and fails if no index
+  exists. *)
+
 
   (** {3 Compare Functions} *)
 

@@ -269,7 +269,12 @@ let check_smt_file_and_parse problem solver env alf =
             with _ ->
               if String.get value 0 == '#' && String.get value 1 == 'x'  then
                 let csort = Sortdeclaration.create [] xsort in
-                let c = Alphabet.create_fun csort value alf in
+                (*let bits = Sort.index xsort in
+                let rec add s k = if k <= 0 then s else add ("0" ^ s) (k-1) in
+                let v = String.sub value 2 (String.length value - 2) in
+                let v' = add value (bits / 4 - (String.length v - 2)) in*)
+                let v' = value in
+                let c = Alphabet.create_fun csort ("#x" ^ v') alf in
                 Alphabet.add_symbol_kind c Alphabet.Logical alf;
                 Term.Fun (c,[])
               else

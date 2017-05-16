@@ -77,7 +77,7 @@ SMT-RENAMINGS
   +i 		-> bvadd;
   -i  	-> bvsub;
   *i 		-> bvmul;
-  / 		-> bvdiv;
+  / 		-> bvsdiv;
   /u 		-> bvudiv;
   % 		-> bvsrem;
   %u 		-> bvurem;
@@ -103,7 +103,7 @@ SMT-TRANSLATIONS
   isPowerOf2(x) -> (and (= (bvand x (bvsub x #x00000001)) #x00000000) (not (= x #x00000000))) ;
   isPowerOf2OrZero(x) -> (= (bvand x (bvsub x #x00000001)) #x00000000) ;
   isShiftedMask(x) -> (let ((vv (bvor (bvsub x #x00000001) x))) (and (not (= vv #x00000000)) (= #x00000000 (bvand vv (bvadd vv #x00000001)))));
-  isSignBit(x) -> (= ((_ extract 7 7) x) #x1);
+  isSignBit(x) -> (= (bvlshr x #x0000001f) #x00000001);
   log2_th(x) -> (ite (= x #x00000001) #x00000000 #x00000000);
   lshr_th(x,y) -> (bvlshr x y);
   MaskedValueIsZero(x,y) -> (= (bvand x y) #x00000000);
@@ -114,11 +114,12 @@ SMT-TRANSLATIONS
   WillNotOverflowUnsignedSub(x,y) -> (= (bvsub ((_ zero_extend 1) x) ((_ zero_extend 1) y)) ((_ zero_extend 1) (bvsub x y)));
   WillNotOverflowSignedMul(x,y) -> (= (bvmul ((_ sign_extend 32) x) ((_ sign_extend 32) y)) ((_ sign_extend 32) (bvmul x y)));
   WillNotOverflowUnsignedMul(x,y) -> (= (bvmul ((_ zero_extend 32) x) ((_ zero_extend 32) y)) ((_ zero_extend 32) (bvmul x y)));
+  WillNotOverflowUnsignedShl(x,y) -> (= x (bvlshr (bvshl x y) y));
 
-  sext_i1(x) -> ((_ sign_extend 7) x);
-  zext_i1(x) -> ((_ zero_extend 7) x);
-  sexti11(x) -> ((_ sign_extend 7) x);
-  zexti11(x) -> ((_ zero_extend 7) x);
+  sext_i1(x) -> ((_ sign_extend 31) x);
+  zext_i1(x) -> ((_ zero_extend 31) x);
+  sexti11(x) -> ((_ sign_extend 21) x);
+  zexti11(x) -> ((_ zero_extend 21) x);
 
   trunc_th(x) -> ((_ zero_extend 0) x) ; /* FIXME: how to deal with bitvectors of different sizes? */
   width(x) -> ((_ zero_extend 0) #x00000020); /* FIXME: how to deal with bitvectors of different sizes? */

@@ -1,2 +1,0 @@
-src/smt/build/solver.cmx: src/ctrs/ctrs.cmxa src/smt/build/externalsolver.cmx src/smt/build/internalsolver.cmx src/smt/build/manualsolver.cmx src/smt/build/smtquantifiers.cmx src/smt/build/smtresults.cmx src/util/util.cmxa
-src/smt/build/solver.cmo: src/ctrs/ctrs.cma src/smt/build/externalsolver.cmo src/smt/build/internalsolver.cmo src/smt/build/manualsolver.cmo src/smt/build/smtquantifiers.cmo src/smt/build/smtresults.cmo src/util/util.cma

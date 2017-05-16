@@ -170,6 +170,9 @@ class Rule:
     self.rhs = rhs
     self.cond = cond
 
+  def getName(self):
+    return self.name
+
   def toString(self):
     pre = "  [ " + self.cond.toString() + "] " if self.cond else ""
     return "  " + self.lhs.toString() + " -> " + self.rhs.toString() + pre
@@ -199,7 +202,7 @@ def printLCTRS(rules):
         " !BITVECTOR;")
   print("\nRULES")
   for r in rules:
-    print("  " + r.toString() + ";")
+    print("  " + r.toString() + "; /*" + r.getName() + "*/")
   print("\nNON-STANDARD IRREGULAR")
   print("\nQUERY loops")
 
@@ -291,8 +294,11 @@ def mkIdent(toks):
     return val
   return Ident(toks[0])
 
-def replaceBinOp(e):
-  assert(isinstance(e, Binop))
+def replaceLogical(e):
+  assert(isinstance(e, FunApp) or isinstance(e, Binop))
+  if isinstance(e, FunApp) and e.isTerm():
+    return e
+
   global logical_terms
   if logical_terms.get(e.toString()):
     return logical_terms[e.toString()][0]
@@ -308,8 +314,9 @@ def addRule(toks):
   logical_terms = {}
   lhs = toks["lhs"].pop()
   rhs = toks["rhs"].pop()
-  lexp = lhs["expr"].visit(id, id, replaceBinOp, lambda e: isinstance(e,FunApp))
-  rexp = rhs["expr"].visit(id, id, replaceBinOp, lambda e: isinstance(e,FunApp))
+  rec_funapps = lambda e: isinstance(e,FunApp) and e.isTerm
+  lexp = lhs["expr"].visit(id, replaceLogical, replaceLogical, rec_funapps)
+  rexp = rhs["expr"].visit(id, replaceLogical, replaceLogical, rec_funapps)
   # concat additional preconditions
   pre = toks.get("pre") if toks.get("pre") else None
   for key in logical_terms:

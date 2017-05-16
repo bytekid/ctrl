@@ -1,2 +1,0 @@
-src/termination/build/terminator.cmx: src/termination/build/chainer.cmx src/ctrs/ctrs.cmxa src/termination/build/dpframework.cmx src/termination/build/dpproblem.cmx src/termination/build/subtermcriterion.cmx src/termination/build/valuecriterion.cmx
-src/termination/build/terminator.cmo: src/termination/build/chainer.cmo src/ctrs/ctrs.cma src/termination/build/dpframework.cmo src/termination/build/dpproblem.cmo src/termination/build/subtermcriterion.cmo src/termination/build/valuecriterion.cmo

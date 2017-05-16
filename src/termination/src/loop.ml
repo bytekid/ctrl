@@ -41,6 +41,8 @@ type t = {
 (* loop candidate *)
 type seq = Rule.t * (Rule.t * Pos.t * Term.t) list * Sub.t
 
+let check_time = ref 0.
+
 (* Create a context record. *)
 let mk_ctxt a e ml ms = { alph = a; env = e; max_length = ml; max_size = ms } 
 
@@ -76,7 +78,7 @@ let explanation ((rl,_,_) as loop) =
   let cs = Rule.constraints rl in
   "We use the loop processor to conclude nontermination.\n" ^
   "The loop is given by the sequence \n" ^ (sequence_to_string loop) ^
-  (if cs = [] then "" else " if " ^ (constraints_to_string cs) ^ "\n" )
+  (if cs = [] then "" else " if " ^ (constraints_to_string cs) ^ " (" ^ (string_of_float !check_time) ^ ")\n" )
 ;;
 
 let substr sigma =
@@ -104,8 +106,9 @@ let logical_sat = logical_check Smt.Solver.satisfiable
 
 let logical_valid = logical_check Smt.Solver.valid
 
-(* Given constraints cs, check whether cs => cs sigma is valid. *)
-let subst_constr_valid ctxt cs sigma =
+(* (1) Given constraints cs and a loop substitution sigma, check whether
+   cs => cs sigma is a logical term and valid. *)
+let condition1 ctxt cs sigma =
   let mk_fun = Term.make_function ctxt.alph ctxt.env in
   let disj = Alph.get_or_symbol ctxt.alph in
   let neg = Alph.get_not_symbol ctxt.alph in
@@ -116,18 +119,66 @@ let subst_constr_valid ctxt cs sigma =
   r
 ;;
 
+(* (3) Given constraints cs and a loop substitution sigma, check whether
+   cs => lcap(cs sigma) is valid. *)
+let condition3 ctxt cs sigma =
+  let mk_fun = Term.make_function ctxt.alph ctxt.env in
+  let disj = Alph.get_or_symbol ctxt.alph in
+  let neg = Alph.get_not_symbol ctxt.alph in
+  let c1 = conjunction ctxt cs in
+  let c2 = Term.logical_cap ctxt.alph ctxt.env (Sub.apply_term sigma c1) in
+  let c = mk_fun disj [mk_fun neg [c1]; c2] in
+  let r = logical_valid ctxt c in
+  r
+;;
 
-let refined_subst_constr_valid ctxt cs sigma =
+(* (4) Given constraints cs and a loop substitution sigma, check whether
+   cs sigma is logical, and, if yes, 
+   cs /\ \bigwedge_{x \in Dom(sigma)} (x = x sigma) is satisfiable. If yes,
+   the resulting substitution is a loop witness *)
+let refined_condition4 ctxt cs sigma =
   let mk_fun = Term.make_function ctxt.alph ctxt.env in
   let eq = Alph.get_equal_symbol ctxt.alph in
   let app x t cs = (mk_fun eq [Term.make_var x; t]) :: cs in
   let c = conjunction ctxt (Sub.fold app sigma cs) in
-  (*let c_cap = Term.logical_cap ctxt.alph ctxt.env c in*)
   let not_logical = Term.check_logical_term ctxt.alph c <> None in
   if not_logical then None
   else (
     let r = Smt.Solver.satisfiable_formulas [c] (smt ()) ctxt.env in
-    if fst r = SAT then Some (snd r) else None)
+    if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
+;;
+
+(* (5) Given constraints cs and a loop substitution \sigma. Let
+   X \subseteq Dom(\sigma) be the variables x such that x\sigma = x, and
+   Y = Dom(\sigma) - X be the variables y such that y\sigma != y. Check whether
+   \forall Y.(cs => cs\sigma) /\ cs [Y \mapsto Z] for fresh variables is
+   satisfiable. If yes, the resulting substitution is a loop witness.
+   cs sigma is logical, and, if yes, 
+   cs /\ \bigwedge_{x \in Dom(sigma)} (x = x sigma) is satisfiable. If yes,
+   the resulting substitution is a loop witness *)
+let refined_condition5 ctxt cs sigma =
+  let fresh_rep sub y =
+    let s = Term.get_sort ctxt.alph ctxt.env (Term.Var y) in
+    Sub.add y (Term.make_var (Environment.create_sorted_var s [] ctxt.env)) sub 
+  in
+  let mk_fun = Term.make_function ctxt.alph ctxt.env in
+  let disj = Alph.get_or_symbol ctxt.alph in
+  let conj = Alph.get_and_symbol ctxt.alph in
+  let neg = Alph.get_not_symbol ctxt.alph in
+  let ys = Sub.fold (fun x _ vs -> x::vs) sigma [] in
+  let ys_zs = List.fold_left fresh_rep Sub.empty ys in
+  let c = conjunction ctxt cs in
+  let csigma = Sub.apply_term sigma c in
+  let imp = mk_fun disj [mk_fun neg [c]; csigma] in
+  let phi = mk_fun conj [imp; Sub.apply_term ys_zs c] in 
+  let not_logical = Term.check_logical_term ctxt.alph phi <> None in
+  if not_logical then None
+  else (
+    Format.printf "TEST new condition\n%!";
+    let r = Smt.Solver.forall_satisfiable ys phi (smt ()) ctxt.env in
+    if fst r = Smt.Smtresults.SAT then
+     Format.printf "results in substitution %s\n%!" (substr (snd r));
+    if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
 ;;
 
 (* Check whether constraints cs are satisfiable. *)
@@ -139,10 +190,12 @@ let constr_sat ctxt cs =
   logical_sat ctxt conj_cs
 ;;
 
+
 (* Check whether the given rewrite sequence constitutes a loop; to that end
    it is checked whether the initial term unifies with (a subterm of) the final
    term, and constraint conditions are satisfied. *)
-let check ctxt ((rule, rs, sigma) as seq) =
+let check ctxt (rule, rs, sigma) =
+  let start = Unix.gettimeofday () in
   let (s, t) = Rule.to_terms rule in
   let cs = Rule.constraints rule in
   let check' get_subst t' b =
@@ -150,15 +203,14 @@ let check ctxt ((rule, rs, sigma) as seq) =
       let tau = get_subst t' s in
       let sigma' = Sub.compose Sub.apply_term sigma tau in
       let rule' = if b then Rule.apply_sub tau rule else rule in
-      if subst_constr_valid ctxt cs sigma' then
+      if condition3 ctxt cs sigma' then
         Some (rule', rs, sigma')
       else (
-        match refined_subst_constr_valid ctxt cs sigma' with
+        match refined_condition5 ctxt cs sigma' with
           | None -> None
           | Some rho ->
             let rule'' = Rule.apply_sub rho rule' in
-        (
-         Some (rule'', rs, Sub.compose Sub.apply_term sigma' rho)))
+            Some (rule'', rs, Sub.compose Sub.apply_term sigma' rho))
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
   if not (constr_sat ctxt cs) then LL.empty
@@ -169,12 +221,14 @@ let check ctxt ((rule, rs, sigma) as seq) =
         | None -> ( match check' Elogic.unify t' true with
           | Some loop -> [loop]
           | None -> [])
-    in LL.of_list (L.flat_map check (Term.subterms t))
+    in
+    let res = LL.of_list (L.flat_map check (Term.subterms t)) in
+    check_time := !check_time +. Unix.gettimeofday () -. start;
+    res
 ;;
 
 (* Shorthand to rename a rule. *)
 let rename_rule c rule =
-  let fn = Alph.fun_names c.alph in
   let newenv = Environment.empty 10 in
   Rule.rename rule c.env
 ;;
@@ -193,15 +247,21 @@ let narrow c ((st, rs,sigma) as seq) p rule =
   with Elogic.Not_unifiable -> []
 ;;
 
+let last (_,rs,_) c = List.length rs + 1 = c.max_length
+
+let diff_root (rl, _ , _) = Term.root (Rule.lhs rl) <> Term.root (Rule.rhs rl)
+
 (* Do forward narrowing using rules in trs from last terms in sequence, trying
    possible rules and positions. For the rules to be applied at the root
+    srem(X, shl(A, B)) -> srem(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 8*/
    (typically dependency pairs) only consider rules which are smaller or equal
    to the first rule (with respect to some arbitrary order), to avoid redundant
    representations of same loop that start at different term. *)
 let forward c (rules_root, rules_below) ((st,rs,_) as seq) =
   let r0,_,_ = L.nth rs 0 in
-  let rsrt = L.filter (fun r -> Rule.compare r r0 <= 0) rules_root in
-  let rlps_root = List.map (Util.Pair.make Pos.root) rsrt in
+  let rsrt = (L.filter (fun r -> Rule.compare r r0 <= 0) rules_root) in
+  let rlps_root =if last seq c && diff_root seq then [] else 
+    (List.map (Util.Pair.make Pos.root) rsrt) in
   let ps = L.remove Pos.root (Term.funs_pos (Rule.rhs st)) in
   let rlps = rlps_root @ (L.product ps rules_below) in
   (* do not process already found loops further *)
@@ -242,11 +302,12 @@ let generate_loops ctxt start_rules step =
 
 (* Main functionality *)
 let process verbose prob =
+  Format.printf "Go looping %f\n%!" !check_time;
   let dps = Dpproblem.get_dps prob in
   let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let ctxt = mk_ctxt alph env 4 25 in
+  let ctxt = mk_ctxt alph env 3 25 in
   let loops = generate_loops ctxt dps (all_forward ctxt (dps, rules)) in
   if LL.null loops then None
   else (

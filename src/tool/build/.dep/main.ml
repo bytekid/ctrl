@@ -1,2 +1,0 @@
-src/tool/build/main.cmx: src/confluence/confluence.cmxa src/ctrs/ctrs.cmxa src/inductive/inductive.cmxa src/io/io.cmxa src/rewriting/rewriting.cmxa src/smt/smt.cmxa src/termination/termination.cmxa src/util/util.cmxa
-src/tool/build/main.cmo: src/confluence/confluence.cma src/ctrs/ctrs.cma src/inductive/inductive.cma src/io/io.cma src/rewriting/rewriting.cma src/smt/smt.cma src/termination/termination.cma src/util/util.cma
