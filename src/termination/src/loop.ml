@@ -111,6 +111,16 @@ let size_increasing rl = Term.size (Rule.lhs rl) < Term.size (Rule.rhs rl);;
 let size_decreasing rl = Term.size (Rule.lhs rl) > Term.size (Rule.rhs rl);;
 let size_keeping rl = Term.size (Rule.lhs rl) = Term.size (Rule.rhs rl);;
 
+let rl_has_dp_root c rl =
+ match Term.root (Rule.lhs rl) with
+   | None -> false
+   | Some f ->
+     let n = Function.find_name f in
+     String.get n (String.length n - 1) = '#'
+;;
+
+let seq_has_dp_root c (st, _,_) = rl_has_dp_root c st
+
 let conjunction ctxt =
   let mk_fun = Term.make_function ctxt.alph ctxt.env in
   let conj = Alph.get_and_symbol ctxt.alph in
@@ -246,7 +256,7 @@ let constr_sat ctxt cs =
 (* Check whether the given rewrite sequence constitutes a loop; to that end
    it is checked whether the initial term unifies with (a subterm of) the final
    term, and constraint conditions are satisfied. *)
-let check ctxt (rule, rs, sigma) =
+let check' ctxt (rule, rs, sigma) =
   let start = Unix.gettimeofday () in
   let (s, t) = Rule.to_terms rule in
   let cs = Rule.constraints rule in
@@ -274,11 +284,13 @@ let check ctxt (rule, rs, sigma) =
           | Some loop -> [loop]
           | None -> [])
     in
-    let res = L.flat_map check (Term.subterms t) in
+    let res = check t in
     check_time := !check_time +. Unix.gettimeofday () -. start;
     explain_all res;
     res
 ;;
+(* Only return loops starting with a DP symbol to avoid duplicates. *)
+let check c seq = if not (seq_has_dp_root c seq) then [] else check' c seq
 
 (* Shorthand to rename a rule. *)
 let rename_rule c rule =
@@ -341,16 +353,6 @@ let small c (st,_,_) =
   Term.size (Rule.lhs st) <= c.max_size && Term.size (Rule.lhs st) <= c.max_size
 ;;
 
-let rl_has_dp_root c rl =
- match Term.root (Rule.lhs rl) with
-   | None -> false
-   | Some f ->
-     let n = Function.find_name f in
-     String.get n (String.length n - 1) = '#'
-;;
-
-let seq_has_dp_root c (st, _,_) = rl_has_dp_root c st
-
 let seq_sat c (rl,_,tau) =
   constr_sat c (L.map (Sub.apply_term tau) (Rule.constraints rl))
 ;;
@@ -362,7 +364,7 @@ let rec all_forward c rules i (loops,seqs) =
   let len = i + 1 in
   if len > c.max_length then loops
   else (
-    Format.printf "Looking for sequences of length %d\n%!" (i+1);
+    Format.printf "Looking for sequences of length %d\n%!" len;
     (* determine whether we can use precomputed result*)
     let seqs, rules = 
       if len < 4 then seqs, rules
@@ -381,6 +383,9 @@ let rec all_forward c rules i (loops,seqs) =
       let lps, sqs = forward c do_all is_final rules seq in
       L.rev_append lps loops', L.rev_append sqs seqs'
     in
+    let rs1, rs2 = rules in
+    Format.printf "Combining %d sequences of length %d with %d rules\n%!"
+      (List.length seqs) i (List.length rs1 + (List.length rs2));
     let loops, seqs' = L.fold_left fw (loops,[]) seqs in
     let seqs'' = L.filter useful seqs' in
     Format.printf "Found %d sequences of length %d\n%!" (L.length seqs'') len;
@@ -398,6 +403,7 @@ let init_seq rule = (rule, [rule, Position.root, Rule.rhs rule], Sub.empty)
 *)
 let generate_loops ctxt start_rules step =
   let init_seqs = List.map init_seq start_rules in
+
   let lps, seqs = L.partition (fun seq -> check ctxt seq <> []) init_seqs in
   let loops = step 1 (lps, seqs) in
   loops
