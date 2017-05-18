@@ -49,6 +49,7 @@ DECLARE
   lshr_th : (BitVec _) * (BitVec _) => (BitVec _);
   log2_th : (BitVec _) => (BitVec _);
   MaskedValueIsZero : (BitVec _) * (BitVec _) => Bool;
+  max_th          : (BitVec _) * (BitVec _) => (BitVec _);
   sext_th : (BitVec _) => (BitVec _);
   trunc_th : (BitVec _) => (BitVec _);
   width : (BitVec _) => (BitVec _);
@@ -60,6 +61,7 @@ DECLARE
   WillNotOverflowUnsignedShl : (BitVec _) * (BitVec _) => Bool;
   WillNotOverflowUnsignedSub : (BitVec _) * (BitVec _) => Bool;
   zext_th : (BitVec _) => (BitVec _);
+
 
 
 WELLFOUNDED i>, u> ;
@@ -120,6 +122,8 @@ SMT-TRANSLATIONS
   zext_i1(x) -> ((_ zero_extend 31) x);
   sexti11(x) -> ((_ sign_extend 21) x);
   zexti11(x) -> ((_ zero_extend 21) x);
+  sext_th(x) -> ((_ sign_extend 0) x);
+  zext_th(x) -> ((_ zero_extend 0) x);
 
   trunc_th(x) -> ((_ zero_extend 0) x) ; /* FIXME: how to deal with bitvectors of different sizes? */
   width(x) -> ((_ zero_extend 0) #x00000020); /* FIXME: how to deal with bitvectors of different sizes? */

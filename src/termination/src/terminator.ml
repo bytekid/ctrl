@@ -37,6 +37,7 @@ let termination_procs = [Dpproblem.graph_proc;
                          Valuecriterion.extended_process];;
 
 let nontermination_procs = [(Dpproblem.graph_proc, TERMINATING);
+                            (Subtermcriterion.process, TERMINATING);
                             (Loop.process, NONTERMINATING)];;
 
 let check_dps framework original_rules verbose =
@@ -104,12 +105,11 @@ let check_dps_nonterm framework original_rules verbose =
     else
       let (problem, dp) = Dpframework.pop dpf in
       let probdesc = Dpproblem.tostring problem in
-      Format.printf "subproblem\n%!";
       if verbose then Printf.printf "%s%!" probdesc ;
       match f problem with
         | None -> repeat f dp txt answer
         | Some (result, expl, a) ->
-          let a = if result = [] then a else answer in
+          let a = if result = [] && a = NONTERMINATING then a else answer in
           repeat f (Dpframework.push_all dp result) (txt ^ probdesc ^ expl) a
   in
   if Dpframework.solved framework then (TERMINATING, "")

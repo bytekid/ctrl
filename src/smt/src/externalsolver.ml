@@ -274,8 +274,7 @@ let check_smt_file_and_parse problem solver env alf =
                 let rec add s k = if k <= 0 then s else add ("0" ^ s) (k-1) in
                 let v = String.sub value 2 (String.length value - 2) in
                 let v' = add value (bits / 4 - (String.length v - 2)) in*)
-                let v' = value in
-                let c = Alphabet.create_fun csort ("#x" ^ v') alf in
+                let c = Alphabet.create_fun csort value alf in
                 Alphabet.add_symbol_kind c Alphabet.Logical alf;
                 Term.Fun (c,[])
               else

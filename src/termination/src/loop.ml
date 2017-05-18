@@ -19,10 +19,12 @@
 
 (*** OPENS *******************************************************************)
 open Ctrs;;
+open Util;;
 
 (*** MODULES ******************************************************************)
-module L = Util.List
-module LL = Util.LazyList
+module L = List
+module H = Hashtbl
+module LL = LazyList
 module Sub = Substitution
 module P = Io.Printer
 module Alph = Alphabet
@@ -43,8 +45,10 @@ type seq = Rule.t * (Rule.t * Pos.t * Term.t) list * Sub.t
 
 let check_time = ref 0.;;
 let loop_count = ref 0;;
-let seq_cache : (int, seq list) Hashtbl.t = Hashtbl.create 5096;;
-let constr_sat_cache : (Term.t, bool) Hashtbl.t = Hashtbl.create 1024;;
+let seq_cache : (int, seq list) H.t = H.create 5096;;
+let constr_sat_cache : (Term.t, bool) H.t = H.create 1024;;
+
+let triple_fst (a,_,_) = a
 
 (* Create a context record. *)
 let mk_ctxt a e ml ms = { alph = a; env = e; max_length = ml; max_size = ms } 
@@ -79,8 +83,7 @@ let constraints_to_string = function
 (* String representation of loop, with explanation. *)
 let explanation ((rl,_,_) as loop) =
   let cs = Rule.constraints rl in
-  "We use the loop processor to conclude nontermination.\n" ^
-  "The loop is given by the sequence \n" ^ (sequence_to_string loop) ^
+  "A loop is given by the sequence \n" ^ (sequence_to_string loop) ^
   (if cs = [] then "" else " if " ^ (constraints_to_string cs) ^ " (" ^ (string_of_float !check_time) ^ ")\n" )
 ;;
 
@@ -103,6 +106,9 @@ let substr sigma =
   let app x t s = " " ^ (xstr x) ^ " -> " ^ (P.to_string_term t) ^ "\n" ^ s in
   "{" ^ (Sub.fold app sigma "}")
 ;;
+
+let size_increasing rl = Term.size (Rule.lhs rl) < Term.size (Rule.rhs rl);;
+let size_keeping rl = Term.size (Rule.lhs rl) = Term.size (Rule.rhs rl);;
 
 let conjunction ctxt =
   let mk_fun = Term.make_function ctxt.alph ctxt.env in
@@ -198,16 +204,41 @@ let refined_condition5 ctxt cs sigma =
     if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
 ;;
 
+let refined_condition6 ctxt cs sigma =
+  let fresh_rep sub y =
+    let s = Term.get_sort ctxt.alph ctxt.env (Term.Var y) in
+    Sub.add y (Term.make_var (Environment.create_sorted_var s [] ctxt.env)) sub 
+  in
+  let mk_fun = Term.make_function ctxt.alph ctxt.env in
+  let disj = Alph.get_or_symbol ctxt.alph in
+  let conj = Alph.get_and_symbol ctxt.alph in
+  let neg = Alph.get_not_symbol ctxt.alph in
+  let ys = Sub.fold (fun x _ vs -> x::vs) sigma [] in
+  let ys_zs = List.fold_left fresh_rep Sub.empty ys in
+  let c = conjunction ctxt cs in
+  let csigma = Sub.apply_term sigma c in
+  let csigma' = Term.logical_cap ctxt.alph ctxt.env csigma in
+  let zs = L.diff (Term.vars csigma') (Term.vars csigma) in
+  let imp = mk_fun disj [mk_fun neg [c]; csigma'] in
+  let phi = mk_fun conj [imp; Sub.apply_term ys_zs c] in 
+ (
+    Format.printf "TEST new condition\n%!";
+    let r = Smt.Solver.forall_satisfiable (zs @ ys) phi (smt ()) ctxt.env in
+    if fst r = Smt.Smtresults.SAT then
+     Format.printf "results in substitution %s\n%!" (substr (snd r));
+    if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
+;;
+
 (* Check whether constraints cs are satisfiable. *)
 let constr_sat ctxt cs =
   let mk_fun = Term.make_function ctxt.alph ctxt.env in
   let conj = Alph.get_and_symbol ctxt.alph in
   let top = mk_fun (Alph.get_top_symbol ctxt.alph) [] in
   let conj_cs = List.fold_left (fun a b -> mk_fun conj [a; b]) top cs in
-  try Hashtbl.find constr_sat_cache conj_cs
+  try H.find constr_sat_cache conj_cs
   with Not_found ->
     let res = logical_sat ctxt conj_cs in
-    Hashtbl.add constr_sat_cache conj_cs res;
+    H.add constr_sat_cache conj_cs res;
     res
 ;;
 
@@ -223,7 +254,7 @@ let check ctxt (rule, rs, sigma) =
       let tau = get_subst t' s in
       let sigma' = Sub.compose Sub.apply_term sigma tau in
       let rule' = if b then Rule.apply_sub tau rule else rule in
-      if condition3 ctxt cs sigma' then
+      if condition1 ctxt cs sigma' then
         Some (rule', rs, sigma')
       else (
         match refined_condition5 ctxt cs sigma' with
@@ -294,12 +325,33 @@ let small c (st,_,_) =
   Term.size (Rule.lhs st) <= c.max_size && Term.size (Rule.lhs st) <= c.max_size
 ;;
 
+let rl_has_dp_root c rl =
+ match Term.root (Rule.lhs rl) with
+   | None -> false
+   | Some f ->
+     let n = Function.find_name f in
+     String.get n (String.length n - 1) = '#'
+;;
+
+let seq_has_dp_root c (st, _,_) = rl_has_dp_root c st
+
 (* Do forward narrowing from last terms in sequences, trying all possible
    rules and positions but eliminating sequences that exceed the bounds. *)
 let rec all_forward c rules i (loops,seqs) =
   if i+1 > c.max_length then loops
   else (
     Format.printf "Looking for sequences of length %d\n%!" (i+1);
+    let seqs, rules = 
+      if (i+1) < 4 then seqs, rules
+      else
+        let j = (i+1) / 2 in
+        let rs = List.map triple_fst (H.find seq_cache (i+1-j)) in
+        H.find seq_cache j, List.partition (rl_has_dp_root c) rs
+    in
+    let seqs =
+      if 2 * (i+1) <= c.max_length then seqs
+      else List.filter (seq_has_dp_root c) seqs
+    in
     let cs (rl,_,tau) = L.map (Sub.apply_term tau) (Rule.constraints rl) in
     let useful seq = small c seq && (constr_sat c (cs seq)) in
     let fw (loops', seqs') seq =
@@ -309,7 +361,10 @@ let rec all_forward c rules i (loops,seqs) =
     let loops, seqs' = L.fold_left fw (loops,[]) seqs in
     let seqs'' = L.filter useful seqs' in
     Format.printf "Found %d sequences of length %d\n%!" (L.length seqs'') (i+1);
-    if seqs'' = [] then loops else all_forward c rules (i+1) (loops,seqs''))
+    if seqs'' = [] then loops
+    else (
+      H.add seq_cache (i+1) seqs'';
+      all_forward c rules (i+1) (loops,seqs'')))
 ;;
 
 (* The initial sequence, starting from a rule. *)
@@ -325,6 +380,10 @@ let generate_loops ctxt start_rules step =
   loops
 ;;
 
+let size_filter all xs =
+  if List.exists size_increasing all then xs
+  else (Format.printf "FILTER\n%!"; List.filter size_keeping xs)
+
 (* Main functionality *)
 let process verbose prob =
   Format.printf "Go looping %f\n%!" !check_time;
@@ -332,9 +391,14 @@ let process verbose prob =
   let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let ctxt = mk_ctxt alph env 2 25 in
-  let loops = generate_loops ctxt (dps) (all_forward ctxt (dps, rules)) in
+  let maxlen = 3 in
+  let ctxt = mk_ctxt alph env maxlen 25 in
+  let init = size_filter (dps @ rules) (dps @ rules) in 
+  let dpsf, rulesf = Pair.map (size_filter (dps @ rules)) (dps, rules) in
+  let loops = generate_loops ctxt init (all_forward ctxt (dpsf, rulesf)) in
   if loops = [] then None
-  else Some ([ ],  explanation (L.hd loops))
+  else
+    let e = "We use the loop processor to conclude nontermination.\n" in
+    Some ([ ],  e ^ (explanation (L.hd loops)))
 ;;
 
