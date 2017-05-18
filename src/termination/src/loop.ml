@@ -325,6 +325,7 @@ let forward c do_all is_final (rs_root, rs_below) ((st,rs,_) as seq) =
   let rs_root, rs_below =
     Pair.map (if is_final then size_filter st else id) (rs_root, rs_below)
   in
+  let rs_root = List.filter (same_root st) rs_root in
   let rs_root =
     if do_all then rs_root
     else L.filter (fun r -> Rule.compare r r0 <= 0) rs_root
