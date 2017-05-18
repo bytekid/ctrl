@@ -314,7 +314,7 @@ let narrow c ((st, rs,sigma) as seq) p rule =
 
 let last (_,rs,_) c = List.length rs + 1 = c.max_length
 
-let diff_root (rl, _ , _) = Term.root (Rule.lhs rl) <> Term.root (Rule.rhs rl)
+let root_changes rl = Term.root (Rule.lhs rl) <> Term.root (Rule.rhs rl)
 let same_root rl rl' = Term.root (Rule.rhs rl) = Term.root (Rule.lhs rl')
 
 (* Do forward narrowing using rules in trs from last terms in sequence, trying
@@ -329,15 +329,17 @@ let size_filter st rs =
 ;;
 
 (* If is_final is true then we are only interested in loops where the added
-   step is the final step. Thus if we have a size decrease so far we can
-   restrict to size-increasing rules. *)
+   step is the final step.  *)
 let forward c do_all is_final (rs_root, rs_below) ((st,rs,_) as seq) =
-  let r0,_,_ = L.nth rs 0 in
+  (* If final and different symbols at root, must rewrite at root.*)
+  let rs_below = if is_final && root_changes st then [] else rs_below in
+  (* If final and size decrease so far, restrict to size-increasing rules.*)
   let rs_root, rs_below =
     Pair.map (if is_final then size_filter st else id) (rs_root, rs_below)
   in
   let rs_root = List.filter (same_root st) rs_root in
   let rs_root =
+    let r0,_,_ = L.nth rs 0 in
     if do_all then rs_root
     else L.filter (fun r -> Rule.compare r r0 <= 0) rs_root
   in
@@ -357,6 +359,12 @@ let seq_sat c (rl,_,tau) =
   constr_sat c (L.map (Sub.apply_term tau) (Rule.constraints rl))
 ;;
 
+let first_rule_maximal (_,rpts,_) =
+  match List.map triple_fst rpts with
+    | rl0 :: rs -> List.for_all (fun rl -> Rule.compare rl rl0 <= 0) rs
+    | [] -> failwith "Loop.first_rule_maximal: empty rule set"
+;;
+
 (* Do forward narrowing from last terms in sequences, trying all possible
    rules and positions but eliminating sequences that exceed the bounds.
    Use previously computed results of shorter sequences. *)
@@ -373,11 +381,13 @@ let rec all_forward c rules i (loops,seqs) =
         let rs = List.map triple_fst (H.find seq_cache (len - j)) in
         H.find seq_cache j, List.partition (rl_has_dp_root c) rs
     in
-    (* if the currently computed sequences are not required for a computation
-       step later on, we can restrict to those starting with a DP symbol *)
     let do_all = len <= c.max_length / 2 in
     let is_final = len > (c.max_length + 1) / 2 in
+    (* if the currently computed sequences are not required for a computation
+       step later on, we can restrict to those starting with a DP symbol *)
     let seqs = if do_all then seqs else List.filter (seq_has_dp_root c) seqs in
+    (* Wlog assume that first rule is maximal (to avoid duplicates) *)
+    let seqs = if do_all then seqs else List.filter first_rule_maximal seqs in
     let useful seq = small c seq && (seq_sat c seq) in
     let fw (loops', seqs') seq =
       let lps, sqs = forward c do_all is_final rules seq in
@@ -420,7 +430,7 @@ let process verbose prob =
   let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let maxlen = 3 in
+  let maxlen = 4 in
   let ctxt = mk_ctxt alph env maxlen 25 in
   let init = size_filter (dps @ rules) (dps @ rules) in 
   let dpsf, rulesf = Pair.map (size_filter (dps @ rules)) (dps, rules) in
