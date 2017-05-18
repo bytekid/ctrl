@@ -316,6 +316,9 @@ let size_filter st rs =
   if size_decreasing st then List.filter size_increasing rs else rs
 ;;
 
+(* If is_final is true then we are only interested in loops where the added
+   step is the final step. Thus if we have a size decrease so far we can
+   restrict to size-increasing rules. *)
 let forward c do_all is_final (rs_root, rs_below) ((st,rs,_) as seq) =
   let r0,_,_ = L.nth rs 0 in
   (* TODO  && same_root st r*)
