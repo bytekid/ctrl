@@ -418,11 +418,6 @@ let generate_loops ctxt start_rules step =
   let loops = step 1 (lps, seqs) in
   loops
 ;;
-
-let size_filter all xs =
-  if List.exists size_increasing all then xs
-  else (Format.printf "FILTER\n%!"; List.filter size_keeping xs)
-
 (* Main functionality *)
 let process verbose prob =
   Format.printf "Go looping %f\n%!" !check_time;
@@ -432,8 +427,7 @@ let process verbose prob =
   let env = Dpproblem.get_environment prob in
   let maxlen = 4 in
   let ctxt = mk_ctxt alph env maxlen 25 in
-  let init = size_filter (dps @ rules) (dps @ rules) in 
-  let dpsf, rulesf = Pair.map (size_filter (dps @ rules)) (dps, rules) in
+  let dpsf, rulesf = Pair.map (dps @ rules) (dps, rules) in
   let loops = generate_loops ctxt init (all_forward ctxt (dpsf, rulesf)) in
   if loops = [] then None
   else
