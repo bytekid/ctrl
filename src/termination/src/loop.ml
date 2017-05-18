@@ -224,31 +224,6 @@ let refined_condition5 ctxt cs sigma =
     if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
 ;;
 
-let refined_condition6 ctxt cs sigma =
-  let fresh_rep sub y =
-    let s = Term.get_sort ctxt.alph ctxt.env (Term.Var y) in
-    Sub.add y (Term.make_var (Environment.create_sorted_var s [] ctxt.env)) sub 
-  in
-  let mk_fun = Term.make_function ctxt.alph ctxt.env in
-  let disj = Alph.get_or_symbol ctxt.alph in
-  let conj = Alph.get_and_symbol ctxt.alph in
-  let neg = Alph.get_not_symbol ctxt.alph in
-  let ys = Sub.fold (fun x _ vs -> x::vs) sigma [] in
-  let ys_zs = L.fold_left fresh_rep Sub.empty ys in
-  let c = conjunction ctxt cs in
-  let csigma = Sub.apply_term sigma c in
-  let csigma' = Term.logical_cap ctxt.alph ctxt.env csigma in
-  let zs = L.diff (Term.vars csigma') (Term.vars csigma) in
-  let imp = mk_fun disj [mk_fun neg [c]; csigma'] in
-  let phi = mk_fun conj [imp; Sub.apply_term ys_zs c] in 
- (
-    Format.printf "TEST new condition\n%!";
-    let r = Smt.Solver.forall_satisfiable (zs @ ys) phi (smt ()) ctxt.env in
-    if fst r = Smt.Smtresults.SAT then
-     Format.printf "results in substitution %s\n%!" (substr (snd r));
-    if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
-;;
-
 (* Check whether constraints cs are satisfiable. *)
 let constr_sat ctxt cs =
   let mk_fun = Term.make_function ctxt.alph ctxt.env in
