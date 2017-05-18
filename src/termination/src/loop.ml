@@ -321,7 +321,6 @@ let size_filter st rs =
    restrict to size-increasing rules. *)
 let forward c do_all is_final (rs_root, rs_below) ((st,rs,_) as seq) =
   let r0,_,_ = L.nth rs 0 in
-  (* TODO  && same_root st r*)
   let rs_root, rs_below =
     Pair.map (if is_final then size_filter st else id) (rs_root, rs_below)
   in
