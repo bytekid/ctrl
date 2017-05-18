@@ -108,6 +108,7 @@ let substr sigma =
 ;;
 
 let size_increasing rl = Term.size (Rule.lhs rl) < Term.size (Rule.rhs rl);;
+let size_decreasing rl = Term.size (Rule.lhs rl) > Term.size (Rule.rhs rl);;
 let size_keeping rl = Term.size (Rule.lhs rl) = Term.size (Rule.rhs rl);;
 
 let conjunction ctxt =
@@ -310,12 +311,24 @@ let same_root rl rl' = Term.root (Rule.rhs rl) = Term.root (Rule.lhs rl')
    (typically dependency pairs) only consider rules which are smaller or equal
    to the first rule (with respect to some arbitrary order), to avoid redundant
    representations of same loop that start at different term. *)
-let forward c (rules_root, rules_below) ((st,rs,_) as seq) =
+
+let size_filter st rs =
+  if size_decreasing st then List.filter size_increasing rs else rs
+;;
+
+let forward c do_all is_final (rs_root, rs_below) ((st,rs,_) as seq) =
   let r0,_,_ = L.nth rs 0 in
-  let rsrt = L.filter (fun r -> Rule.compare r r0 <= 0 && same_root st r) rules_root in
-  let rlps_root = (List.map (Util.Pair.make Pos.root) rsrt) in
+  (* TODO  && same_root st r*)
+  let rs_root, rs_below =
+    Pair.map (if is_final then size_filter st else id) (rs_root, rs_below)
+  in
+  let rs_root =
+    if do_all then rs_root
+    else L.filter (fun r -> Rule.compare r r0 <= 0) rs_root
+  in
+  let rlps_root = (List.map (Util.Pair.make Pos.root) rs_root) in
   let ps = L.remove Pos.root (Term.funs_pos (Rule.rhs st)) in
-  let rlps = rlps_root @ (L.product ps rules_below) in
+  let rlps = rlps_root @ (L.product ps rs_below) in
   let seqs = L.flat_map (fun (p,rl) -> narrow c seq p rl) rlps in
   L.partition (fun seq -> check c seq <> []) seqs
 ;;
@@ -335,36 +348,43 @@ let rl_has_dp_root c rl =
 
 let seq_has_dp_root c (st, _,_) = rl_has_dp_root c st
 
+let seq_sat c (rl,_,tau) =
+  constr_sat c (L.map (Sub.apply_term tau) (Rule.constraints rl))
+;;
+
 (* Do forward narrowing from last terms in sequences, trying all possible
-   rules and positions but eliminating sequences that exceed the bounds. *)
+   rules and positions but eliminating sequences that exceed the bounds.
+   Use previously computed results of shorter sequences. *)
 let rec all_forward c rules i (loops,seqs) =
-  if i+1 > c.max_length then loops
+  let len = i + 1 in
+  if len > c.max_length then loops
   else (
     Format.printf "Looking for sequences of length %d\n%!" (i+1);
+    (* determine whether we can use precomputed result*)
     let seqs, rules = 
-      if (i+1) < 4 then seqs, rules
+      if len < 4 then seqs, rules
       else
-        let j = (i+1) / 2 in
-        let rs = List.map triple_fst (H.find seq_cache (i+1-j)) in
+        let j = (len + 1) / 2 in
+        let rs = List.map triple_fst (H.find seq_cache (len - j)) in
         H.find seq_cache j, List.partition (rl_has_dp_root c) rs
     in
-    let seqs =
-      if 2 * (i+1) <= c.max_length then seqs
-      else List.filter (seq_has_dp_root c) seqs
-    in
-    let cs (rl,_,tau) = L.map (Sub.apply_term tau) (Rule.constraints rl) in
-    let useful seq = small c seq && (constr_sat c (cs seq)) in
+    (* if the currently computed sequences are not required for a computation
+       step later on, we can restrict to those starting with a DP symbol *)
+    let do_all = len <= c.max_length / 2 in
+    let is_final = len > (c.max_length + 1) / 2 in
+    let seqs = if do_all then seqs else List.filter (seq_has_dp_root c) seqs in
+    let useful seq = small c seq && (seq_sat c seq) in
     let fw (loops', seqs') seq =
-      let lps, sqs = forward c rules seq in
+      let lps, sqs = forward c do_all is_final rules seq in
       L.rev_append lps loops', L.rev_append sqs seqs'
     in
     let loops, seqs' = L.fold_left fw (loops,[]) seqs in
     let seqs'' = L.filter useful seqs' in
-    Format.printf "Found %d sequences of length %d\n%!" (L.length seqs'') (i+1);
+    Format.printf "Found %d sequences of length %d\n%!" (L.length seqs'') len;
     if seqs'' = [] then loops
     else (
-      H.add seq_cache (i+1) seqs'';
-      all_forward c rules (i+1) (loops,seqs'')))
+      H.add seq_cache len seqs'';
+      all_forward c rules len (loops,seqs'')))
 ;;
 
 (* The initial sequence, starting from a rule. *)
