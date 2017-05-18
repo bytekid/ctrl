@@ -84,8 +84,9 @@ let constraints_to_string = function
 (* String representation of loop, with explanation. *)
 let explanation ((rl,_,_) as loop) =
   let cs = Rule.constraints rl in
+  let cexp = " with side condition " ^ (constraints_to_string cs) in
   "A loop is given by the sequence \n" ^ (sequence_to_string loop) ^
-  (if cs = [] then "" else " if " ^ (constraints_to_string cs) ^ " (" ^ (string_of_float !check_time) ^ ")\n" )
+  (if cs = [] then "" else cexp ^ " (" ^ (string_of_float !check_time) ^ ")\n" )
 ;;
 
 let show loop =
@@ -207,15 +208,17 @@ let refined_condition5 ctxt cs sigma =
   let neg = Alph.get_not_symbol ctxt.alph in
   let ys = Sub.fold (fun x _ vs -> x::vs) sigma [] in
   let ys_zs = L.fold_left fresh_rep Sub.empty ys in
+  let zs = Sub.fold (fun x _ vs -> x::vs) ys_zs [] in
   let c = conjunction ctxt cs in
-  let csigma = Sub.apply_term sigma c in
-  let imp = mk_fun disj [mk_fun neg [c]; csigma] in
-  let phi = mk_fun conj [imp; Sub.apply_term ys_zs c] in 
+  let c_ren = Sub.apply_term ys_zs c in
+  let c_ren_sigma = Sub.apply_term sigma c_ren in
+  let imp = mk_fun disj [mk_fun neg [c_ren]; c_ren_sigma] in
+  let phi = mk_fun conj [imp; c] in
   let not_logical = Term.check_logical_term ctxt.alph phi <> None in
   if not_logical then None
   else (
-    Format.printf "TEST new condition\n%!";
-    let r = Smt.Solver.forall_satisfiable ys phi (smt ()) ctxt.env in
+    Format.printf "TEST refined condition\n%!";
+    let r = Smt.Solver.forall_satisfiable zs phi (smt ()) ctxt.env in
     if fst r = Smt.Smtresults.SAT then
      Format.printf "results in substitution %s\n%!" (substr (snd r));
     if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
@@ -271,14 +274,18 @@ let check' ctxt (rule, rs, sigma) =
       let tau = get_subst t' s in
       let sigma' = Sub.compose Sub.apply_term sigma tau in
       let rule' = if b then Rule.apply_sub tau rule else rule in
-      if condition1 ctxt cs sigma' then
-        Some (rule', subst_terms tau rs, sigma')
-      else (
+      let rs' = if b then subst_terms tau rs else rs in
+      (*if condition1 ctxt cs sigma' then
+        Some (rule', rs', sigma')
+      else*) (
         match refined_condition5 ctxt cs sigma' with
           | None -> None
           | Some rho ->
             let rule'' = Rule.apply_sub rho rule' in
-            Some (rule'', rs, Sub.compose Sub.apply_term sigma' rho))
+            Format.printf "from rule %s to rule %s\n%!"
+              (P.to_string_rule rule') (P.to_string_rule rule'');
+            let rs'' = subst_terms rho rs' in
+            Some (rule'', rs'', Sub.compose Sub.apply_term sigma' rho))
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
   if not (constr_sat ctxt cs) then []
@@ -300,19 +307,21 @@ let check c seq = if not (seq_has_dp_root c seq) then [] else check' c seq
 
 (* Shorthand to rename a rule. *)
 let rename_rule c rule =
-  let newenv = Environment.empty 10 in
-  Rule.rename rule c.env
+  let rho = Elogic.renaming [Rule.lhs rule; Rule.rhs rule] [] c.env in
+  Rule.apply_sub rho rule, rho
 ;;
 
 let to_ctxt ctx (rl,q,t) = (rl,Pos.append (Ctx.hole_pos ctx) q,Ctx.apply t ctx)
 
 (* Narrow last term in sequence using given rule at position p. *)
 let narrow c ((st,rs,sigma) as seq) p (rl,rs',sigma') =
-  let rule' = rename_rule c rl in
+  let rule',rho = rename_rule c rl in
   let l,r = Rule.lhs rule', Rule.rhs rule' in
   try
     let s,t = Rule.lhs st, Rule.rhs st in
     let mgu = Elogic.unify (Term.subterm p t) l in
+    let rs = subst_terms mgu rs in
+    let rs' = subst_terms (Sub.compose Sub.apply_term rho mgu) rs' in
     let constr = Rule.constraints st @ (Rule.constraints rule') in
     let st' = Rule.apply_sub mgu (Rule.create s (Term.replace p r t) constr) in
     let sigma' = Sub.compose Sub.apply_term sigma mgu in
