@@ -240,6 +240,15 @@ let constr_sat ctxt cs =
     res
 ;;
 
+(* Criteria for loop being redundant (output is suppressed):
+   - if root is not DP symbol a copy with DPed roots exists as well
+   - start loop with largest rule to avoid copies (this is already partially
+    filtered out in narrow, but if loop length is smaller or equal than half of
+    original loop length it's still returned) *)
+let decreasing (_, rpts) =
+  let r0,_,_ = L.hd rpts in 
+  L.for_all (fun rpt -> Rule.compare (rule rpt) r0 <= 0) rpts
+
 (* Check whether the given rewrite sequence constitutes a loop; to that end
    it is checked whether the initial term unifies with (a subterm of) the final
    term, and constraint conditions are satisfied. *)
@@ -260,7 +269,7 @@ let check ctxt ((rule, rs, sigma) as seq) =
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
   (* Only return loops starting with a DP symbol to avoid duplicates. *)
-  if not (seq_has_dp_root ctxt seq) || not (constr_sat ctxt cs) then None
+  if not (constr_sat ctxt cs) then None
   else
     let check t' =
       match check' Elogic.match_term t' false with
@@ -277,7 +286,9 @@ let check ctxt ((rule, rs, sigma) as seq) =
 
 let check_all c seqs =
   let chk (ls,ss) s = match check c s with Some l -> l::ls,ss | _ -> ls,s::ss in
-  List.fold_left chk ([],[]) seqs
+  let seqs = L.filter (seq_has_dp_root c) seqs in
+  let loops, seqs = List.fold_left chk ([],[]) seqs in
+  L.filter decreasing loops, seqs
 ;;
 
 (* Shorthand to rename a rule. *)
@@ -287,6 +298,8 @@ let rename_rule c rule =
 ;;
 
 let to_ctxt ctx (rl,q,t) = (rl,Pos.append (Ctx.hole_pos ctx) q,Ctx.apply t ctx)
+
+let sub_constr_sat c cs tau = constr_sat c (L.map (Sub.apply_term tau) cs)
 
 (* Narrow last term in sequence using given rule at position p. *)
 let narrow c ((st,rs,sigma) as seq) p (rl,rs',sigma') =
@@ -300,8 +313,10 @@ let narrow c ((st,rs,sigma) as seq) p (rl,rs',sigma') =
     let constr = Rule.constraints st @ (Rule.constraints rule') in
     let st' = Rule.apply_sub mgu (Rule.create s (Term.replace p r t) constr) in
     let sigma' = Sub.compose Sub.apply_term sigma mgu in
-    let ctxt_rs = List.map (to_ctxt (Ctx.of_term p t)) rs' in
-    [st', rs @ ctxt_rs, sigma']
+    if not (sub_constr_sat c constr sigma') then []
+    else
+      let ctxt_rs = List.map (to_ctxt (Ctx.of_term p t)) rs' in
+      [st', rs @ ctxt_rs, sigma']
   with Elogic.Not_unifiable -> []
 ;;
 
@@ -315,7 +330,6 @@ let root_changes rl = Term.root (Rule.lhs rl) <> Term.root (Rule.rhs rl)
    (typically dependency pairs) only consider rules which are smaller or equal
    to the first rule (with respect to some arbitrary order), to avoid redundant
    representations of same loop that start at different term. *)
-
 let size_filter seq rl_seqs =
   if size_decreasing seq then L.filter size_increasing rl_seqs else rl_seqs
 ;;
@@ -347,10 +361,6 @@ let small c (st,_,_) =
   Term.size (Rule.lhs st) <= c.max_size && Term.size (Rule.lhs st) <= c.max_size
 ;;
 
-let seq_sat c (rl,_,tau) =
-  constr_sat c (L.map (Sub.apply_term tau) (Rule.constraints rl))
-;;
-
 let first_rule_maximal (_,rpts,_) =
   match L.map rule rpts with
     | rl0 :: rs -> L.for_all (fun rl -> Rule.compare rl rl0 <= 0) rs
@@ -360,7 +370,7 @@ let first_rule_maximal (_,rpts,_) =
 (* Do forward narrowing from last terms in sequences, trying all possible
    rules and positions but eliminating sequences that exceed the bounds.
    Use previously computed results of shorter sequences. *)
-let rec all_forward c ruleseqs i (loops,seqs) =
+let rec unfold_all c ruleseqs i (loops,seqs) =
   let len = i + 1 in
   if len > c.max_length then loops
   else (
@@ -380,21 +390,24 @@ let rec all_forward c ruleseqs i (loops,seqs) =
     let seqs = if do_all then seqs else L.filter (seq_has_dp_root c) seqs in
     (* Wlog assume that first rule is maximal (to avoid duplicates) *)
     let seqs = if do_all then seqs else L.filter first_rule_maximal seqs in
-    let useful seq = small c seq && (seq_sat c seq) in
     let fw (loops', seqs') seq =
       let lps, sqs = forward c do_all is_final ruleseqs seq in
       L.rev_append lps loops', L.rev_append sqs seqs'
     in
     let rs1, rs2 = ruleseqs in
-    Format.printf "Combining %d sequences of length %d with %d rules\n%!"
-      (L.length seqs) i (L.length rs1 + (L.length rs2));
+    Format.printf "Combining %d sequences of length %d with %d rules %i\n%!"
+      (L.length seqs) i (L.length rs1 + (L.length rs2))
+      (if do_all then 1 else 0);
+    (*let seqss = if not is_final then seqs else
+    L.filter (fun s -> Term.size (rule_lhs s) - Term.size (rule_rhs s) <= 3) seqs in
+    Format.printf "throw out %d\n%!" (List.length seqs - (List.length seqs));*)
     let loops, seqs' = L.fold_left fw (loops,[]) seqs in
-    let seqs'' = L.filter useful seqs' in
+    let seqs'' = L.filter (small c) seqs' in
     Format.printf "Found %d sequences of length %d\n%!" (L.length seqs'') len;
     if seqs'' = [] then loops
     else (
       H.add seq_cache len seqs'';
-      all_forward c ruleseqs len (loops,seqs'')))
+      unfold_all c ruleseqs len (loops,seqs'')))
 ;;
 
 (* The initial sequence, starting from a rule. *)
@@ -405,18 +418,26 @@ let init_seqs = L.map init_seq;;
    to extend sequences. *)
 let generate_loops ctxt init_seqs step = step 1 (check_all ctxt init_seqs)
 
+let max_diff rls = 
+  let m = List.fold_left (fun m rl ->
+    let l,r = Rule.lhs rl, Rule.rhs rl in
+    max m (Term.size r - (Term.size l))) 0 rls in
+  Format.printf "max term size diff is %d\n%!" m 
+;;
+
 (* Main functionality *)
 let process verbose prob =
   Format.printf "Go looping %f\n%!" !check_time;
   let dps = Dpproblem.get_dps prob in
   let rules = Dpproblem.get_rules prob in
+  max_diff rules;
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
   let maxlen = 4 in
   let ctxt = mk_ctxt alph env maxlen 25 in
   let dprlseqs = Pair.map init_seqs (dps, rules) in
   let init_seqs = fst dprlseqs @ (snd dprlseqs) in
-  let loops = generate_loops ctxt init_seqs (all_forward ctxt dprlseqs) in
+  let loops = generate_loops ctxt init_seqs (unfold_all ctxt dprlseqs) in
   if loops = [] then None
   else
     let e = "We use the loop processor to conclude nontermination.\n" in
