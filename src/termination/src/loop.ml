@@ -38,7 +38,8 @@ type t = {
   alph: Alph.t;
   env: Environment.t;
   max_length: int;
-  max_size: int
+  max_size: int;
+  max_rule_inc: int
 }
 
 (* loop candidate *)
@@ -52,7 +53,9 @@ let constr_sat_cache : (Term.t, bool) H.t = H.create 1024;;
 let rule (a,_,_) = a
 
 (* Create a context record. *)
-let mk_ctxt a e ml ms = { alph = a; env = e; max_length = ml; max_size = ms } 
+let mk_ctxt a e ml ms inc = {
+  alph = a; env = e; max_length = ml; max_size = ms; max_rule_inc = inc
+}
 
 (* Returns the SMT-solver we will use (just the default) *)
 let smt () = Rewriter.smt_solver (Rewriter.get_current ());;
@@ -280,7 +283,6 @@ let check ctxt ((rule, rs, sigma) as seq) =
     in
     let res = check t in
     check_time := !check_time +. Unix.gettimeofday () -. start;
-    if Option.is_some res then show (Option.the res);
     res
 ;;
 
@@ -288,7 +290,9 @@ let check_all c seqs =
   let chk (ls,ss) s = match check c s with Some l -> l::ls,ss | _ -> ls,s::ss in
   let seqs = L.filter (seq_has_dp_root c) seqs in
   let loops, seqs = List.fold_left chk ([],[]) seqs in
-  L.filter decreasing loops, seqs
+  let loops, seqs = L.filter decreasing loops, seqs in
+  explain_all loops;
+  loops, seqs
 ;;
 
 (* Shorthand to rename a rule. *)
@@ -310,11 +314,11 @@ let narrow c ((st,rs,sigma) as seq) p (rl,rs',sigma') =
     let mgu = Elogic.unify (Term.subterm p t) l in
     let rs = subst_terms mgu rs in
     let rs' = subst_terms (Sub.compose Sub.apply_term rho mgu) rs' in
-    let constr = Rule.constraints st @ (Rule.constraints rule') in
-    let st' = Rule.apply_sub mgu (Rule.create s (Term.replace p r t) constr) in
+    let cnstr = Rule.constraints st @ (Rule.constraints rule') in
     let sigma' = Sub.compose Sub.apply_term sigma mgu in
-    if not (sub_constr_sat c constr sigma') then []
+    if not (sub_constr_sat c cnstr sigma') then []
     else
+      let st' = Rule.apply_sub mgu (Rule.create s (Term.replace p r t) cnstr) in
       let ctxt_rs = List.map (to_ctxt (Ctx.of_term p t)) rs' in
       [st', rs @ ctxt_rs, sigma']
   with Elogic.Not_unifiable -> []
@@ -367,8 +371,16 @@ let first_rule_maximal (_,rpts,_) =
     | [] -> failwith "Loop.first_rule_maximal: empty rule set"
 ;;
 
-(* Do forward narrowing from last terms in sequences, trying all possible
-   rules and positions but eliminating sequences that exceed the bounds.
+let within_step ctx seq =
+  Term.size (rule_lhs seq) - Term.size (rule_rhs seq) <= ctx.max_rule_inc
+;;
+
+let within_2_steps ctx seq =
+  Term.size (rule_lhs seq) - Term.size (rule_rhs seq) <= ctx.max_rule_inc * 2
+;;
+
+(* Do unfolding, trying all possible rules and positions but eliminating
+   sequences that exceed the bounds.
    Use previously computed results of shorter sequences. *)
 let rec unfold_all c ruleseqs i (loops,seqs) =
   let len = i + 1 in
@@ -398,10 +410,13 @@ let rec unfold_all c ruleseqs i (loops,seqs) =
     Format.printf "Combining %d sequences of length %d with %d rules %i\n%!"
       (L.length seqs) i (L.length rs1 + (L.length rs2))
       (if do_all then 1 else 0);
-    (*let seqss = if not is_final then seqs else
-    L.filter (fun s -> Term.size (rule_lhs s) - Term.size (rule_rhs s) <= 3) seqs in
-    Format.printf "throw out %d\n%!" (List.length seqs - (List.length seqs));*)
-    let loops, seqs' = L.fold_left fw (loops,[]) seqs in
+    let seqss =
+      if is_final then L.filter (within_step c) seqs
+      else if len <> (c.max_length + 1) / 2 then seqs
+      else L.filter (within_2_steps c) seqs 
+    in
+    Format.printf "throw out %d\n%!" (List.length seqs - (List.length seqss));
+    let loops, seqs' = L.fold_left fw (loops,[]) seqss in
     let seqs'' = L.filter (small c) seqs' in
     Format.printf "Found %d sequences of length %d\n%!" (L.length seqs'') len;
     if seqs'' = [] then loops
@@ -422,7 +437,8 @@ let max_diff rls =
   let m = List.fold_left (fun m rl ->
     let l,r = Rule.lhs rl, Rule.rhs rl in
     max m (Term.size r - (Term.size l))) 0 rls in
-  Format.printf "max term size diff is %d\n%!" m 
+  Format.printf "max term size diff is %d\n%!" m;
+  m
 ;;
 
 (* Main functionality *)
@@ -434,7 +450,7 @@ let process verbose prob =
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
   let maxlen = 4 in
-  let ctxt = mk_ctxt alph env maxlen 25 in
+  let ctxt = mk_ctxt alph env maxlen 25 (max_diff rules) in
   let dprlseqs = Pair.map init_seqs (dps, rules) in
   let init_seqs = fst dprlseqs @ (snd dprlseqs) in
   let loops = generate_loops ctxt init_seqs (unfold_all ctxt dprlseqs) in
