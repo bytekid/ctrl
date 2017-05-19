@@ -212,20 +212,19 @@ let refined_condition5 ctxt cs sigma =
   let neg = Alph.get_not_symbol ctxt.alph in
   let ys = Sub.fold (fun x _ vs -> x::vs) sigma [] in
   let ys_zs = L.fold_left fresh_rep Sub.empty ys in
-  let zs = Sub.fold (fun x _ vs -> x::vs) ys_zs [] in
   let c = conjunction ctxt cs in
-  let c_ren = Sub.apply_term ys_zs c in
-  let c_ren_sigma = Sub.apply_term sigma c_ren in
-  let imp = mk_fun disj [mk_fun neg [c_ren]; c_ren_sigma] in
-  let phi = mk_fun conj [imp; c] in
+  let csigma = Sub.apply_term sigma c in
+  let imp = mk_fun disj [mk_fun neg [c]; csigma] in
+  let phi = mk_fun conj [imp; Sub.apply_term ys_zs c] in
   let not_logical = Term.check_logical_term ctxt.alph phi <> None in
   if not_logical then None
   else (
-    Format.printf "TEST refined condition\n%!";
-    let r = Smt.Solver.forall_satisfiable zs phi (smt ()) ctxt.env in
+    Format.printf "Refined condition\n%!";
+    let r = Smt.Solver.forall_satisfiable ys phi (smt ()) ctxt.env in
     if fst r = Smt.Smtresults.SAT then
      Format.printf "results in substitution %s\n%!" (substr (snd r));
-    if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
+    if fst r <> Smt.Smtresults.SAT then None
+    else Some (Sub.compose Sub.apply_term ys_zs (snd r)))
 ;;
 
 (* Check whether constraints cs are satisfiable. *)
