@@ -257,18 +257,6 @@ let check ctxt ((rule, rs, sigma) as seq) =
       let res1 = Option.map sub_map (condition1 ctxt cs sigma') in
       if Option.is_some res1 then res1
       else Option.map sub_map (refined_condition5 ctxt cs sigma')
-      (*match condition1 ctxt cs sigma' with
-        | Some rho ->
-            let rule'' = Rule.apply_sub rho rule' in
-            let rs'' = subst_terms rho rs' in
-            Some (rule'', rs'', sigma')
-        | None -> (
-          match refined_condition5 ctxt cs sigma' with
-            | None -> None
-            | Some rho ->
-              let rule'' = Rule.apply_sub rho rule' in
-              let rs'' = subst_terms rho rs' in
-              Some (rule'', rs'', sigma'))*)
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
   (* Only return loops starting with a DP symbol to avoid duplicates. *)
@@ -424,7 +412,7 @@ let process verbose prob =
   let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let maxlen = 3 in
+  let maxlen = 4 in
   let ctxt = mk_ctxt alph env maxlen 25 in
   let dprlseqs = Pair.map init_seqs (dps, rules) in
   let init_seqs = fst dprlseqs @ (snd dprlseqs) in
