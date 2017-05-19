@@ -156,8 +156,12 @@ let condition1 ctxt cs sigma =
   let c1 = conjunction ctxt cs in
   let c2 = Sub.apply_term sigma c1 in
   let c = mk_fun disj [mk_fun neg [c1]; c2] in
-  let r = logical_valid ctxt c in
-  r
+  let valid = logical_valid ctxt c in
+  if not valid then None
+  else (
+    let r = Smt.Solver.satisfiable_formulas [c1] (smt ()) ctxt.env in
+    if fst r = Smt.Smtresults.SAT then Some (snd r)
+    else failwith "Loop.condition1: unsatisfiable constraint")
 ;;
 
 (* (3) Given constraints cs and a loop substitution sigma, check whether
@@ -250,17 +254,18 @@ let check' ctxt (rule, rs, sigma) =
       let sigma' = Sub.compose Sub.apply_term sigma tau in
       let rule' = if b then Rule.apply_sub tau rule else rule in
       let rs' = if b then subst_terms tau rs else rs in
-      (*if condition1 ctxt cs sigma' then
-        Some (rule', rs', sigma')
-      else*) (
-        match refined_condition5 ctxt cs sigma' with
-          | None -> None
-          | Some rho ->
+      match condition1 ctxt cs sigma' with
+        | Some rho ->
             let rule'' = Rule.apply_sub rho rule' in
-            Format.printf "from rule %s to rule %s\n%!"
-              (P.to_string_rule rule') (P.to_string_rule rule'');
             let rs'' = subst_terms rho rs' in
-            Some (rule'', rs'', Sub.compose Sub.apply_term sigma' rho))
+            Some (rule'', rs'', Sub.compose Sub.apply_term sigma' rho)
+        | None -> (
+          match refined_condition5 ctxt cs sigma' with
+            | None -> None
+            | Some rho ->
+              let rule'' = Rule.apply_sub rho rule' in
+              let rs'' = subst_terms rho rs' in
+              Some (rule'', rs'', Sub.compose Sub.apply_term sigma' rho))
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
   if not (constr_sat ctxt cs) then []
