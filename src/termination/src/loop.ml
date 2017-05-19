@@ -58,7 +58,7 @@ let mk_ctxt a e ml ms = { alph = a; env = e; max_length = ml; max_size = ms }
 let smt () = Rewriter.smt_solver (Rewriter.get_current ());;
 
 (* String representation of loop. *)
-let sequence_to_string (st, rs,_) =
+let sequence_to_string (st, rs) =
   let add_step (str,t) (rule,p, u) =
   try
     let str =
@@ -82,7 +82,7 @@ let constraints_to_string = function
 ;;
 
 (* String representation of loop, with explanation. *)
-let explanation ((rl,_,_) as loop) =
+let explanation ((rl,_) as loop) =
   let cs = Rule.constraints rl in
   let cexp = " with side condition " ^ (constraints_to_string cs) in
   "A loop is given by the sequence \n" ^ (sequence_to_string loop) ^
@@ -244,7 +244,7 @@ let constr_sat ctxt cs =
 (* Check whether the given rewrite sequence constitutes a loop; to that end
    it is checked whether the initial term unifies with (a subterm of) the final
    term, and constraint conditions are satisfied. *)
-let check' ctxt (rule, rs, sigma) =
+let check ctxt ((rule, rs, sigma) as seq) =
   let start = Unix.gettimeofday () in
   let (s, t) = Rule.to_terms rule in
   let cs = Rule.constraints rule in
@@ -254,36 +254,44 @@ let check' ctxt (rule, rs, sigma) =
       let sigma' = Sub.compose Sub.apply_term sigma tau in
       let rule' = if b then Rule.apply_sub tau rule else rule in
       let rs' = if b then subst_terms tau rs else rs in
-      match condition1 ctxt cs sigma' with
+      let sub_map rho = (Rule.apply_sub rho rule', subst_terms rho rs') in
+      let res1 = Option.map sub_map (condition1 ctxt cs sigma') in
+      if Option.is_some res1 then res1
+      else Option.map sub_map (refined_condition5 ctxt cs sigma')
+      (*match condition1 ctxt cs sigma' with
         | Some rho ->
             let rule'' = Rule.apply_sub rho rule' in
             let rs'' = subst_terms rho rs' in
-            Some (rule'', rs'', Sub.compose Sub.apply_term sigma' rho)
+            Some (rule'', rs'', sigma')
         | None -> (
           match refined_condition5 ctxt cs sigma' with
             | None -> None
             | Some rho ->
               let rule'' = Rule.apply_sub rho rule' in
               let rs'' = subst_terms rho rs' in
-              Some (rule'', rs'', Sub.compose Sub.apply_term sigma' rho))
+              Some (rule'', rs'', sigma'))*)
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
-  if not (constr_sat ctxt cs) then []
+  (* Only return loops starting with a DP symbol to avoid duplicates. *)
+  if not (seq_has_dp_root ctxt seq) || not (constr_sat ctxt cs) then None
   else
     let check t' =
       match check' Elogic.match_term t' false with
-        | Some loop -> [loop]
+        | Some loop -> Some loop
         | None -> ( match check' Elogic.unify t' true with
-          | Some loop -> [loop]
-          | None -> [])
+          | Some loop -> Some loop
+          | None -> None)
     in
     let res = check t in
     check_time := !check_time +. Unix.gettimeofday () -. start;
-    explain_all res;
+    if Option.is_some res then show (Option.the res);
     res
 ;;
-(* Only return loops starting with a DP symbol to avoid duplicates. *)
-let check c seq = if not (seq_has_dp_root c seq) then [] else check' c seq
+
+let check_all c seqs =
+  let chk (ls,ss) s = match check c s with Some l -> l::ls,ss | _ -> ls,s::ss in
+  List.fold_left chk ([],[]) seqs
+;;
 
 (* Shorthand to rename a rule. *)
 let rename_rule c rule =
@@ -344,7 +352,7 @@ let forward c do_all is_final (rs_root, rs_below) ((st,rs,_) as seq) =
   let ps = L.remove Pos.root (Term.funs_pos (Rule.rhs st)) in
   let rlps = rlps_root @ (L.product ps rs_below) in
   let seqs = L.flat_map (fun (p,rl) -> narrow c seq p rl) rlps in
-  L.partition (fun seq -> check c seq <> []) seqs
+  check_all c seqs
 ;;
 
 (* Checking whether the sequence does not exceed the maximal term size. *)
@@ -407,13 +415,9 @@ let init_seq rule = (rule, [rule, Position.root, Rule.rhs rule], Sub.empty);;
 let init_seqs = L.map init_seq;;
 
 (* Generates loops, starting from rule set rules and using the step function
-   to extend sequences.
-*)
-let generate_loops ctxt init_seqs step =
-  let lps, seqs = L.partition (fun seq -> check ctxt seq <> []) init_seqs in
-  let loops = step 1 (lps, seqs) in
-  loops
-;;
+   to extend sequences. *)
+let generate_loops ctxt init_seqs step = step 1 (check_all ctxt init_seqs)
+
 (* Main functionality *)
 let process verbose prob =
   Format.printf "Go looping %f\n%!" !check_time;
@@ -421,7 +425,7 @@ let process verbose prob =
   let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let maxlen = 2 in
+  let maxlen = 3 in
   let ctxt = mk_ctxt alph env maxlen 25 in
   let dprlseqs = Pair.map init_seqs (dps, rules) in
   let init_seqs = fst dprlseqs @ (snd dprlseqs) in
