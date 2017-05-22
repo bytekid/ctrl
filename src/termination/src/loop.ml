@@ -180,35 +180,6 @@ let condition1 ctxt cs sigma =
     else failwith "Loop.condition1: unsatisfiable constraint")
 ;;
 
-(* (3) Given constraints cs and a loop substitution sigma, check whether
-   cs => lcap(cs sigma) is valid. *)
-let condition3 ctxt cs sigma =
-  let mk_fun = T.make_function ctxt.alph ctxt.env in
-  let disj = Alph.get_or_symbol ctxt.alph in
-  let neg = Alph.get_not_symbol ctxt.alph in
-  let c1 = conjunction ctxt cs in
-  let c2 = T.logical_cap ctxt.alph ctxt.env (Sub.apply_term sigma c1) in
-  let c = mk_fun disj [mk_fun neg [c1]; c2] in
-  let r = logical_valid ctxt c in
-  r
-;;
-
-(* (4) Given constraints cs and a loop substitution sigma, check whether
-   cs sigma is logical, and, if yes, 
-   cs /\ \bigwedge_{x \in Dom(sigma)} (x = x sigma) is satisfiable. If yes,
-   the resulting substitution is a loop witness *)
-let refined_condition4 ctxt cs sigma =
-  let mk_fun = T.make_function ctxt.alph ctxt.env in
-  let eq = Alph.get_equal_symbol ctxt.alph in
-  let app x t cs = (mk_fun eq [T.make_var x; t]) :: cs in
-  let c = conjunction ctxt (Sub.fold app sigma cs) in
-  let not_logical = T.check_logical_term ctxt.alph c <> None in
-  if not_logical then None
-  else (
-    let r = Smt.Solver.satisfiable_formulas [c] (smt ()) ctxt.env in
-    if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
-;;
-
 (* (5) Given constraints cs and a loop substitution \sigma. Let
    X \subseteq Dom(\sigma) be the variables x such that x\sigma = x, and
    Y = Dom(\sigma) - X be the variables y such that y\sigma != y. Check whether
