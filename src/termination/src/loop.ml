@@ -180,6 +180,23 @@ let condition1 ctxt cs sigma =
     else failwith "Loop.condition1: unsatisfiable constraint")
 ;;
 
+(* (4) Given constraints cs and a loop substitution sigma, check whether
+   cs sigma is logical, and, if yes,
+   cs /\ \bigwedge_{x \in Dom(sigma)} (x = x sigma) is satisfiable. If yes,
+   the resulting substitution is a loop witness *)
+let refined_condition4 ctxt cs sigma =
+  let mk_fun = T.make_function ctxt.alph ctxt.env in
+  let eq = Alph.get_equal_symbol ctxt.alph in
+  let app x t cs = (mk_fun eq [T.make_var x; t]) :: cs in
+  let c = conjunction ctxt (Sub.fold app sigma cs) in
+  let not_logical = T.check_logical_term ctxt.alph c <> None in
+  if not_logical then None
+  else (
+    let r = Smt.Solver.satisfiable_formulas [c] (smt ()) ctxt.env in
+    if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
+;;
+
+
 (* (5) Given constraints cs and a loop substitution \sigma. Let
    X \subseteq Dom(\sigma) be the variables x such that x\sigma = x, and
    Y = Dom(\sigma) - X be the variables y such that y\sigma != y. Check whether
@@ -206,10 +223,9 @@ let refined_condition5 ctxt cs sigma =
   let not_logical = T.check_logical_term ctxt.alph phi <> None in
   if not_logical then None
   else (
-    Format.printf "Refined condition\n%!";
     let r = Smt.Solver.forall_satisfiable ys phi (smt ()) ctxt.env in
     if fst r = Smt.Smtresults.SAT then
-     Format.printf "results in substitution %s\n%!" (substr (snd r));
+     Format.printf "Refined condition results in substitution %s\n%!" (substr (snd r));
     if fst r <> Smt.Smtresults.SAT then None
     else Some (Sub.compose Sub.apply_term ys_zs (snd r)))
 ;;
@@ -447,9 +463,12 @@ let max_diff rls =
   let m = List.fold_left (fun m rl ->
     let l,r = Rule.lhs rl, Rule.rhs rl in
     max m (T.size r - (T.size l))) 0 rls in
-  Format.printf "max term size diff is %d\n%!" m;
+  (*Format.printf "max term size diff is %d\n%!" m;*)
   m
 ;;
+
+let non_size_dec =
+  List.filter (fun rl -> Term.size (Rule.lhs rl) <= Term.size (Rule.rhs rl))
 
 (* Main functionality *)
 let process verbose prob =
