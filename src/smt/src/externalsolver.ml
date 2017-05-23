@@ -133,11 +133,14 @@ let variable_assignments lst =
 (* runs the smt-solver on the given problem and returns the list of
 variable assignments *)
 let call_solver problem solver =
-  let _ = Unix.system "touch tmp.smt" in
-  write_file "tmp.smt" problem ;
-  let _ = Unix.system ("timeout 3 ./" ^ solver ^ " tmp.smt > smt-output") in
-  let ret = read_file "smt-output" in
-  let _ = Unix.system "rm tmp.smt smt-output" in
+  let file = Filename.temp_file "ctrl" ".smt" in
+  let out = Str.string_before file (String.length file - 4) ^ ".out" in
+  write_file file problem;
+  let _ = Unix.system ("timeout 3 ./" ^ solver ^ " " ^ file ^ " > " ^ out) in
+  let ret = read_file out in
+  ignore (Unix.system ("rm " ^ file));
+  if Sys.file_exists out then (* might not exist if error/timeout occurred *)
+    ignore (Unix.system ("rm " ^ out));
   let trouble () = (* DEBUGGING *)
     if Util.query_debugging () then
       Printf.printf "%s\n%s\n"
@@ -145,6 +148,9 @@ let call_solver problem solver =
     (UNKNOWN, [])
   in
   let res = SmtResultReader.read ret in
+  if Util.query_debugging () then (
+    assert (not (Sys.file_exists out));
+    assert (not (Sys.file_exists file)));
   if fst res = UNKNOWN then trouble () else res
 ;;
 
