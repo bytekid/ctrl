@@ -348,7 +348,6 @@ let exists_valid vars form smt env =
 (* returns (hopefully) whether Al vars [form] is satisfiable; this
 does not have quite so many optimisations yet *)
 let forall_satisfiable vars form t e =
-  Printf.printf "In forall_satisfiable\n" ;
   if List.length vars = 0 then satisfiable_formulas [form] t e
   else (
     let rec forall = function
