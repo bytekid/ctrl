@@ -39,6 +39,7 @@ DECLARE
   Abs_th : (BitVec _) => (BitVec _) ;
   ashr_th : (BitVec _) * (BitVec _) => (BitVec _);
   computeKnownZeroBits : (BitVec _) => (BitVec _);
+  computeNumSignBits : (BitVec _) => (BitVec _);
   countLeadingZeros : (BitVec _) => (BitVec _);
   countTrailingZeros : (BitVec _) => (BitVec _);
   hasOneUse : Bool;
@@ -51,6 +52,7 @@ DECLARE
   MaskedValueIsZero : (BitVec _) * (BitVec _) => Bool;
   max_th          : (BitVec _) * (BitVec _) => (BitVec _);
   sext_th : (BitVec _) => (BitVec _);
+  sexti15 : (BitVec _) => (BitVec _);
   trunc_th : (BitVec _) => (BitVec _);
   width : (BitVec _) => (BitVec _);
   WillNotOverflowSignedAdd : (BitVec _) * (BitVec _) => Bool;
@@ -61,6 +63,8 @@ DECLARE
   WillNotOverflowUnsignedShl : (BitVec _) * (BitVec _) => Bool;
   WillNotOverflowUnsignedSub : (BitVec _) * (BitVec _) => Bool;
   zext_th : (BitVec _) => (BitVec _);
+  zexti15 : (BitVec _) => (BitVec _);
+  ZExtOrTrunc_i11 : (BitVec _) => (BitVec _);
 
 
 
@@ -100,6 +104,7 @@ SMT-TRANSLATIONS
   Abs_th(x) -> (ite (bvsge x #x00000000) x (bvneg x));
   ashr_th(x,y) -> (bvashr x y);           /* not in SMT-LIB but accepted by Z3 */
   computeKnownZeroBits(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
+  computeNumSignBits(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
   countLeadingZeros(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
   countTrailingZeros(x) -> ((_ zero_extend 0) x); /* worst case: everything is known */
   isPowerOf2(x) -> (and (= (bvand x (bvsub x #x00000001)) #x00000000) (not (= x #x00000000))) ;
@@ -122,6 +127,8 @@ SMT-TRANSLATIONS
   zext_i1(x) -> ((_ zero_extend 31) x);
   sexti11(x) -> ((_ sign_extend 21) x);
   zexti11(x) -> ((_ zero_extend 21) x);
+  sexti15(x) -> ((_ sign_extend 21) x);
+  zexti15(x) -> ((_ zero_extend 21) x);
   sext_th(x) -> ((_ sign_extend 0) x);
   zext_th(x) -> ((_ zero_extend 0) x);
 

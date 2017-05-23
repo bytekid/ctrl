@@ -367,8 +367,8 @@ binops = ["&&", "||"]
 lBinop = Or(mkLit(s) for s in binops)
 cmps = ["==", "!=", "<", ">", "u<", "u>", "<=", ">=", "u<=", "u>="]
 lCmp = Or(mkLit(s) for s in cmps)
-funs = ["abs", "computeKnownZeroBits", "countLeadingZeros","countTrailingZeros", \
-        "log2", "lshr", \
+funs = ["abs", "computeKnownZeroBits", "countLeadingZeros", \
+        "countTrailingZeros",  "computeNumSignBits", "log2", "lshr", \
         "max", "umax", "width"]
 xfuns = ["sext", "trunc", "zext", "ZExtOrTrunc"]
 lBvFun = Or(mkLit(s) for s in funs + xfuns)
