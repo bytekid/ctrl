@@ -1,0 +1,85 @@
+THEORY bitvectors;
+LOGIC QF_UFBV;
+SOLVER external;
+SIGNATURE lshr_i31, lshr_i33, Xor, lshr_i17, lshr, ashr_exact_i33, sub, shl_nsw_i31, ashr_i33, shl_i27, ashr_i31, shl_nsw, add, ashr_exact, srem_i31, shl_nuw, mul, mul_i7, srem, shl_nuw_i27, sext, Or, trunc, And, zext, shl_i17, shl_i31, shl_i33, srem_i27, lshr_exact, ashr, lshr_exact_i31, shl, srem_i29,  !BITVECTOR;
+
+RULES
+    shl(Op0, srem_i31(A, C)) -> shl(Op0, And(A, CL0))  [ (((C -i #x00000001) = CL0) /\ isPowerOf2(C))] ; /* InstCombineShift: 46*/
+    ashr(Op0, srem_i29(A, C)) -> ashr(Op0, And(A, CL0))  [ (((C -i #x00000001) = CL0) /\ isPowerOf2(C))] ; /* InstCombineShift: 46-2*/
+    lshr(Op0, srem_i27(A, C)) -> lshr(Op0, And(A, CL0))  [ (((C -i #x00000001) = CL0) /\ isPowerOf2(C))] ; /* InstCombineShift: 46-3*/
+    shl(shl(X, C1), C2) -> #x00000000  [ (zext_th((C1 +i C2)) i>= width(C1))] ; /* InstCombineShift: 228*/
+    shl(shl_i33(X, C1), C2) -> shl(X, CL0)  [ (((C1 +i C2) = CL0) /\ (zext_th((C1 +i C2)) i< width(C2)))] ; /* InstCombineShift: 234*/
+    lshr(shl(X, C), C) -> And(X, CL0)  [ ((#xffffffff u>> C) = CL0)] ; /* InstCombineShift: 239*/
+    lshr(shl_i27(X, C1), C2) -> shl(X, CL0)  [ (((C1 -i C2) = CL0) /\ ((C1 i> C2) /\ MaskedValueIsZero(X, ((#xffffffff u>> (width(C2) -i C2)) << (width(C1) -i C1)))))] ; /* InstCombineShift: 252*/
+    lshr(lshr(X, C1), C2) -> #x00000000  [ (zext_th((C1 +i C2)) i>= width(C1))] ; /* InstCombineShift: 270*/
+    lshr(lshr_i33(X, C1), C2) -> lshr(X, CL0)  [ (((C1 +i C2) = CL0) /\ (zext_th((C1 +i C2)) i< width(C1)))] ; /* InstCombineShift: 274*/
+    shl(lshr(X, C), C) -> And(X, CL0)  [ ((#xffffffff << C) = CL0)] ; /* InstCombineShift: 279*/
+    shl(lshr_i31(X, C1), C2) -> lshr(X, CL0)  [ (((C1 -i C2) = CL0) /\ ((C1 i> C2) /\ MaskedValueIsZero(X, ((#xffffffff u>> (width(C2) -i C2)) << (C1 -i C2)))))] ; /* InstCombineShift: 292*/
+    shl(mul_i7(X, C1), C2) -> mul(X, CL0)  [ ((C1 << C2) = CL0)] ; /* InstCombineShift: 351*/
+    shl_i17(trunc(shl(X, C1)), C2) -> trunc(And(shl(shl(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) << zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-1*/
+    shl_i17(trunc(lshr(X, C1)), C2) -> trunc(And(shl(lshr(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) << zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-2*/
+    shl_i17(trunc(ashr(X, C1)), C2) -> trunc(And(shl(ashr(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) << zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-3*/
+    lshr_i17(trunc(shl(X, C1)), C2) -> trunc(And(lshr(shl(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) u>> zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-4*/
+    lshr_i17(trunc(lshr(X, C1)), C2) -> trunc(And(lshr(lshr(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) u>> zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-5*/
+    lshr_i17(trunc(ashr(X, C1)), C2) -> trunc(And(lshr(ashr(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) u>> zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-6*/
+    shl(add(Y, lshr_i31(X, C)), C) -> And(add(shl(Y, C), X), CL0)  [ ((#xffffffff << C) = CL0)] ; /* InstCombineShift: 422-1*/
+    shl(add(Y, ashr_i31(X, C)), C) -> And(add(shl(Y, C), X), CL0)  [ ((#xffffffff << C) = CL0)] ; /* InstCombineShift: 422-2*/
+    shl(Xor(Y, And(lshr(X, C), C2)), C) -> Xor(And(X, CL0), shl(Y, C))  [ ((C2 << C) = CL0)] ; /* InstCombineShift: 440*/
+    shl(sub(ashr_i31(X, C), Y), C) -> And(sub(X, shl(Y, C)), CL0)  [ ((#xffffffff << C) = CL0)] ; /* InstCombineShift: 458*/
+    shl(Or(And(lshr(X, C), C2), Y), C) -> Or(And(X, CL0), shl(Y, C))  [ ((C2 << C) = CL0)] ; /* InstCombineShift: 476*/
+    lshr(Xor(X, C2), C) -> Xor(lshr(X, C), CL0)  [ ((C2 u>> C) = CL0)] ; /* InstCombineShift: 497*/
+    ashr(Xor(X, C2), C) -> Xor(ashr(X, C), CL0)  [ (((C2 >> C) = CL0) /\ ((C2 u>> (width(C) -i #x00000001)) = #x00000000))] ; /* InstCombineShift: 497*/
+    ashr(And(X, C2), C) -> And(ashr(X, C), CL0)  [ (((C2 >> C) = CL0) /\ ((C2 u>> (width(C) -i #x00000001)) = #x00000001))] ; /* InstCombineShift: 497*/
+    shl(add(X, C2), C) -> add(shl(X, C), CL0)  [ ((C2 << C) = CL0)] ; /* InstCombineShift: 497*/
+    shl(shl(X, C2), C) -> #x00000000  [ (zext_th((C +i C2)) i>= width(C))] ; /* InstCombineShift: 573*/
+    ashr(ashr(X, C2), C) -> ashr(X, CL0)  [ (((width(C) -i #x00000001) = CL0) /\ (zext_th((C +i C2)) i>= width(C)))] ; /* InstCombineShift: 574*/
+    shl(shl_i31(X, C2), C) -> shl(X, CL0)  [ (((C +i C2) = CL0) /\ (zext_th((C +i C2)) i< width(C)))] ; /* InstCombineShift: 577*/
+    lshr(shl(X, C), C) -> And(X, CL0)  [ ((#xffffffff u>> C) = CL0)] ; /* InstCombineShift: 582*/
+    shl_i33(ashr_exact(X, C1), C2) -> shl(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_nsw_i31(ashr_exact(X, C1), C2) -> shl_nsw(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_nuw(ashr_exact(X, C1), C2) -> shl_nuw_i27(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_i33(lshr_exact(X, C1), C2) -> shl(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_nsw_i31(lshr_exact(X, C1), C2) -> shl_nsw(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_nuw(lshr_exact(X, C1), C2) -> shl_nuw_i27(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    lshr_i33(shl_nuw(X, C1), C2) -> lshr(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 612*/
+    lshr_exact(shl_nuw(X, C1), C2) -> lshr_exact_i31(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 612*/
+    lshr_i33(shl(X, C1), C2) -> And(lshr(X, CL0), CL1)  [ (((#xffffffff u>> C2) = CL1) /\ (((C2 -i C1) = CL0) /\ (C1 i< C2)))] ; /* InstCombineShift: 622*/
+    ashr_i33(shl_nsw(X, C1), C2) -> ashr(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 628*/
+    ashr_exact_i33(shl_nsw(X, C1), C2) -> ashr_exact(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 628-2*/
+    shl_i33(lshr_exact(X, C1), C2) -> lshr_exact(X, CL0)  [ (((C1 -i C2) = CL0) /\ (C1 i> C2))] ; /* InstCombineShift: 646*/
+    shl_i33(ashr_exact(X, C1), C2) -> ashr_exact(X, CL0)  [ (((C1 -i C2) = CL0) /\ (C1 i> C2))] ; /* InstCombineShift: 646-2*/
+    lshr_i33(shl_nuw(X, C1), C2) -> shl_nuw(X, CL0)  [ (((C1 -i C2) = CL0) /\ (C1 i> C2))] ; /* InstCombineShift: 661*/
+    lshr_i33(shl(X, C1), C2) -> And(shl(X, CL0), CL1)  [ (((C1 -i C2) = CL0) /\ (((#xffffffff u>> C2) = CL1) /\ (C1 i> C2)))] ; /* InstCombineShift: 670*/
+    ashr_i33(shl_nsw(X, C1), C2) -> shl_nsw(X, CL0)  [ (((C1 -i C2) = CL0) /\ (C1 i> C2))] ; /* InstCombineShift: 676*/
+    shl(Op0, C) -> shl_nuw(Op0, C)  [ MaskedValueIsZero(Op0, (#xffffffff << (width(C) -i C)))] ; /* InstCombineShift: 708*/
+    shl(Op0, C) -> shl_nsw(Op0, C)  [ (computeNumSignBits(Op0) i> C)] ; /* InstCombineShift: 717*/
+    shl(shl_i31(C1, A), C2) -> shl(CL0, A)  [ ((C1 << C2) = CL0)] ; /* InstCombineShift: 724*/
+    lshr(Op0, C) -> lshr_exact(Op0, C)  [ MaskedValueIsZero(Op0, ((#x00000001 << C) -i #x00000001))] ; /* InstCombineShift: 767*/
+    ashr_i33(shl(zext(x), C), C) -> sext(x)  [ (C = (width(zext_th(x)) -i width(x)))] ; /* InstCombineShift: 807*/
+    ashr(Op0, C) -> ashr_exact(Op0, C)  [ MaskedValueIsZero(Op0, ((#x00000001 << C) -i #x00000001))] ; /* InstCombineShift: 812*/
+    ashr(Op0, Op1) -> lshr(Op0, Op1)  [ MaskedValueIsZero(Op0, (#x00000001 << (width(lshr_th(Op0, Op1)) -i #x00000001)))] ; /* InstCombineShift: 821*/
+    lshr_i31(X0, X1) -> lshr(X0, X1); /**/
+    lshr_i17(X0, X1) -> lshr(X0, X1); /**/
+    shl_i27(X0, X1) -> shl(X0, X1); /**/
+    srem_i29(X0, X1) -> srem(X0, X1); /**/
+    mul_i7(X0, X1) -> mul(X0, X1); /**/
+    ashr_exact_i33(X0, X1) -> ashr(X0, X1); /**/
+    shl_i33(X0, X1) -> shl(X0, X1); /**/
+    shl_nsw_i31(X0, X1) -> shl(X0, X1); /**/
+    ashr_exact(X0, X1) -> ashr(X0, X1); /**/
+    shl_i31(X0, X1) -> shl(X0, X1); /**/
+    shl_nsw(X0, X1) -> shl(X0, X1); /**/
+    lshr_exact_i31(X0, X1) -> lshr(X0, X1); /**/
+    shl_nuw(X0, X1) -> shl(X0, X1); /**/
+    lshr_i33(X0, X1) -> lshr(X0, X1); /**/
+    shl_i17(X0, X1) -> shl(X0, X1); /**/
+    srem_i31(X0, X1) -> srem(X0, X1); /**/
+    srem_i27(X0, X1) -> srem(X0, X1); /**/
+    ashr_i33(X0, X1) -> ashr(X0, X1); /**/
+    shl_nuw_i27(X0, X1) -> shl(X0, X1); /**/
+    lshr_exact(X0, X1) -> lshr(X0, X1); /**/
+    ashr_i31(X0, X1) -> ashr(X0, X1); /**/
+
+NON-STANDARD IRREGULAR
+
+QUERY loops

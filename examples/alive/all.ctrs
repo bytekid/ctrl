@@ -1,0 +1,555 @@
+THEORY bitvectors;
+LOGIC QF_UFBV;
+SOLVER external;
+SIGNATURE Or_i11, Xor, icmp_sge, icmp_ugt, icmp_ugt_i32, lshr, icmp_sgt, icmp_uge, add_i9,  max,  select, 
+icmp_eq, sub, add, sub_i9, zext_15, True, icmp_ult_i32, sext_15, icmp_slt_i32, sext, icmp_ne, icmp, Or, And, 
+icmp_ult, False, icmp_slt, ZExtOrTrunc, zext, shl, ashr, icmp_sgt_i32, Xor, 
+add_i1, lshr, sub_nuw, zext_i1, select, sub, shl_nsw, sub_nsw, add_nuw, add, 
+shl_nuw, mul, sub_i1, add_nsw, sext, sdiv_i9, sext_i1, Or, trunc, And, sdiv, zext, 
+shl, ashr,  Xor, icmp_sge, icmp_ugt, lshr, icmp_sgt, icmp_uge, sexti11, umax, 
+icmp_ne, select, icmp_eq, sub, add, zext_11, True, trunc_11, add_i29, sext_11, 
+sext, sext_i1, icmp, Or, trunc, And, icmp_ult, False, icmp_slt, zexti11, icmp_ule, 
+trunci11, zext, shl, ashr,  srem_i9, lshr, Abs, icmp_ne, mul_nuw_i7, shl_i7, 
+udiv_exact_i9, select, icmp_eq, sub, shl_nsw_i7, zext_Ty, shl_nsw_i9, srem_i11, 
+udiv_exact_i13, ashr, udiv_exact, add, ashr_exact, mul_nuw, shl_nuw, 
+sdiv_exact_i33, mul, mul_nuw_nsw, mul_nsw, And, log2, srem, urem_i9, mul_nsw_nuw, 
+urem, shl_i13, udiv_i13, mul_nsw_i7, sdiv_i7, mul_i1, sdiv_i5, icmp, urem_i33, 
+udiv_i5, udiv_i7, icmp_ult, lshr_i9, sdiv, mul_i11, udiv_i9, shl_i33, shl_nuw_i7, 
+sdiv_exact, lshr_exact, shl_nsw_nuw_i9, mul_nuw_nsw_i7, shl_i23, mul_nuw_i11, 
+udiv, zext, shl, sub_nsw_i11, mul_i7, shl_i17, shl_nuw_i9, shl_i27, lshr_i33,
+lshr_i31, srem_i31, srem_i27,srem_i29, shl_i31, ashr_i31, lshr_i17, 
+Or_i11, Xor, icmp_sge, icmp_ugt, icmp_ugt_i32, lshr, icmp_sgt, icmp_uge, 
+add_i9, select, icmp_eq, sub, add, sub_i9, zext_15, True, icmp_ult_i32, sext_15, 
+icmp_slt_i32, sext, icmp_ne, icmp, Or, ZExtOrTrunc_11, And, icmp_ult, False, 
+icmp_slt, ZExtOrTrunc, zext, shl, ashr, icmp_sgt_i32, 
+lshr_i31, lshr_i33, Xor, lshr_i17, lshr, ashr_exact_i33, sub, shl_nsw_i31,
+ashr_i33, shl_i27, ashr_i31, shl_nsw, add, ashr_exact, srem_i31, shl_nuw, mul, mul_i7,
+ srem, shl_nuw_i27, sext, Or, trunc, And, zext, shl_i17, shl_i31, shl_i33, srem_i27,
+  lshr_exact, ashr, lshr_exact_i31, shl, srem_i29,  !BITVECTOR;
+
+RULES
+    udiv(X, lshr(shl_i33(#x00000001, A), B)) -> udiv(X, shl(#x00000001, sub(A, B)))  [ hasOneUse] ; /* simplifyValueKnownNonZero 1*/
+    udiv(X, lshr(A, B)) -> udiv(X, lshr_exact(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* simplifyValueKnownNonZero 2*/
+    udiv(X, shl(A, B)) -> udiv(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* simplifyValueKnownNonZero 3*/
+    sdiv(X, lshr(shl_i33(#x00000001, A), B)) -> sdiv(X, shl(#x00000001, sub(A, B)))  [ hasOneUse] ; /* simplifyValueKnownNonZero 4*/
+    sdiv(X, lshr(A, B)) -> sdiv(X, lshr_exact(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* simplifyValueKnownNonZero 5*/
+    sdiv(X, shl(A, B)) -> sdiv(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* simplifyValueKnownNonZero 6*/
+    urem(X, lshr(shl_i33(#x00000001, A), B)) -> urem(X, shl(#x00000001, sub(A, B)))  [ hasOneUse] ; /* simplifyValueKnownNonZero 7*/
+    urem(X, lshr(A, B)) -> urem(X, lshr_exact(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* simplifyValueKnownNonZero 8*/
+    urem(X, shl(A, B)) -> urem(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* simplifyValueKnownNonZero 9*/
+    srem(X, lshr(shl_i33(#x00000001, A), B)) -> srem(X, shl(#x00000001, sub(A, B)))  [ hasOneUse] ; /* simplifyValueKnownNonZero 10*/
+    srem(X, lshr(A, B)) -> srem(X, lshr_exact(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* simplifyValueKnownNonZero 11*/
+    srem(X, shl(A, B)) -> srem(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* simplifyValueKnownNonZero 12*/
+    mul(x, #xffffffff) -> sub(#x00000000, x); /* 152*/
+    mul(shl_i7(x, C2), C1) -> mul(x, CL0)  [ ((C1 << C2) = CL0)] ; /* 160*/
+    mul_i11(x, C1) -> shl(x, CL0)  [ ((log2_th(C1) = CL0) /\ isPowerOf2(C1))] ; /* 168*/
+    mul_nuw_i11(x, C1) -> shl_nuw(x, CL0)  [ ((log2_th(C1) = CL0) /\ isPowerOf2(C1))] ; /* 168-2*/
+    mul(sub(Y, X), C) -> mul(sub(X, Y), CL0)  [ ((Abs_th(C) = CL0) /\ ((C i< #x00000000) /\ isPowerOf2(Abs_th(C))))] ; /* 201*/
+    mul(add(Y, C1), C) -> mul(sub(neg(C1), Y), CL0)  [ ((Abs_th(C) = CL0) /\ ((C i< #x00000000) /\ isPowerOf2(Abs_th(C))))] ; /* 203*/
+    mul(add(X, C1), Op1) -> add(mul(X, Op1), mul(C1, Op1)); /* 229*/
+    mul(sub(#x00000000, X), sub(#x00000000, Y)) -> mul(X, Y); /* 239*/
+    mul(udiv_exact(X, Y), Y) -> X; /* 265*/
+    mul(sdiv_exact(X, Y), Y) -> X; /* 265-2*/
+    mul(udiv_exact(X, Y), sub(#x00000000, Y)) -> sub(#x00000000, X); /* 266*/
+    mul(sdiv_exact(X, Y), sub(#x00000000, Y)) -> sub(#x00000000, X); /* 266-2*/
+    mul(udiv_i5(X, Y), Y) -> sub(X, urem(X, Y)); /* 275*/
+    mul(sdiv_i5(X, Y), Y) -> sub(X, srem(X, Y)); /* 275-2*/
+    mul(sdiv_i5(X, Y), sub(#x00000000, Y)) -> sub(srem(X, Y), X); /* 276*/
+    mul(udiv_i5(X, Y), sub(#x00000000, Y)) -> sub(urem(X, Y), X); /* 276-2*/
+    mul_i1(X, Y) -> And(X, Y); /* 283*/
+    mul(shl(#x00000001, Y), Op1) -> shl(Op1, Y); /* 290 & 292*/
+    mul(Op0, Op1) -> And(sub(#x00000000, Op0), Op1)  [ MaskedValueIsZero(Op0, #xfffffffe)] ; /* 304*/
+    udiv(X, select(c, Y, #x00000000)) -> udiv(X, Y); /* SimplifyDivRemOfSelect*/
+    sdiv(sdiv_i7(X, C1), C2) -> sdiv(X, CL0)  [ (((C1 *i C2) = CL0) /\ WillNotOverflowSignedMul(C1, C2))] ; /* 735*/
+    udiv(udiv_i7(X, C1), C2) -> udiv(X, CL0)  [ (((C1 *i C2) = CL0) /\ WillNotOverflowUnsignedMul(C1, C2))] ; /* 735*/
+    sdiv(mul_nsw_i7(X, C1), C2) -> sdiv(X, CL0)  [ (((C2 / C1) = CL0) /\ ((C2 % C1) = #x00000000))] ; /* 748*/
+    sdiv_exact(mul_nsw_i7(X, C1), C2) -> sdiv_exact(X, CL0)  [ (((C2 / C1) = CL0) /\ ((C2 % C1) = #x00000000))] ; /* 748*/
+    udiv(mul_nuw_i7(X, C1), C2) -> udiv(X, CL0)  [ (((C2 /u C1) = CL0) /\ ((C2 %u C1) = #x00000000))] ; /* 748*/
+    udiv_exact(mul_nuw_i7(X, C1), C2) -> udiv_exact(X, CL0)  [ (((C2 /u C1) = CL0) /\ ((C2 %u C1) = #x00000000))] ; /* 748*/
+    sdiv(mul_nsw_i7(X, C1), C2) -> mul_nsw(X, CL0)  [ (((C1 / C2) = CL0) /\ ((C1 % C2) = #x00000000))] ; /* 756*/
+    udiv(mul_nuw_i7(X, C1), C2) -> mul_nuw(X, CL0)  [ (((C1 /u C2) = CL0) /\ ((C1 %u C2) = #x00000000))] ; /* 756*/
+    udiv(mul_nuw_nsw_i7(X, C1), C2) -> mul_nuw_nsw(X, CL0)  [ (((C1 /u C2) = CL0) /\ ((C1 %u C2) = #x00000000))] ; /* 756*/
+    sdiv(shl_nsw_i9(X, C1), C2) -> sdiv(X, CL0)  [ (((C2 / (#x00000001 << C1)) = CL0) /\ (((C2 % (#x00000001 << C1)) = #x00000000) /\ (C1 != (width(C1) -i #x00000001))))] ; /* 764*/
+    sdiv_exact(shl_nsw_i7(X, C1), C2) -> sdiv_exact(X, CL0)  [ (((C2 / (#x00000001 << C1)) = CL0) /\ (((C2 % (#x00000001 << C1)) = #x00000000) /\ (C1 != (width(C1) -i #x00000001))))] ; /* 764*/
+    udiv(shl_nuw_i9(X, C1), C2) -> udiv(X, CL0)  [ (((C2 /u (#x00000001 << C1)) = CL0) /\ ((C2 %u (#x00000001 << C1)) = #x00000000))] ; /* 764*/
+    udiv_exact(shl_nuw_i7(X, C1), C2) -> udiv_exact(X, CL0)  [ (((C2 /u (#x00000001 << C1)) = CL0) /\ ((C2 %u (#x00000001 << C1)) = #x00000000))] ; /* 764*/
+    sdiv(shl_nsw_i9(X, C1), C2) -> mul_nsw(X, CL0)  [ ((((#x00000001 << C1) / C2) = CL0) /\ ((((#x00000001 << C1) % C2) = #x00000000) /\ (C1 != (width(C1) -i #x00000001))))] ; /* 772*/
+    udiv(shl_nuw_i9(X, C1), C2) -> mul_nuw(X, CL0)  [ ((((#x00000001 << C1) /u C2) = CL0) /\ (((#x00000001 << C1) %u C2) = #x00000000))] ; /* 772*/
+    udiv(shl_nsw_nuw_i9(X, C1), C2) -> mul_nsw_nuw(X, CL0)  [ ((((#x00000001 << C1) /u C2) = CL0) /\ (((#x00000001 << C1) %u C2) = #x00000000))] ; /* 772*/
+    sdiv(#x00000001, X) -> select(icmp_ult(add(X, #x00000001), #x00000003), X, #x00000000); /* 805*/
+    udiv(#x00000001, X) -> zext(icmp_eq(X, #x00000001)); /* 809*/
+    sdiv(sub(X, srem_i9(X, Op1)), Op1) -> sdiv(X, Op1); /* 820*/
+    udiv(sub(X, urem_i9(X, Op1)), Op1) -> udiv(X, Op1); /* 820*/
+    udiv_i9(x, C) -> lshr(x, CL0)  [ ((log2_th(C) = CL0) /\ isPowerOf2(C))] ; /* 865*/
+    udiv_exact_i9(x, C) -> lshr_exact(x, CL0)  [ ((log2_th(C) = CL0) /\ isPowerOf2(C))] ; /* 865*/
+    udiv(x, C) -> select(icmp_ult(x, C), #x00000000, #x00000001)  [ (C u>= (#x00000001 << (width(C) -i #x00000001)))] ; /* 876*/
+    udiv(x, shl_i13(#x00000001, N)) -> lshr(x, N); /* 891*/
+    udiv_exact(x, shl_i13(#x00000001, N)) -> lshr_exact(x, N); /* 891-exact*/
+    udiv(x, shl_i13(C, N)) -> lshr(x, add(N, CL0))  [ ((log2_th(C) = CL0) /\ isPowerOf2(C))] ; /* 891-2*/
+    udiv_exact(x, shl_i13(C, N)) -> lshr_exact(x, add(N, CL0))  [ ((log2_th(C) = CL0) /\ isPowerOf2(C))] ; /* 891-2*/
+    udiv_i13(x, zext(shl(C, N))) -> lshr(x, zext(add(N, CL0)))  [ ((log2_th(C) = CL0) /\ isPowerOf2(C))] ; /* 891-3*/
+    udiv_exact_i13(x, zext(shl(C, N))) -> lshr_exact(x, zext(add(N, CL0)))  [ ((log2_th(C) = CL0) /\ isPowerOf2(C))] ; /* 891-3*/
+    udiv(lshr_i9(X, C1), C2) -> udiv(X, CL0)  [ (((C2 << C1) = CL0) /\ WillNotOverflowUnsignedShl(C2, C1))] ; /* 968*/
+    udiv(zext_Ty(X), zext_Ty(Y)) -> zext(udiv(X, Y)); /* 976*/
+    udiv_exact_i9(zext_Ty(X), zext_Ty(Y)) -> zext(udiv_exact(X, Y)); /* 976-exact*/
+    sdiv(X, #xffffffff) -> sub(#x00000000, X); /* 1030*/
+    sdiv_exact_i33(Op0, C) -> ashr_exact(Op0, CL0)  [ ((log2_th(C) = CL0) /\ ((C i>= #x00000000) /\ isPowerOf2(C)))] ; /* 1033*/
+    sdiv(Op0, C) -> zext(icmp_eq(Op0, C))  [ isSignBit(C)] ; /* 1045*/
+    sdiv(sub_nsw_i11(#x00000000, X), C) -> sdiv(X, neg(C)); /* 1049*/
+    sdiv(Op0, Op1) -> udiv(Op0, Op1)  [ (MaskedValueIsZero(Op0, (#x00000001 << (width(Op0) -i #x00000001))) /\ MaskedValueIsZero(Op1, (#x00000001 << (width(Op0) -i #x00000001))))] ; /* 1062*/
+    sdiv(Op0, shl_i23(C, X)) -> udiv(Op0, shl_i23(C, X))  [ (MaskedValueIsZero(Op0, (#x00000001 << (width(Op0) -i #x00000001))) /\ isPowerOf2(C))] ; /* 1065*/
+    urem(zext_Ty(X), zext_Ty(Y)) -> zext(urem(X, Y)); /* 1285*/
+    urem_i33(Op0, Op1) -> And(Op0, add(Op1, #xffffffff))  [ isPowerOf2OrZero(Op1)] ; /* 1291*/
+    urem(#x00000001, Op1) -> zext(icmp_ne(Op1, #x00000001)); /* 1298*/
+    srem_i11(Op0, C) -> srem(Op0, neg(C))  [ ((C i< #x00000000) /\ not(isSignBit(C)))] ; /* 1321*/
+    srem(Op0, Op1) -> urem(Op0, Op1)  [ (MaskedValueIsZero(Op1, (#x00000001 << (width(Op1) -i #x00000001))) /\ MaskedValueIsZero(Op0, (#x00000001 << (width(Op0) -i #x00000001))))] ; /* 1333*/
+    shl_nuw_i9(X0, X1) -> shl(X0, X1); /**/
+    zext_Ty(X0) -> zext(X0); /**/
+    shl_nsw_nuw_i9(X0, X1) -> shl(X0, X1); /**/
+    urem_i9(X0, X1) -> urem(X0, X1); /**/
+    srem_i11(X0, X1) -> srem(X0, X1); /**/
+    sdiv_exact_i33(X0, X1) -> sdiv(X0, X1); /**/
+    mul_nuw(X0, X1) -> mul(X0, X1); /**/
+    mul_nuw_nsw(X0, X1) -> mul(X0, X1); /**/
+    shl_i7(X0, X1) -> shl(X0, X1); /**/
+    urem_i33(X0, X1) -> urem(X0, X1); /**/
+    icmp_eq(X0, X1) -> icmp(X0, X1); /**/
+    mul_nuw_nsw_i7(X0, X1) -> mul(X0, X1); /**/
+    udiv_exact_i9(X0, X1) -> udiv(X0, X1); /**/
+    shl_i33(X0, X1) -> shl(X0, X1); /**/
+    shl_nsw_i7(X0, X1) -> shl(X0, X1); /**/
+    mul_nsw(X0, X1) -> mul(X0, X1); /**/
+    udiv_i9(X0, X1) -> udiv(X0, X1); /**/
+    shl_i23(X0, X1) -> shl(X0, X1); /**/
+    icmp_ne(X0, X1) -> icmp(X0, X1); /**/
+    sdiv_i7(X0, X1) -> sdiv(X0, X1); /**/
+    icmp_ult(X0, X1) -> icmp(X0, X1); /**/
+    udiv_exact(X0, X1) -> udiv(X0, X1); /**/
+    mul_nuw_i7(X0, X1) -> mul(X0, X1); /**/
+    udiv_i13(X0, X1) -> udiv(X0, X1); /**/
+    shl_nuw(X0, X1) -> shl(X0, X1); /**/
+    srem_i9(X0, X1) -> srem(X0, X1); /**/
+    udiv_i5(X0, X1) -> udiv(X0, X1); /**/
+    sdiv_i5(X0, X1) -> sdiv(X0, X1); /**/
+    mul_nuw_i11(X0, X1) -> mul(X0, X1); /**/
+    mul_i11(X0, X1) -> mul(X0, X1); /**/
+    mul_i1(X0, X1) -> mul(X0, X1); /**/
+    lshr_exact(X0, X1) -> lshr(X0, X1); /**/
+    sdiv_exact(X0, X1) -> sdiv(X0, X1); /**/
+    shl_nuw_i7(X0, X1) -> shl(X0, X1); /**/
+    udiv_exact_i13(X0, X1) -> udiv(X0, X1); /**/
+    udiv_i7(X0, X1) -> udiv(X0, X1); /**/
+    mul_nsw_nuw(X0, X1) -> mul(X0, X1); /**/
+    ashr_exact(X0, X1) -> ashr(X0, X1); /**/
+    mul_nsw_i7(X0, X1) -> mul(X0, X1); /**/
+    shl_i13(X0, X1) -> shl(X0, X1); /**/
+    shl_nsw_i9(X0, X1) -> shl(X0, X1); /**/
+    sub_nsw_i11(X0, X1) -> sub(X0, X1); /**/
+    lshr_i9(X0, X1) -> lshr(X0, X1); /**/
+
+    And(Xor(X, C1), C2) -> Xor(And(X, C2), CL0)  [ ((C1 & C2) = CL0)] ;
+    And(Or(X, C1), C2) -> And(Or(X, CL0), C2)  [ ((C1 & C2) = CL0)] ;
+    And(Or(X, C1), C2) -> Or(And(X, CL0), C1)  [ (((C2 ^ (C1 & C2)) = CL0) /\ ((C1 & C2) = C1))] ;
+    And(add(X, C1), C2) -> And(X, C2)  [ (isPowerOf2(C2) /\ (((C1 & (C2 -i #x00000001)) = #x00000000) /\ ((C2 & C1) = #x00000000)))] ;
+    And(add(X, C1), C2) -> Xor(And(X, C2), C2)  [ (isPowerOf2(C2) /\ (((C1 & (C2 -i #x00000001)) = #x00000000) /\ ((C2 & C1) != #x00000000)))] ;
+    And(shl(X, C1), C2) -> shl(X, C1)  [ ((C2 & (#xffffffff << C1)) = (#xffffffff << C1))] ;
+    And(shl(X, C1), C2) -> And(shl(X, C1), CL0)  [ (((C2 & (#xffffffff << C1)) = CL0) /\ (((C2 & (#xffffffff << C1)) != (#xffffffff << C1)) /\ ((C2 & (#xffffffff << C1)) != C2)))] ;
+    And(lshr(X, C1), C2) -> lshr(X, C1)  [ ((C2 & lshr_th(#xffffffff, C1)) = lshr_th(#xffffffff, C1))] ;
+    And(lshr(X, C1), C2) -> And(lshr(X, C1), CL0)  [ (((C2 & lshr_th(#xffffffff, C1)) = CL0) /\ ((C2 & lshr_th(#xffffffff, C1)) != lshr_th(#xffffffff, C1)))] ;
+    And(ashr(X, C1), C2) -> And(lshr(X, C1), C2)  [ (hasOneUse /\ ((C2 & lshr_th(#xffffffff, C1)) = C2))] ;
+    And(icmp_sge(X, C1), icmp_slt(X, C2)) -> False  [ ((C1 i<= C2) /\ (C1 = C2))] ;
+    And(icmp_sge(X, C1), icmp_slt(X, C2)) -> icmp_slt(X, C2)  [ ((C1 i<= C2) /\ (C1 = (#x00000001 << (width(C1) -i #x00000001))))] ;
+    And(icmp_sge(X, C1), icmp_slt(X, C2)) -> icmp_ult(add(X, neg(C1)), CL0)  [ (((neg(C1) +i C2) = CL0) /\ (C1 i<= C2))] ;
+    Or(icmp_slt(X, C1), icmp_sge(X, C2)) -> True  [ ((C1 i<= C2) /\ (C1 = C2))] ;
+    Or(icmp_slt(X, C1), icmp_sge(X, C2)) -> icmp_sgt(X, CL0)  [ (((C2 -i #x00000001) = CL0) /\ ((C1 i<= C2) /\ ((C1 != C2) /\ (C1 = (#x00000001 << (width(C1) -i #x00000001))))))] ;
+    Or(icmp_slt(X, C1), icmp_sge(X, C2)) -> icmp_ugt(add(X, neg(C1)), CL0)  [ (((neg(C1) +i (C2 -i #x00000001)) = CL0) /\ ((C1 i<= C2) /\ (C1 != C2)))] ;
+    And(add(And(A, C1), B), C2) -> And(add(A, B), C2)  [ (((C1 & C2) = C2) /\ (isPowerOf2OrZero((C2 +i #x00000001)) \/ (isShiftedMask(C2) /\ MaskedValueIsZero(B, ((#x00000001 << (width(C2) -i countLeadingZeros(((C2 -i #x00000001) ^ C2)))) -i #x00000001)))))] ;
+    And(add(Or(A, C1), B), C2) -> And(add(A, B), C2)  [ (isPowerOf2OrZero((C2 +i #x00000001)) /\ ((C1 & C2) = #x00000000))] ;
+    And(sub(Xor(A, C1), B), C2) -> And(sub(A, B), C2)  [ (isPowerOf2OrZero((C2 +i #x00000001)) /\ ((C1 & C2) = #x00000000))] ;
+    icmp_slt(X, #x00000000) -> icmp_ne(And(X, CL0), #x00000000)  [ ((#x00000001 << (width(X) -i #x00000001)) = CL0)] ;
+    icmp_sgt(X, #xffffffff) -> icmp_eq(And(X, CL0), #x00000000)  [ ((#x00000001 << (width(X) -i #x00000001)) = CL0)] ;
+    icmp_ult(X, C) -> icmp_eq(And(X, neg(C)), #x00000000)  [ isPowerOf2(C)] ;
+    icmp_ugt(X, C) -> icmp_ne(And(X, ~(C)), #x00000000)  [ isPowerOf2((C +i #x00000001))] ;
+    And(icmp_eq(And(a, b), #x00000000), icmp_eq(And(a, d), #x00000000)) -> icmp_eq(And(a, Or(b, d)), #x00000000);
+    And(icmp_eq(And(a, b), b), icmp_eq(And(a, d), d)) -> icmp_eq(And(a, Or(b, d)), Or(b, d));
+    And(icmp_eq(And(a, b), a), icmp_eq(And(a, d), a)) -> icmp_eq(And(a, And(b, d)), a);
+    And(icmp_ne(And(a, C1), #x00000000), icmp_ne(And(a, C2), #x00000000)) -> icmp_ne(And(a, C1), #x00000000)  [ ((C1 & C2) = C1)] ;
+    And(icmp_ne(And(a, C1), C1), icmp_ne(And(a, C2), C2)) -> icmp_ne(And(a, C1), C1)  [ ((C1 & C2) = C1)] ;
+    And(icmp_ne(And(a, C1), a), icmp_ne(And(a, C2), a)) -> icmp_ne(And(a, C1), a)  [ ((C1 | C2) = C1)] ;
+    And(icmp_eq(And(a, C1), C2), icmp_eq(And(a, C3), C4)) -> icmp_eq(And(a, CL0), CL1)  [ (((C1 | C3) = CL0) /\ (((C2 | C4) = CL1) /\ ((((C1 & C3) & (C2 ^ C4)) = #x00000000) /\ (((C1 & C2) = C2) /\ ((C3 & C4) = C4)))))] ;
+    And(icmp_sgt(a, b), icmp_ne(a, b)) -> icmp_sgt(a, b);
+    And(icmp_ult(a, C), icmp_ult(b, C)) -> icmp_ult(Or(a, b), C)  [ isPowerOf2(C)] ;
+    And(icmp_eq(a, #x00000000), icmp_eq(b, #x00000000)) -> icmp_eq(Or(a, b), #x00000000);
+    And(icmp_eq(trunci11(x), C1), icmp_eq(And(x, C3), C2)) -> icmp_eq(And(x, CL0), CL1)  [ (((zext_th(C1) | C2) = CL1) /\ (((C3 | ((#x00000001 << width(C1)) -i #x00000001)) = CL0) /\ (((((#x00000001 << width(C1)) -i #x00000001) & C3) = #x00000000) /\ ((((#x00000001 << width(C1)) -i #x00000001) & C2) = #x00000000))))] ;
+    And(icmp_eq(a, C1), icmp_eq(a, C2)) -> False  [ (C1 != C2)] ;
+    And(icmp_eq(a, C1), icmp_ne(a, C1)) -> False;
+    And(icmp_eq(a, C1), icmp_ne(a, C2)) -> icmp_eq(a, C1)  [ (C1 u< C2)] ;
+    And(icmp_eq(a, C1), icmp_ult(a, C2)) -> icmp_eq(a, C1)  [ (C1 u< C2)] ;
+    And(icmp_eq(a, C1), icmp_slt(a, C2)) -> icmp_eq(a, C1)  [ (C1 i< C2)] ;
+    And(icmp_ne(a, C1), icmp_ult(a, C2)) -> icmp_ult(a, C1)  [ ((C1 u< C2) /\ (C1 = (C2 -i #x00000001)))] ;
+    And(icmp_ne(a, C1), icmp_slt(a, C2)) -> icmp_slt(a, C1)  [ ((C1 i< C2) /\ (C1 = (C2 -i #x00000001)))] ;
+    And(icmp_ne(a, C1), icmp_eq(a, C2)) -> icmp_eq(a, C2)  [ (C1 u< C2)] ;
+    And(icmp_ne(a, C1), icmp_ugt(a, C2)) -> icmp_ugt(a, C2)  [ (C1 u< C2)] ;
+    And(icmp_ne(a, C1), icmp_sgt(a, C2)) -> icmp_sgt(a, C2)  [ (C1 i< C2)] ;
+    And(icmp_ne(a, C1), icmp_ne(a, C2)) -> icmp_ugt(add(a, neg(C1)), #x00000001)  [ ((C1 u< C2) /\ (C1 = (C2 -i #x00000001)))] ;
+    And(icmp_ult(a, C1), icmp_eq(a, C2)) -> False  [ (C1 u< C2)] ;
+    And(icmp_ult(a, C1), icmp_ugt(a, C2)) -> False  [ (C1 u< C2)] ;
+    And(icmp_ult(a, C1), icmp_ne(a, C2)) -> icmp_ult(a, C1)  [ (C1 u< C2)] ;
+    And(icmp_ult(a, C1), icmp_ult(a, C2)) -> icmp_ult(a, C1)  [ (C1 u< C2)] ;
+    And(icmp_slt(a, C1), icmp_ne(a, C2)) -> icmp_slt(a, C1)  [ (C1 i< C2)] ;
+    And(icmp_slt(a, C1), icmp_slt(a, C2)) -> icmp_slt(a, C1)  [ (C1 i< C2)] ;
+    And(icmp_ugt(a, C1), icmp_eq(a, C2)) -> icmp_eq(a, C2)  [ (C1 u< C2)] ;
+    And(icmp_ugt(a, C1), icmp_ugt(a, C2)) -> icmp_ugt(a, C2)  [ (C1 u< C2)] ;
+    And(icmp_ugt(a, C1), icmp_ne(a, C2)) -> icmp_ugt(a, C2)  [ ((C1 u< C2) /\ (C2 = (C1 +i #x00000001)))] ;
+    And(icmp_sgt(a, C1), icmp_eq(a, C2)) -> icmp_eq(a, C2)  [ (C1 i< C2)] ;
+    And(icmp_sgt(a, C1), icmp_sgt(a, C2)) -> icmp_sgt(a, C2)  [ (C1 i< C2)] ;
+    And(icmp_sgt(a, C1), icmp_ne(a, C2)) -> icmp_sgt(a, C2)  [ ((C1 i< C2) /\ (C2 = (C1 +i #x00000001)))] ;
+    And(Xor(op0LHS, op0RHS), C) -> Xor(op0LHS, And(op0RHS, C))  [ MaskedValueIsZero(op0LHS, ~(C))] ;
+    And(Or(op0LHS, op0RHS), C) -> Or(op0LHS, And(op0RHS, C))  [ MaskedValueIsZero(op0LHS, ~(C))] ;
+    And(Xor(op0LHS, op0RHS), C) -> Xor(And(op0LHS, C), op0RHS)  [ MaskedValueIsZero(op0RHS, ~(C))] ;
+    And(Or(op0LHS, op0RHS), C) -> Or(And(op0LHS, C), op0RHS)  [ MaskedValueIsZero(op0RHS, ~(C))] ;
+    And(sub(A, B), C) -> And(sub(#x00000000, B), C)  [ MaskedValueIsZero(A, lshr_th(#xffffffff, countLeadingZeros(C)))] ;
+    And(shl(#x00000001, op0RHS), #x00000001) -> zext(icmp_eq(op0RHS, #x00000000));
+    And(lshr(#x00000001, op0RHS), #x00000001) -> zext(icmp_eq(op0RHS, #x00000000));
+    And(trunc(And(x, C1)), C2) -> And(trunc(x), CL0)  [ ((trunc_th(C1) & C2) = CL0)] ;
+    And(Xor(notOp0, #xffffffff), Xor(notOp1, #xffffffff)) -> Xor(Or(notOp0, notOp1), #xffffffff);
+    And(Or(A, B), Xor(And(A, B), #xffffffff)) -> Xor(A, B);
+    And(Xor(And(A, B), #xffffffff), Or(A, B)) -> Xor(A, B);
+    And(Xor(A, B), A) -> And(A, Xor(B, #xffffffff));
+    And(Or(Xor(A, #xffffffff), B), A) -> And(A, B);
+    And(Xor(A, B), Xor(Xor(B, C), A)) -> And(Xor(A, B), Xor(C, #xffffffff));
+    And(Or(A, B), Xor(Xor(A, #xffffffff), B)) -> And(A, B);
+    And(sext(x), sext(y)) -> sext(And(x, y));
+    And(zext(x), zext(y)) -> zext(And(x, y));
+    And(trunc(x), trunc(y)) -> trunc(And(x, y));
+    And(sext_i1(a), b) -> select(a, b, #x00000000);
+    And(Xor(sext_i1(a), #xffffffff), b) -> select(a, #x00000000, b);
+    Or(And(sext(Cond), C), And(B, Xor(sext(Cond), #xffffffff))) -> select(Cond, C, B);
+    Or(And(sext(Cond), C), And(B, sext(Xor(Cond, #xffffffff)))) -> select(Cond, C, B);
+    Or(And(sext(Cond), C), And(Xor(sext(Cond), #xffffffff), D)) -> select(Cond, C, D);
+    Or(And(sext(Cond), C), And(sext(Xor(Cond, #xffffffff)), D)) -> select(Cond, C, D);
+    Or(icmp_eq(And(A, K1), #x00000000), icmp_eq(And(A, K2), #x00000000)) -> icmp_ne(And(A, Or(K1, K2)), Or(K1, K2))  [ (isPowerOf2(K1) /\ isPowerOf2(K2))] ;
+    Or(icmp_ult(add_i29(A, C1), C3), icmp_ult(add(A, C2), C3)) -> icmp_ult(add(And(A, ~(CL0)), umax(C1, C2)), C3)  [ (((C1 ^ C2) = CL0) /\ ((C1 u> C3) /\ ((C2 u> C3) /\ (isPowerOf2((C1 ^ C2)) /\ (isPowerOf2((neg(C2) ^ neg(C1))) /\ (((neg(C2) ^ neg(C1)) = ((C3 -i C2) ^ (C3 -i C1))) /\ (Abs_th((C1 -i C2)) u> C3)))))))] ;
+    Or(icmp_ule(add_i29(A, C1), C3), icmp_ule(add(A, C2), C3)) -> icmp_ule(add(And(A, ~(CL0)), umax(C1, C2)), C3)  [ (((C1 ^ C2) = CL0) /\ ((C1 u> C3) /\ ((C2 u> C3) /\ (isPowerOf2((C1 ^ C2)) /\ (isPowerOf2((neg(C2) ^ neg(C1))) /\ (((neg(C2) ^ neg(C1)) = ((C3 -i C2) ^ (C3 -i C1))) /\ (Abs_th((C1 -i C2)) u> C3)))))))] ;
+    Or(icmp_ugt(a, b), icmp_eq(a, b)) -> icmp_uge(a, b);
+    Or(icmp_uge(a, b), icmp_ne(a, b)) -> True;
+    Or(icmp_eq(B, #x00000000), icmp_ult(A, B)) -> icmp_uge(add(B, #xffffffff), A);
+    Or(icmp_eq(B, #x00000000), icmp_ugt(B, A)) -> icmp_uge(add(B, #xffffffff), A);
+    Or(icmp_ne(A, #x00000000), icmp_ne(B, #x00000000)) -> icmp_ne(Or(A, B), #x00000000);
+    Or(icmp_ult(add(X, C3), C1), icmp_eq(X, C2)) -> icmp_ule(add(X, C3), C1)  [ ((C2 +i C3) = C1)] ;
+    Or(icmp_eq(X, C1), icmp_eq(X, C2)) -> icmp_eq(And(X, ~(CL0)), C1)  [ (((C1 ^ C2) = CL0) /\ ((C1 u< C2) /\ isPowerOf2((C1 ^ C2))))] ;
+    Or(icmp_eq(X, C1), icmp_eq(X, C2)) -> icmp_ult(add(X, neg(C1)), #x00000002)  [ (C1 = (C2 -i #x00000001))] ;
+    Or(icmp_eq(X, C1), icmp_ne(X, C2)) -> icmp_ne(X, C2)  [ (C1 u< C2)] ;
+    Or(icmp_eq(X, C1), icmp_ult(X, C2)) -> icmp_ult(X, C2)  [ (C1 u< C2)] ;
+    Or(icmp_eq(X, C1), icmp_slt(X, C2)) -> icmp_slt(X, C2)  [ (C1 i< C2)] ;
+    Or(icmp_ne(X, C1), icmp_eq(X, C2)) -> icmp_ne(X, C1)  [ (C1 u< C2)] ;
+    Or(icmp_ne(X, C1), icmp_ugt(X, C2)) -> icmp_ne(X, C1)  [ (C1 u< C2)] ;
+    Or(icmp_ne(X, C1), icmp_sgt(X, C2)) -> icmp_ne(X, C1)  [ (C1 i< C2)] ;
+    Or(icmp_ne(X, C1), icmp_ne(X, C2)) -> True  [ (C1 u< C2)] ;
+    Or(icmp_ne(X, C1), icmp_ult(X, C2)) -> True  [ (C1 u< C2)] ;
+    Or(icmp_ne(X, C1), icmp_slt(X, C2)) -> True  [ (C1 i< C2)] ;
+    Or(icmp_ult(X, C1), icmp_ugt(X, C2)) -> icmp_ult(X, C1)  [ ((C1 u< C2) /\ (C2 = #xffffffff))] ;
+    Or(icmp_ult(X, C1), icmp_ne(X, C2)) -> icmp_ne(X, C2)  [ (C1 u< C2)] ;
+    Or(icmp_ult(X, C1), icmp_ult(X, C2)) -> icmp_ult(X, C2)  [ (C1 u< C2)] ;
+    Or(icmp_slt(X, C1), icmp_sgt(X, C2)) -> icmp_slt(X, C1)  [ ((C1 i< C2) /\ (C2 = (#x00000001 << (width(C2) -i #x00000001))))] ;
+    Or(icmp_slt(X, C1), icmp_ne(X, C2)) -> icmp_ne(X, C2)  [ (C1 i< C2)] ;
+    Or(icmp_slt(X, C1), icmp_slt(X, C2)) -> icmp_slt(X, C2)  [ (C1 i< C2)] ;
+    Or(icmp_ugt(X, C1), icmp_eq(X, C2)) -> icmp_ugt(X, C1)  [ (C1 u< C2)] ;
+    Or(icmp_ugt(X, C1), icmp_ugt(X, C2)) -> icmp_ugt(X, C1)  [ (C1 u< C2)] ;
+    Or(icmp_ugt(X, C1), icmp_ne(X, C2)) -> True  [ (C1 u< C2)] ;
+    Or(icmp_ugt(X, C1), icmp_ult(X, C2)) -> True  [ (C1 u< C2)] ;
+    Or(icmp_sgt(X, C1), icmp_eq(X, C2)) -> icmp_sgt(X, C1)  [ (C1 i< C2)] ;
+    Or(icmp_sgt(X, C1), icmp_sgt(X, C2)) -> icmp_sgt(X, C1)  [ (C1 i< C2)] ;
+    Or(icmp_sgt(X, C1), icmp_ne(X, C2)) -> True  [ (C1 i< C2)] ;
+    Or(icmp_sgt(X, C1), icmp_slt(X, C2)) -> True  [ (C1 i< C2)] ;
+    Or(And(Or(A, B), C1), And(B, C2)) -> Or(And(A, C1), B)  [ ((C1 ^ C2) = #xffffffff)] ;
+    Or(And(Xor(A, B), C1), And(B, C2)) -> Xor(And(A, C1), B)  [ ((C1 ^ C2) = #xffffffff)] ;
+    Or(And(x, C1), C) -> And(Or(x, C), CL0)  [ (((C | C1) = CL0) /\ ((C & C1) != #x00000000))] ;
+    Or(Xor(x, C1), C) -> Xor(Or(x, C), CL0)  [ ((C1 & ~(C)) = CL0)] ;
+    Or(Xor(A, C1), op1) -> Xor(Or(A, op1), C1)  [ MaskedValueIsZero(op1, C1)] ;
+    Or(And(Xor(A, #xffffffff), B), A) -> Or(A, B);
+    Or(And(A, B), Xor(A, #xffffffff)) -> Or(Xor(A, #xffffffff), B);
+    Or(And(A, Xor(B, #xffffffff)), Xor(A, B)) -> Xor(A, B);
+    Or(And(Or(B, V2), C1), And(B, C2)) -> And(Or(B, V2), CL0)  [ (((C1 | C2) = CL0) /\ (((C1 & C2) = #x00000000) /\ MaskedValueIsZero(V2, ~(C1))))] ;
+    Or(And(Or(V1, C3), C1), And(Or(V1, C4), C2)) -> And(Or(V1, CL0), CL1)  [ (((C1 | C2) = CL1) /\ (((C3 | C4) = CL0) /\ (((C1 & C2) = #x00000000) /\ (((C3 & ~(C1)) = #x00000000) /\ ((C4 & ~(C2)) = #x00000000)))))] ;
+    Or(And(A, Xor(D, #xffffffff)), And(Xor(A, #xffffffff), D)) -> Xor(A, D);
+    Or(Xor(A, B), Xor(Xor(B, C), A)) -> Or(Xor(A, B), C);
+    Or(And(Or(B, C), A), B) -> Or(B, And(A, C));
+    Or(Xor(A, #xffffffff), Xor(B, #xffffffff)) -> Xor(And(A, B), #xffffffff);
+    Or(op0, Xor(op0, B)) -> Or(op0, B);
+    Or(A, Xor(Xor(A, #xffffffff), B)) -> Or(A, Xor(B, #xffffffff));
+    Or(And(A, B), Xor(A, B)) -> Or(A, B);
+    Or(A, Xor(Or(A, B), #xffffffff)) -> Or(A, Xor(B, #xffffffff));
+    Or(A, Xor(Xor(A, B), #xffffffff)) -> Or(A, Xor(B, #xffffffff));
+    Or(And(A, B), Xor(Xor(A, #xffffffff), B)) -> Xor(Xor(A, #xffffffff), B);
+    Or(zext(A), zext(B)) -> zext(Or(A, B));
+    Or(sext(A), sext(B)) -> sext(Or(A, B));
+    Or(trunc(A), trunc(B)) -> trunc(Or(A, B));
+    Or(sext_i1(A), op1) -> select(A, #xffffffff, op1);
+    Or(Or(A, C1), op1) -> Or(Or(A, op1), C1);
+    Or(select(x, A, B), select(x, C, D)) -> select(x, Or(A, C), Or(B, D));
+    Xor(And(Xor(nx, #xffffffff), y), #xffffffff) -> Or(nx, Xor(y, #xffffffff));
+    Xor(Or(Xor(nx, #xffffffff), y), #xffffffff) -> And(nx, Xor(y, #xffffffff));
+    Xor(And(x, y), #xffffffff) -> Or(Xor(x, #xffffffff), Xor(y, #xffffffff));
+    Xor(Or(x, y), #xffffffff) -> And(Xor(x, #xffffffff), Xor(y, #xffffffff));
+    Xor(ashr(Xor(x, #xffffffff), y), #xffffffff) -> ashr(x, y);
+    Xor(icmp_slt(x, y), #xffffffff) -> icmp_sge(x, y);
+    Xor(zexti11(icmp_slt(x, y)), #x00000001) -> zext(icmp_sge(x, y));
+    Xor(sexti11(icmp_slt(x, y)), #xffffffff) -> sext(icmp_sge(x, y));
+    Xor(sub(C, x), #xffffffff) -> add(x, CL0)  [ ((#xffffffff -i C) = CL0)] ;
+    Xor(add(x, C), #xffffffff) -> sub(CL0, x)  [ ((#xffffffff -i C) = CL0)] ;
+    Xor(add(x, C), C1) -> add(x, CL0)  [ (((C +i C1) = CL0) /\ isSignBit(C1))] ;
+    Xor(Or(x, C1), C2) -> Xor(x, CL0)  [ (((C1 ^ C2) = CL0) /\ MaskedValueIsZero(x, C1))] ;
+    Xor(lshr(Xor(x, C1), C2), C3) -> Xor(lshr(x, C2), CL0)  [ ((lshr_th(C1, C2) ^ C3) = CL0)] ;
+    Xor(Or(a, op1), op1) -> And(a, Xor(op1, #xffffffff));
+    Xor(And(a, op1), op1) -> And(Xor(a, #xffffffff), op1);
+    Xor(And(a, b), Or(a, b)) -> Xor(a, b);
+    Xor(Or(a, Xor(b, #xffffffff)), Or(Xor(a, #xffffffff), b)) -> Xor(a, b);
+    Xor(And(a, Xor(b, #xffffffff)), And(Xor(a, #xffffffff), b)) -> Xor(a, b);
+    Xor(Xor(a, c), Or(a, b)) -> Xor(And(Xor(a, #xffffffff), b), c);
+    Xor(And(a, b), Xor(a, b)) -> Or(a, b);
+    Xor(And(a, Xor(b, #xffffffff)), Xor(a, #xffffffff)) -> Xor(And(a, b), #xffffffff);
+    Xor(icmp_ule(a, b), icmp_ne(a, b)) -> icmp_uge(a, b);
+    Xor(zext(a), zext(b)) -> zext(Xor(a, b));
+    Xor(sext(a), sext(b)) -> sext(Xor(a, b));
+    Xor(trunc(a), trunc(b)) -> trunc(Xor(a, b));
+    zext_11(X0) -> zext(X0);
+    icmp_ugt(X0, X1) -> icmp(X0, X1);
+    add_i29(X0, X1) -> add(X0, X1);
+    sext_i1(X0) -> sext(X0);
+    icmp_sgt(X0, X1) -> icmp(X0, X1);
+    sext_11(X0) -> sext(X0);
+    icmp_slt(X0, X1) -> icmp(X0, X1);
+    icmp_ule(X0, X1) -> icmp(X0, X1);
+    icmp_uge(X0, X1) -> icmp(X0, X1);
+    trunc_11(X0) -> trunc(X0);
+    icmp_eq(X0, X1) -> icmp(X0, X1);
+    icmp_ne(X0, X1) -> icmp(X0, X1);
+    icmp_sge(X0, X1) -> icmp(X0, X1);
+    icmp_ult(X0, X1) -> icmp(X0, X1);
+
+   select(icmp_eq(And(X, C1), #x00000000), X, Xor(X, C2)) -> And(X, ~(C1))  [ (isPowerOf2(C1) /\ (C1 = C2))] ; /* Select:420*/
+    select(icmp_eq(And(X, C1), #x00000000), X, And(X, C2)) -> And(X, C2)  [ (isPowerOf2(C1) /\ (C1 = ~(C2)))] ; /* Select:423*/
+    select(icmp_eq(And(X, C1), #x00000000), Xor(X, C2), X) -> Or(X, C1)  [ (isPowerOf2(C1) /\ (C1 = C2))] ; /* Select:427*/
+    select(icmp_eq(And(X, C1), #x00000000), And(X, C2), X) -> X  [ (isPowerOf2(C1) /\ (C1 = ~(C2)))] ; /* Select:430*/
+    select(icmp_eq(And(X, C1), #x00000000), Or(X, C2), X) -> Or(X, C2)  [ (isPowerOf2(C1) /\ (C1 = C2))] ; /* Select:433*/
+    select(icmp_eq(And(X, C1), #x00000000), Y, Or_i11(Y, C2)) -> Or(shl(ZExtOrTrunc(And(X, C1)), CL0), Y)  [ (((log2_th(C2) -i log2_th(C1)) = CL0) /\ (isPowerOf2(C1) /\ (isPowerOf2(C2) /\ (log2_th(C2) i>= log2_th(C1)))))] ; /* Select:465*/
+    select(icmp_ne(And(X, C1), #x00000000), Y, Or_i11(Y, C2)) -> Or(Xor(shl(ZExtOrTrunc(And(X, C1)), CL0), C2), Y)  [ (((log2_th(C2) -i log2_th(C1)) = CL0) /\ (isPowerOf2(C1) /\ (isPowerOf2(C2) /\ (log2_th(C2) i>= log2_th(C1)))))] ; /* Select:465-2*/
+    select(icmp_eq(And(X, C1), #x00000000), Y, Or_i11(Y, C2)) -> Or(ZExtOrTrunc(lshr(And(X, C1), CL0)), Y)  [ (((log2_th(C1) -i log2_th(C2)) = CL0) /\ (isPowerOf2(C1) /\ (isPowerOf2(C2) /\ (log2_th(C2) i< log2_th(C1)))))] ; /* Select:465-3*/
+    select(icmp_ne(And(X, C1), #x00000000), Y, Or_i11(Y, C2)) -> Or(Xor(ZExtOrTrunc(lshr(And(X, C1), CL0)), C2), Y)  [ (((log2_th(C1) -i log2_th(C2)) = CL0) /\ (isPowerOf2(C1) /\ (isPowerOf2(C2) /\ (log2_th(C2) i< log2_th(C1)))))] ; /* Select:465-4*/
+    select(icmp_eq(And(X, C1), #x00000000), Or_i11(Y, C2), Y) -> Or(Xor(shl(ZExtOrTrunc(And(X, C1)), CL0), C2), Y)  [ (((log2_th(C2) -i log2_th(C1)) = CL0) /\ (isPowerOf2(C1) /\ (isPowerOf2(C2) /\ (log2_th(C2) i>= log2_th(C1)))))] ; /* Select:465-5*/
+    select(icmp_ne(And(X, C1), #x00000000), Or_i11(Y, C2), Y) -> Or(shl(ZExtOrTrunc(And(X, C1)), CL0), Y)  [ (((log2_th(C2) -i log2_th(C1)) = CL0) /\ (isPowerOf2(C1) /\ (isPowerOf2(C2) /\ (log2_th(C2) i>= log2_th(C1)))))] ; /* Select:465-6*/
+    select(icmp_eq(And(X, C1), #x00000000), Or_i11(Y, C2), Y) -> Or(Xor(ZExtOrTrunc(lshr(And(X, C1), CL0)), C2), Y)  [ (((log2_th(C1) -i log2_th(C2)) = CL0) /\ (isPowerOf2(C1) /\ (isPowerOf2(C2) /\ (log2_th(C2) i< log2_th(C1)))))] ; /* Select:465-7*/
+    select(icmp_ne(And(X, C1), #x00000000), Or_i11(Y, C2), Y) -> Or(ZExtOrTrunc(lshr(And(X, C1), CL0)), Y)  [ (((log2_th(C1) -i log2_th(C2)) = CL0) /\ (isPowerOf2(C1) /\ (isPowerOf2(C2) /\ (log2_th(C2) i< log2_th(C1)))))] ; /* Select:465-8*/
+    select(icmp_slt_i32(x, C), A, B) -> B  [ isSignBit(C)] ; /* Select:485*/
+    select(icmp_ult_i32(x, #x00000000), A, B) -> B; /* Select:485-2*/
+    select(icmp_sgt_i32(x, C), A, B) -> B  [ (C = ((#x00000001 << (width(x) -i #x00000001)) -i #x00000001))] ; /* Select:489*/
+    select(icmp_ugt_i32(x, #xffffffff), A, B) -> B; /* Select:489-2*/
+    select(icmp_sgt(X, C), X, C2) -> select(icmp_slt(X, C2), C2, X)  [ ((C2 = (C +i #x00000001)) /\ (C != ((#x00000001 << (width(X) -i #x00000001)) -i #x00000001)))] ; /* Select:510*/
+    select(icmp_slt(X, C), X, C2) -> select(icmp_sgt(X, C2), C2, X)  [ ((C2 = (C -i #x00000001)) /\ not(isSignBit(C)))] ; /* Select:511*/
+    select(icmp_sgt(x, C), CL0, C2) -> select(icmp_slt(CL0, C2), C2, CL0)  [ ((sexti15(x) = CL0) /\ ((C2 = sext_th((C +i #x00000001))) /\ (C != ((#x00000001 << (width(x) -i #x00000001)) -i #x00000001))))] ; /* Select:523*/
+    select(icmp_slt(x, C), CL0, C2) -> select(icmp_sgt(CL0, C2), C2, CL0)  [ ((sexti15(x) = CL0) /\ ((C2 = sext_th((C -i #x00000001))) /\ not(isSignBit(C))))] ; /* Select:524*/
+    select(icmp_ugt(x, C), CL0, C2) -> select(icmp_ult(CL0, C2), C2, CL0)  [ ((sexti15(x) = CL0) /\ ((C2 = sext_th((C +i #x00000001))) /\ (C != #xffffffff)))] ; /* Select:525*/
+    select(icmp_ult(x, C), CL0, C2) -> select(icmp_ugt(CL0, C2), C2, CL0)  [ ((sexti15(x) = CL0) /\ ((C2 = sext_th((C -i #x00000001))) /\ (C != #x00000000)))] ; /* Select:526*/
+    select(icmp_ugt(x, C), CL0, C2) -> select(icmp_ult(CL0, C2), C2, CL0)  [ ((zexti15(x) = CL0) /\ ((C2 = zext_th((C +i #x00000001))) /\ (C != #xffffffff)))] ; /* Select:537*/
+    select(icmp_ult(x, C), CL0, C2) -> select(icmp_ugt(CL0, C2), C2, CL0)  [ ((zexti15(x) = CL0) /\ ((C2 = zext_th((C -i #x00000001))) /\ (C != #x00000000)))] ; /* Select:538*/
+    select(icmp_sgt(X, #xffffffff), C1, C2) -> add(And(ashr(X, CL0), CL1), C1)  [ (((width(X) -i #x00000001) = CL0) /\ ((C2 -i C1) = CL1))] ; /* Select:575*/
+    select(icmp_sgt(X, #xffffffff), C1, #xffffffff) -> Or(ashr(X, CL0), C1)  [ ((width(X) -i #x00000001) = CL0)] ; /* Select:575*/
+    select(icmp_slt(X, #x00000000), C2, C1) -> add(And(ashr(X, CL0), CL1), C1)  [ (((width(X) -i #x00000001) = CL0) /\ ((C2 -i C1) = CL1))] ; /* Select:576*/
+    select(icmp_slt(X, #x00000000), #xffffffff, C1) -> Or(ashr(X, CL0), C1)  [ ((width(X) -i #x00000001) = CL0)] ; /* Select:576*/
+    select(icmp_eq(X, C), X, Y) -> select(icmp_eq(X, C), C, Y); /* Select:637*/
+    select(icmp_ne(X, C), Y, X) -> select(icmp_ne(X, C), Y, C); /* Select:641*/
+    select(icmp_uge(select(icmp_uge(A, B), A, B), B), select(icmp_uge(A, B), A, B), B) -> select(icmp_uge(A, B), A, B); /* Select:699*/
+    select(icmp_slt(select(icmp_slt(A, B), A, B), B), select(icmp_slt(A, B), A, B), B) -> select(icmp_slt(A, B), A, B); /* Select:700*/
+    select(icmp_sge(select(icmp_slt(A, B), A, B), A), select(icmp_slt(A, B), A, B), A) -> A; /* Select:704*/
+    select(icmp_slt(select(icmp_sge(A, B), A, B), A), select(icmp_sge(A, B), A, B), A) -> A; /* Select:705*/
+    select(icmp_slt(select(icmp_slt(A, C1), A, C1), C2), select(icmp_slt(A, C1), A, C1), C2) -> select(icmp_slt(A, C1), A, C1)  [ (C1 i< C2)] ; /* Select:719*/
+    select(icmp_uge(select(icmp_uge(A, C1), A, C1), C2), select(icmp_uge(A, C1), A, C1), C2) -> select(icmp_uge(A, C1), A, C1)  [ (C1 u> C2)] ; /* Select:720*/
+    select(icmp_slt(select(icmp_slt(A, C1), A, C1), C2), select(icmp_slt(A, C1), A, C1), C2) -> select(icmp_slt(A, C2), A, C2)  [ (C1 i> C2)] ; /* Select:727*/
+    select(icmp_uge(select(icmp_uge(A, C1), A, C1), C2), select(icmp_uge(A, C1), A, C1), C2) -> select(icmp_uge(A, C2), A, C2)  [ (C1 u< C2)] ; /* Select:728*/
+    select(icmp_sgt(select(icmp_sgt(A, #x00000000), A, sub(#x00000000, A)), #xffffffff), select(icmp_sgt(A, #x00000000), A, sub(#x00000000, A)), sub(#x00000000, select(icmp_sgt(A, #x00000000), A, sub(#x00000000, A)))) -> select(icmp_sgt(A, #x00000000), A, sub(#x00000000, A)); /* Select:740*/
+    select(icmp_sgt(select(icmp_sgt(A, #x00000000), sub(#x00000000, A), A), #xffffffff), sub(#x00000000, select(icmp_sgt(A, #x00000000), sub(#x00000000, A), A)), select(icmp_sgt(A, #x00000000), sub(#x00000000, A), A)) -> select(icmp_sgt(A, #x00000000), sub(#x00000000, A), A); /* Select:741*/
+    select(icmp_sgt(select(icmp_slt(A, #x00000000), A, sub(#x00000000, A)), #x00000000), select(icmp_slt(A, #x00000000), A, sub(#x00000000, A)), sub(#x00000000, select(icmp_slt(A, #x00000000), A, sub(#x00000000, A)))) -> select(icmp_sgt(A, #x00000000), A, sub(#x00000000, A)); /* Select:746*/
+    select(icmp_slt(select(icmp_sgt(A, #x00000000), A, sub(#x00000000, A)), #x00000000), select(icmp_sgt(A, #x00000000), A, sub(#x00000000, A)), sub(#x00000000, select(icmp_sgt(A, #x00000000), A, sub(#x00000000, A)))) -> select(icmp_slt(A, #x00000000), A, sub(#x00000000, A)); /* Select:747*/
+    select(icmp_eq(And(Op, C), #x00000000), C2, C3) -> add(Xor(lshr(shl(CL0, CL2), CL4), CL5), C3)  [ (((C2 -i C3) = CL5) /\ ((max_th(#x00000000, CL1) = CL2) /\ ((ZExtOrTrunc_i11(Op & C) = CL0) /\ (((log2_th(C) -i log2_th((C2 -i C3))) = CL3) /\ (((log2_th((C2 -i C3)) -i log2_th(C)) = CL1) /\ ((max_th(#x00000000, CL3) = CL4) /\ (isPowerOf2(C) /\ (isPowerOf2((C2 -i C3)) /\ (log2_th(C) i< width(C2))))))))))] ; /* Select:762*/
+    select(icmp_ne(And(Op, C), #x00000000), C2, C3) -> add(lshr(shl(CL0, CL2), CL4), C3)  [ (((log2_th((C2 -i C3)) -i log2_th(C)) = CL1) /\ ((max_th(#x00000000, CL3) = CL4) /\ ((max_th(#x00000000, CL1) = CL2) /\ ((ZExtOrTrunc_i11(Op & C) = CL0) /\ (((log2_th(C) -i log2_th((C2 -i C3))) = CL3) /\ (isPowerOf2(C) /\ (isPowerOf2((C2 -i C3)) /\ (log2_th(C) i< width(C2)))))))))] ; /* Select:762-2*/
+    select(icmp_eq(And(Op, C), #x00000000), C2, C3) -> add(lshr(shl(CL0, CL2), CL4), C2)  [ ((max_th(#x00000000, CL3) = CL4) /\ (((log2_th(C) -i log2_th((C3 -i C2))) = CL3) /\ ((max_th(#x00000000, CL1) = CL2) /\ (((log2_th((C3 -i C2)) -i log2_th(C)) = CL1) /\ ((ZExtOrTrunc_i11(Op & C) = CL0) /\ (isPowerOf2(C) /\ (isPowerOf2((C3 -i C2)) /\ (log2_th(C) i< width(C2)))))))))] ; /* Select:762-3*/
+    select(icmp_ne(And(Op, C), #x00000000), C2, C3) -> add(Xor(lshr(shl(CL0, CL2), CL4), CL5), C2)  [ ((max_th(#x00000000, CL1) = CL2) /\ (((log2_th((C3 -i C2)) -i log2_th(C)) = CL1) /\ ((ZExtOrTrunc_i11(Op & C) = CL0) /\ (((C3 -i C2) = CL5) /\ ((max_th(#x00000000, CL3) = CL4) /\ (((log2_th(C) -i log2_th((C3 -i C2))) = CL3) /\ (isPowerOf2(C) /\ (isPowerOf2((C3 -i C2)) /\ (log2_th(C) i< width(C2))))))))))] ; /* Select:762-4*/
+    select(B, True, C) -> Or(B, C); /* Select:846*/
+    select(B, False, C) -> And(Xor(B, True), C); /* Select:850*/
+    select(B, C, False) -> And(B, C); /* Select:855*/
+    select(B, C, True) -> Or(Xor(B, True), C); /* Select:859*/
+    select(a, b, a) -> And(a, b); /* Select:851*/
+    select(a, a, b) -> Or(a, b); /* Select:852*/
+    select(a, Xor(a, #xffffffff), b) -> And(Xor(a, #xffffffff), b); /* Select:858*/
+    select(a, b, Xor(a, #xffffffff)) -> Or(Xor(a, #xffffffff), b); /* Select:859*/
+    select(C, #x00000001, #x00000000) -> zext(C); /* Select:869*/
+    select(C, #xffffffff, #x00000000) -> sext(C); /* Select:873*/
+    select(c, #x00000000, #x00000001) -> zext(Xor(c, #xffffffff)); /* Select:877*/
+    select(c, #x00000000, #xffffffff) -> sext(Xor(c, #xffffffff)); /* Select:883*/
+    select(c, add(x, y), add(x, z)) -> add(x, select(c, y, z)); /* Select:962*/
+    select(c, add_i9(x, y), sub(x, y)) -> add(x, select(c, y, sub(#x00000000, y))); /* Select:967a*/
+    select(c, sub_i9(x, y), add(x, y)) -> add(x, select(c, sub(#x00000000, y), y)); /* Select:967b*/
+    select(c, select(c, W, Z), Y) -> select(c, W, Y); /* Select:1070*/
+    select(c, X, select(c, W, Z)) -> select(c, X, Z); /* Select:1078*/
+    select(Xor(val, True), X, Y) -> select(val, Y, X); /* Select:1087*/
+    select(True, X, Y) -> X; /* Select:1100*/
+    select(False, X, Y) -> Y; /* Select:1105*/
+    icmp_ult_i32(X0, X1) -> icmp(X0, X1); /**/
+    Or_i11(X0, X1) -> Or(X0, X1); /**/
+    icmp_ugt(X0, X1) -> icmp(X0, X1); /**/
+    icmp_ne(X0, X1) -> icmp(X0, X1); /**/
+    sub_i9(X0, X1) -> sub(X0, X1); /**/
+    icmp_sgt(X0, X1) -> icmp(X0, X1); /**/
+    icmp_slt(X0, X1) -> icmp(X0, X1); /**/
+    icmp_ugt_i32(X0, X1) -> icmp(X0, X1); /**/
+    icmp_uge(X0, X1) -> icmp(X0, X1); /**/
+    icmp_sgt_i32(X0, X1) -> icmp(X0, X1); /**/
+    icmp_slt_i32(X0, X1) -> icmp(X0, X1); /**/
+    icmp_sge(X0, X1) -> icmp(X0, X1); /**/
+    sext_15(X0) -> sext(X0); /**/
+    add_i9(X0, X1) -> add(X0, X1); /**/
+    icmp_eq(X0, X1) -> icmp(X0, X1); /**/
+    zext_15(X0) -> zext(X0); /**/
+    icmp_ult(X0, X1) -> icmp(X0, X1); /**/
+
+  shl(Op0, srem_i31(A, C)) -> shl(Op0, And(A, CL0))  [ (((C -i #x00000001) = CL0) /\ isPowerOf2(C))] ; /* InstCombineShift: 46*/
+    ashr(Op0, srem_i29(A, C)) -> ashr(Op0, And(A, CL0))  [ (((C -i #x00000001) = CL0) /\ isPowerOf2(C))] ; /* InstCombineShift: 46-2*/
+    lshr(Op0, srem_i27(A, C)) -> lshr(Op0, And(A, CL0))  [ (((C -i #x00000001) = CL0) /\ isPowerOf2(C))] ; /* InstCombineShift: 46-3*/
+    shl(shl(X, C1), C2) -> #x00000000  [ (zext_th((C1 +i C2)) i>= width(C1))] ; /* InstCombineShift: 228*/
+    shl(shl_i33(X, C1), C2) -> shl(X, CL0)  [ (((C1 +i C2) = CL0) /\ (zext_th((C1 +i C2)) i< width(C2)))] ; /* InstCombineShift: 234*/
+    lshr(shl(X, C), C) -> And(X, CL0)  [ ((#xffffffff u>> C) = CL0)] ; /* InstCombineShift: 239*/
+    lshr(shl_i27(X, C1), C2) -> shl(X, CL0)  [ (((C1 -i C2) = CL0) /\ ((C1 i> C2) /\ MaskedValueIsZero(X, ((#xffffffff u>> (width(C2) -i C2)) << (width(C1) -i C1)))))] ; /* InstCombineShift: 252*/
+    lshr(lshr(X, C1), C2) -> #x00000000  [ (zext_th((C1 +i C2)) i>= width(C1))] ; /* InstCombineShift: 270*/
+    lshr(lshr_i33(X, C1), C2) -> lshr(X, CL0)  [ (((C1 +i C2) = CL0) /\ (zext_th((C1 +i C2)) i< width(C1)))] ; /* InstCombineShift: 274*/
+    shl(lshr(X, C), C) -> And(X, CL0)  [ ((#xffffffff << C) = CL0)] ; /* InstCombineShift: 279*/
+    shl(lshr_i31(X, C1), C2) -> lshr(X, CL0)  [ (((C1 -i C2) = CL0) /\ ((C1 i> C2) /\ MaskedValueIsZero(X, ((#xffffffff u>> (width(C2) -i C2)) << (C1 -i C2)))))] ; /* InstCombineShift: 292*/
+    shl(mul_i7(X, C1), C2) -> mul(X, CL0)  [ ((C1 << C2) = CL0)] ; /* InstCombineShift: 351*/
+    shl_i17(trunc(shl(X, C1)), C2) -> trunc(And(shl(shl(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) << zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-1*/
+    shl_i17(trunc(lshr(X, C1)), C2) -> trunc(And(shl(lshr(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) << zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-2*/
+    shl_i17(trunc(ashr(X, C1)), C2) -> trunc(And(shl(ashr(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) << zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-3*/
+    lshr_i17(trunc(shl(X, C1)), C2) -> trunc(And(lshr(shl(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) u>> zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-4*/
+    lshr_i17(trunc(lshr(X, C1)), C2) -> trunc(And(lshr(lshr(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) u>> zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-5*/
+    lshr_i17(trunc(ashr(X, C1)), C2) -> trunc(And(lshr(ashr(X, C1), CL0), CL1))  [ ((zext_th(C2) = CL0) /\ ((((#x00000001 << width(C2)) -i #x00000001) u>> zext_th(C2)) = CL1))] ; /* InstCombineShift: 366-6*/
+    shl(add(Y, lshr_i31(X, C)), C) -> And(add(shl(Y, C), X), CL0)  [ ((#xffffffff << C) = CL0)] ; /* InstCombineShift: 422-1*/
+    shl(add(Y, ashr_i31(X, C)), C) -> And(add(shl(Y, C), X), CL0)  [ ((#xffffffff << C) = CL0)] ; /* InstCombineShift: 422-2*/
+    shl(Xor(Y, And(lshr(X, C), C2)), C) -> Xor(And(X, CL0), shl(Y, C))  [ ((C2 << C) = CL0)] ; /* InstCombineShift: 440*/
+    shl(sub(ashr_i31(X, C), Y), C) -> And(sub(X, shl(Y, C)), CL0)  [ ((#xffffffff << C) = CL0)] ; /* InstCombineShift: 458*/
+    shl(Or(And(lshr(X, C), C2), Y), C) -> Or(And(X, CL0), shl(Y, C))  [ ((C2 << C) = CL0)] ; /* InstCombineShift: 476*/
+    lshr(Xor(X, C2), C) -> Xor(lshr(X, C), CL0)  [ ((C2 u>> C) = CL0)] ; /* InstCombineShift: 497*/
+    ashr(Xor(X, C2), C) -> Xor(ashr(X, C), CL0)  [ (((C2 >> C) = CL0) /\ ((C2 u>> (width(C) -i #x00000001)) = #x00000000))] ; /* InstCombineShift: 497*/
+    ashr(And(X, C2), C) -> And(ashr(X, C), CL0)  [ (((C2 >> C) = CL0) /\ ((C2 u>> (width(C) -i #x00000001)) = #x00000001))] ; /* InstCombineShift: 497*/
+    shl(add(X, C2), C) -> add(shl(X, C), CL0)  [ ((C2 << C) = CL0)] ; /* InstCombineShift: 497*/
+    shl(shl(X, C2), C) -> #x00000000  [ (zext_th((C +i C2)) i>= width(C))] ; /* InstCombineShift: 573*/
+    ashr(ashr(X, C2), C) -> ashr(X, CL0)  [ (((width(C) -i #x00000001) = CL0) /\ (zext_th((C +i C2)) i>= width(C)))] ; /* InstCombineShift: 574*/
+    shl(shl_i31(X, C2), C) -> shl(X, CL0)  [ (((C +i C2) = CL0) /\ (zext_th((C +i C2)) i< width(C)))] ; /* InstCombineShift: 577*/
+    lshr(shl(X, C), C) -> And(X, CL0)  [ ((#xffffffff u>> C) = CL0)] ; /* InstCombineShift: 582*/
+    shl_i33(ashr_exact(X, C1), C2) -> shl(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_nsw_i31(ashr_exact(X, C1), C2) -> shl_nsw(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_nuw(ashr_exact(X, C1), C2) -> shl_nuw_i27(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_i33(lshr_exact(X, C1), C2) -> shl(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_nsw_i31(lshr_exact(X, C1), C2) -> shl_nsw(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    shl_nuw(lshr_exact(X, C1), C2) -> shl_nuw_i27(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 592*/
+    lshr_i33(shl_nuw(X, C1), C2) -> lshr(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 612*/
+    lshr_exact(shl_nuw(X, C1), C2) -> lshr_exact_i31(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 612*/
+    lshr_i33(shl(X, C1), C2) -> And(lshr(X, CL0), CL1)  [ (((#xffffffff u>> C2) = CL1) /\ (((C2 -i C1) = CL0) /\ (C1 i< C2)))] ; /* InstCombineShift: 622*/
+    ashr_i33(shl_nsw(X, C1), C2) -> ashr(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 628*/
+    ashr_exact_i33(shl_nsw(X, C1), C2) -> ashr_exact(X, CL0)  [ (((C2 -i C1) = CL0) /\ (C1 i< C2))] ; /* InstCombineShift: 628-2*/
+    shl_i33(lshr_exact(X, C1), C2) -> lshr_exact(X, CL0)  [ (((C1 -i C2) = CL0) /\ (C1 i> C2))] ; /* InstCombineShift: 646*/
+    shl_i33(ashr_exact(X, C1), C2) -> ashr_exact(X, CL0)  [ (((C1 -i C2) = CL0) /\ (C1 i> C2))] ; /* InstCombineShift: 646-2*/
+    lshr_i33(shl_nuw(X, C1), C2) -> shl_nuw(X, CL0)  [ (((C1 -i C2) = CL0) /\ (C1 i> C2))] ; /* InstCombineShift: 661*/
+    lshr_i33(shl(X, C1), C2) -> And(shl(X, CL0), CL1)  [ (((C1 -i C2) = CL0) /\ (((#xffffffff u>> C2) = CL1) /\ (C1 i> C2)))] ; /* InstCombineShift: 670*/
+    ashr_i33(shl_nsw(X, C1), C2) -> shl_nsw(X, CL0)  [ (((C1 -i C2) = CL0) /\ (C1 i> C2))] ; /* InstCombineShift: 676*/
+    shl(Op0, C) -> shl_nuw(Op0, C)  [ MaskedValueIsZero(Op0, (#xffffffff << (width(C) -i C)))] ; /* InstCombineShift: 708*/
+    shl(Op0, C) -> shl_nsw(Op0, C)  [ (computeNumSignBits(Op0) i> C)] ; /* InstCombineShift: 717*/
+    shl(shl_i31(C1, A), C2) -> shl(CL0, A)  [ ((C1 << C2) = CL0)] ; /* InstCombineShift: 724*/
+    lshr(Op0, C) -> lshr_exact(Op0, C)  [ MaskedValueIsZero(Op0, ((#x00000001 << C) -i #x00000001))] ; /* InstCombineShift: 767*/
+    ashr_i33(shl(zext(x), C), C) -> sext(x)  [ (C = (width(zext_th(x)) -i width(x)))] ; /* InstCombineShift: 807*/
+    ashr(Op0, C) -> ashr_exact(Op0, C)  [ MaskedValueIsZero(Op0, ((#x00000001 << C) -i #x00000001))] ; /* InstCombineShift: 812*/
+    ashr(Op0, Op1) -> lshr(Op0, Op1)  [ MaskedValueIsZero(Op0, (#x00000001 << (width(lshr_th(Op0, Op1)) -i #x00000001)))] ; /* InstCombineShift: 821*/
+    lshr_i31(X0, X1) -> lshr(X0, X1); /**/
+    lshr_i17(X0, X1) -> lshr(X0, X1); /**/
+    shl_i27(X0, X1) -> shl(X0, X1); /**/
+    srem_i29(X0, X1) -> srem(X0, X1); /**/
+    mul_i7(X0, X1) -> mul(X0, X1); /**/
+    ashr_exact_i33(X0, X1) -> ashr(X0, X1); /**/
+    shl_i33(X0, X1) -> shl(X0, X1); /**/
+    shl_nsw_i31(X0, X1) -> shl(X0, X1); /**/
+    ashr_exact(X0, X1) -> ashr(X0, X1); /**/
+    shl_i31(X0, X1) -> shl(X0, X1); /**/
+    shl_nsw(X0, X1) -> shl(X0, X1); /**/
+    lshr_i33(X0, X1) -> lshr(X0, X1); /**/
+    shl_i17(X0, X1) -> shl(X0, X1); /**/
+    srem_i31(X0, X1) -> srem(X0, X1); /**/
+    srem_i27(X0, X1) -> srem(X0, X1); /**/
+    ashr_i33(X0, X1) -> ashr(X0, X1); /**/
+    shl_nuw_i27(X0, X1) -> shl(X0, X1); /**/
+    ashr_i31(X0, X1) -> ashr(X0, X1); /**/
+
+    add(add(Xor(Or(Z, C2), C1), #x00000001), RHS) -> sub(RHS, And(Z, C1))  [ (C2 = ~(C1))] ;
+    add(add(Xor(And(Z, C1), C1), #x00000001), RHS) -> sub(RHS, Or(Z, ~(C1)));
+    add(Xor(And(Z, C2), C1), RHS) -> sub(RHS, Or(Z, ~(C2)))  [ ((countTrailingZeros(C1) = #x00000000) /\ (C1 = (C2 +i #x00000001)))] ;
+    add(x, C) -> Xor(x, C)  [ isSignBit(C)] ;
+    add(zext_i1(a), b) -> select(a, add(b, #x00000001), b);
+    add(Xor(Y, C2), C1) -> ashr(shl(Y, CL0), CL0)  [ (((width(C1) -i (width(C1) -i (log2_th(C2) -i #x00000001))) = CL0) /\ ((C1 = neg(C2)) /\ (isPowerOf2(C2) /\ not(MaskedValueIsZero(C2, (#xffffffff << (width(C1) -i (width(C1) -i (log2_th(C2) -i #x00000001)))))))))] ;
+    add(Xor(Y, C2), C1) -> ashr(shl(Y, CL0), CL0)  [ (((width(C1) -i (log2_th(C1) -i #x00000001)) = CL0) /\ ((C2 = neg(C1)) /\ (isPowerOf2(C1) /\ MaskedValueIsZero(Y, (#xffffffff << (log2_th(C1) +i #x00000001))))))] ;
+    add(Xor(Y, C2), C1) -> ashr(shl(Y, CL0), CL0)  [ (((width(C2) -i (log2_th(C2) -i #x00000001)) = CL0) /\ ((C2 = neg(C1)) /\ (isPowerOf2(C2) /\ MaskedValueIsZero(Y, (#xffffffff << (log2_th(C2) +i #x00000001))))))] ;
+    add(Xor(Y, C2), C1) -> sub(CL0, Y)  [ (((C1 +i C2) = CL0) /\ (hasOneUse /\ (isPowerOf2((C2 +i #x00000001)) /\ ((C2 | computeKnownZeroBits(Y)) = #xffffffff))))] ;
+    add(Xor(a, C1), C2) -> add(a, CL0)  [ (((C1 ^ C2) = CL0) /\ isSignBit(C1))] ;
+    add_i1(x, y) -> Xor(x, y);
+    add(b, b) -> shl(b, #x00000001);
+    add_nsw(b, b) -> shl_nsw(b, #x00000001);
+    add_nuw(b, b) -> shl_nuw(b, #x00000001);
+    add(sub(#x00000000, a), b) -> sub(b, a);
+    add(sub(#x00000000, a), sub(#x00000000, b)) -> sub(#x00000000, add(a, b));
+    add(a, sub(#x00000000, b)) -> sub(a, b);
+    add(x, y) -> Or(x, y)  [ ((computeKnownZeroBits(x) | computeKnownZeroBits(y)) = #xffffffff)] ;
+    add(Xor(x, #xffffffff), C) -> sub(CL0, x)  [ ((C -i #x00000001) = CL0)] ;
+    add(And(x, C2), C1) -> And(add(x, C1), C2)  [ (hasOneUse /\ (~(((C1 & neg(C1)) -i #x00000001)) = (~(((C1 & neg(C1)) -i #x00000001)) & C2)))] ;
+    add(select(x, #x00000000, sub(n, a)), a) -> select(x, a, n)  [ hasOneUse] ;
+    add(select(x, sub(n, a), #x00000000), a) -> select(x, n, a)  [ hasOneUse] ;
+    add(sext(x), C) -> sext(add_nsw(x, trunc(C)))  [ (hasOneUse /\ (WillNotOverflowSignedAdd(x, trunc_th(C)) /\ ((C & (#xffffffff << (width(x) -i #x00000001))) = #x00000000)))] ;
+    add(sext(x), sext(y)) -> sext(add_nsw(x, y))  [ ((hasOneUse \/ hasOneUse) /\ WillNotOverflowSignedAdd(x, y))] ;
+    add(And(a, b), Xor(a, b)) -> Or(a, b);
+    add(And(a, b), Or(a, b)) -> add(a, b);
+    add_nsw(And(a, b), Or(a, b)) -> add_nsw(a, b);
+    add_nuw(And(a, b), Or(a, b)) -> add_nuw(a, b);
+    add(lhs, rhs) -> add_nsw(lhs, rhs)  [ WillNotOverflowSignedAdd(lhs, rhs)] ;
+    add(lhs, rhs) -> add_nuw(lhs, rhs)  [ WillNotOverflowUnsignedAdd(lhs, rhs)] ;
+    sub(x, sub(#x00000000, a)) -> add(x, a);
+    sub(x, C) -> add(x, neg(C));
+    sub_nsw(x, sub_nsw(#x00000000, a)) -> add_nsw(x, a);
+    sub_nsw(x, C) -> add_nsw(x, neg(C))  [ (C != (#x00000001 << (width(C) -i #x00000001)))] ;
+    sub_i1(x, y) -> Xor(x, y);
+    sub(#xffffffff, a) -> Xor(a, #xffffffff);
+    sub(C, Xor(x, #xffffffff)) -> add(x, CL0)  [ ((C +i #x00000001) = CL0)] ;
+    sub(C, add(X, C2)) -> sub(CL0, X)  [ ((C -i C2) = CL0)] ;
+    sub(#x00000000, zext_i1(X)) -> sext(X);
+    sub(#x00000000, sext_i1(X)) -> zext(X);
+    sub(#x00000000, lshr(x, C)) -> ashr(x, C)  [ (C = (width(lshr_th(x, C)) -i #x00000001))] ;
+    sub(#x00000000, ashr(x, C)) -> lshr(x, C)  [ (C = (width(ashr_th(x, C)) -i #x00000001))] ;
+    sub(X, add(X, Y)) -> sub(#x00000000, Y);
+    sub(sub(X, Y), X) -> sub(#x00000000, Y);
+    sub(Or(A, B), Xor(A, B)) -> And(A, B);
+    sub(Or(Y, Op1), Op1) -> And(Xor(Op1, #xffffffff), Y)  [ hasOneUse] ;
+    sub(X, sub(Y, Z)) -> add(X, sub(Z, Y))  [ hasOneUse] ;
+    sub(X, And(X, Y)) -> And(X, Xor(Y, #xffffffff))  [ hasOneUse] ;
+    sub(#x00000000, sdiv_i9(X, C)) -> sdiv(X, neg(C))  [ (hasOneUse /\ ((C != #x00000001) /\ (C != (#x00000001 << (width(C) -i #x00000001)))))] ;
+    sub(#x00000000, shl(C, Y)) -> shl(neg(C), Y)  [ hasOneUse] ;
+    sub(#x00000000, shl(sub(#x00000000, X), Y)) -> shl(X, Y)  [ hasOneUse] ;
+    sub(X, mul(A, sub(#x00000000, B))) -> add(X, mul(A, B))  [ hasOneUse] ;
+    sub(X, mul(A, C)) -> add(X, mul(A, neg(C)))  [ hasOneUse] ;
+    sub(A, B) -> sub_nsw(A, B)  [ WillNotOverflowSignedSub(A, B)] ;
+    sub(A, B) -> sub_nuw(A, B)  [ WillNotOverflowUnsignedSub(A, B)] ;
+    add_i1(X0, X1) -> add(X0, X1);
+    sub_nsw(X0, X1) -> sub(X0, X1);
+    sub_i1(X0, X1) -> sub(X0, X1);
+    sext_i1(X0) -> sext(X0);
+    zext_i1(X0) -> zext(X0);
+    add_nuw(X0, X1) -> add(X0, X1);
+    add_nsw(X0, X1) -> add(X0, X1);
+    sub_nuw(X0, X1) -> sub(X0, X1);
+    sdiv_i9(X0, X1) -> sdiv(X0, X1);
+NON-STANDARD IRREGULAR
+
+QUERY loops

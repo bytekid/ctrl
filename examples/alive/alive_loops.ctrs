@@ -1,0 +1,53 @@
+THEORY bitvectors;
+LOGIC QF_UFBV;
+SOLVER external;
+SIGNATURE Xor, lshr, sub_nuw, select, icmp_eq, sub, sub_nsw, add_nuw, add, shl_nuw, mul, srem, add_nsw, urem, icmp_ne, icmp, Or, And, sdiv, lshr_exact, udiv, shl,  !BITVECTOR;
+
+RULES
+    add(lhs, rhs) -> add_nsw(lhs, rhs)  [ WillNotOverflowSignedAdd(lhs, rhs)] ; /* AddSub 1 ; AddSub:1334*/
+    add(lhs, rhs) -> add_nuw(lhs, rhs)  [ WillNotOverflowUnsignedAdd(lhs, rhs)] ; /* AddSub 2*/
+    sub(x, C) -> add(x, neg(C)); /* AddSub 3*/
+    sub_nsw(x, C) -> add_nsw(x, neg(C))  [ (C != (#x00000001 << (width(C) -i #x00000001)))] ; /* AddSub 4*/
+    sub(A, B) -> sub_nsw(A, B)  [ WillNotOverflowSignedSub(A, B)] ; /* AddSub 5*/
+    sub(A, B) -> sub_nuw(A, B)  [ WillNotOverflowUnsignedSub(A, B)] ; /* AddSub 6*/
+    And(Xor(X, C1), C2) -> Xor(And(X, C2), CL0)  [ ((C1 & C2) = CL0)] ; /* AndOrXor 1*/
+    And(Or(X, C1), C2) -> And(Or(X, CL0), C2)  [ ((C1 & C2) = CL0)] ; /* AndOrXor 2*/
+    And(Or(X, C1), C2) -> Or(And(X, CL0), C1)  [ (((C2 ^ (C1 & C2)) = CL0) /\ ((C1 & C2) = C1))] ; /* AndOrXor 3*/
+    And(shl(X, C1), C2) -> And(shl(X, C1), CL0)  [ (((C2 & (#xffffffff << C1)) = CL0) /\ (((C2 & (#xffffffff << C1)) != (#xffffffff << C1)) /\ ((C2 & (#xffffffff << C1)) != C2)))] ; /* AndOrXor 4*/
+    And(lshr(X, C1), C2) -> And(lshr(X, C1), CL0)  [ (((C2 & lshr_th(#xffffffff, C1)) = CL0) /\ ((C2 & lshr_th(#xffffffff, C1)) != lshr_th(#xffffffff, C1)))] ; /* AndOrXor 5*/
+    And(Xor(op0LHS, op0RHS), C) -> Xor(And(op0LHS, C), op0RHS)  [ MaskedValueIsZero(op0RHS, ~(C))] ; /* AndOrXor 6*/
+    And(Or(op0LHS, op0RHS), C) -> Or(And(op0LHS, C), op0RHS)  [ MaskedValueIsZero(op0RHS, ~(C))] ; /* AndOrXor 7*/
+    And(sub(A, B), C) -> And(sub(#x00000000, B), C)  [ MaskedValueIsZero(A, lshr_th(#xffffffff, countLeadingZeros(C)))] ; /* AndOrXor 8*/
+    And(Xor(notOp0, #xffffffff), Xor(notOp1, #xffffffff)) -> Xor(Or(notOp0, notOp1), #xffffffff); /* AndOrXor 9*/
+    Or(And(x, C1), C) -> And(Or(x, C), CL0)  [ (((C | C1) = CL0) /\ ((C & C1) != #x00000000))] ; /* AndOrXor 10*/
+    Or(Xor(A, C1), op1) -> Xor(Or(A, op1), C1)  [ MaskedValueIsZero(op1, C1)] ; /* AndOrXor 11*/
+    Or(Xor(A, #xffffffff), Xor(B, #xffffffff)) -> Xor(And(A, B), #xffffffff); /* AndOrXor 12*/
+    Or(Or(A, C1), op1) -> Or(Or(A, op1), C1); /* AndOrXor 13*/
+    Xor(And(x, y), #xffffffff) -> Or(Xor(x, #xffffffff), Xor(y, #xffffffff)); /* AndOrXor 14*/
+    Xor(Or(x, y), #xffffffff) -> And(Xor(x, #xffffffff), Xor(y, #xffffffff)); /* AndOrXor 15*/
+    Xor(And(a, op1), op1) -> And(Xor(a, #xffffffff), op1); /* AndOrXor 16*/
+    udiv(X, lshr(A, B)) -> udiv(X, lshr_exact(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 1*/
+    udiv(X, shl(A, B)) -> udiv(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 2*/
+    sdiv(X, lshr(A, B)) -> sdiv(X, lshr_exact(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 3*/
+    sdiv(X, shl(A, B)) -> sdiv(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 4*/
+    urem(X, lshr(A, B)) -> urem(X, lshr_exact(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 5*/
+    urem(X, shl(A, B)) -> urem(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 6*/
+    srem(X, lshr(A, B)) -> srem(X, lshr_exact(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 7*/
+    srem(X, shl(A, B)) -> srem(X, shl_nuw(A, B))  [ (isPowerOf2(A) /\ hasOneUse)] ; /* MulDivRem 8*/
+    mul(sub(Y, X), C) -> mul(sub(X, Y), CL0)  [ ((Abs_th(C) = CL0) /\ ((C i< #x00000000) /\ isPowerOf2(Abs_th(C))))] ; /* MulDivRem 9*/
+    mul(add(Y, C1), C) -> mul(sub(neg(C1), Y), CL0)  [ ((Abs_th(C) = CL0) /\ ((C i< #x00000000) /\ isPowerOf2(Abs_th(C))))] ; /* MulDivRem 10*/
+    select(icmp_eq(X, C), X, Y) -> select(icmp_eq(X, C), C, Y); /* Select 1*/
+    select(icmp_ne(X, C), Y, X) -> select(icmp_ne(X, C), Y, C); /* Select 2*/
+    shl(Op0, C) -> shl_nuw(Op0, C)  [ MaskedValueIsZero(Op0, (#xffffffff << (width(C) -i C)))] ; /* Shift 1*/
+    sub_nsw(X0, X1) -> sub(X0, X1); /**/
+    icmp_ne(X0, X1) -> icmp(X0, X1); /**/
+    shl_nuw(X0, X1) -> shl(X0, X1); /**/
+    add_nuw(X0, X1) -> add(X0, X1); /**/
+    add_nsw(X0, X1) -> add(X0, X1); /**/
+    sub_nuw(X0, X1) -> sub(X0, X1); /**/
+    icmp_eq(X0, X1) -> icmp(X0, X1); /**/
+    lshr_exact(X0, X1) -> lshr(X0, X1); /**/
+
+NON-STANDARD IRREGULAR
+
+QUERY loops
