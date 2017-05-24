@@ -184,7 +184,7 @@ let condition1 ctxt cs sigma =
    cs sigma is logical, and, if yes,
    cs /\ \bigwedge_{x \in Dom(sigma)} (x = x sigma) is satisfiable. If yes,
    the resulting substitution is a loop witness *)
-let refined_condition4 ctxt cs sigma =
+let refined_condition2 ctxt cs sigma =
   let mk_fun = T.make_function ctxt.alph ctxt.env in
   let eq = Alph.get_equal_symbol ctxt.alph in
   let app x t cs = (mk_fun eq [T.make_var x; t]) :: cs in
@@ -205,7 +205,7 @@ let refined_condition4 ctxt cs sigma =
    cs sigma is logical, and, if yes, 
    cs /\ \bigwedge_{x \in Dom(sigma)} (x = x sigma) is satisfiable. If yes,
    the resulting substitution is a loop witness *)
-let refined_condition5 ctxt cs sigma =
+let refined_condition3 ctxt cs sigma =
   let fresh_rep sub y =
     let s = T.get_sort ctxt.alph ctxt.env (T.Var y) in
     Sub.add y (T.make_var (Environment.create_sorted_var s [] ctxt.env)) sub 
@@ -275,7 +275,7 @@ let check ctxt (rule, rs, sigma) =
       let sub_map rho = (Rule.apply_sub rho rule', subst_terms rho rs') in
       let res1 = Option.map sub_map (condition1 ctxt cs sigma') in
       if Option.is_some res1 then res1
-      else Option.map sub_map (refined_condition5 ctxt cs sigma')
+      else Option.map sub_map (refined_condition3 ctxt cs sigma')
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
   (* Only return loops starting with a DP symbol to avoid duplicates. *)
