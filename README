@@ -28,4 +28,5 @@ to clean up compiled sources.
 The website of the tool is http://cl-informatik.uibk.ac.at/software/ctrl/
 You can contact the author at Cynthia.Kop@uibk.ac.at
 The supplied smt-solver is Z3, and can be downloaded (including source) at http://z3.codeplex.com/
+It is also called by the script external, which may be modified accordingly.
 
