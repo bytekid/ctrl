@@ -19,3 +19,5 @@
 src/*/build/*
 src/tool/build/*
 
+**/CVS/*
+
