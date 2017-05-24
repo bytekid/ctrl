@@ -224,8 +224,9 @@ let refined_condition5 ctxt cs sigma =
   if not_logical then None
   else (
     let r = Smt.Solver.forall_satisfiable ys phi (smt ()) ctxt.env in
-    if fst r = Smt.Smtresults.SAT then
-     Format.printf "Refined condition results in substitution %s\n%!" (substr (snd r));
+    (*if fst r = Smt.Smtresults.SAT then
+     Format.printf "Refined condition results in substitution %s\n%!"
+       (substr (snd r));*)
     if fst r <> Smt.Smtresults.SAT then None
     else Some (Sub.compose Sub.apply_term ys_zs (snd r)))
 ;;
@@ -261,7 +262,7 @@ let init_rule_maximal c (st,rpts,_) = loop_init_rule_maximal c (st,rpts)
 (* Check whether the given rewrite sequence constitutes a loop; to that end
    it is checked whether the initial term unifies with (a subterm of) the final
    term, and constraint conditions are satisfied. *)
-let check ctxt ((rule, rs, sigma) as seq) =
+let check ctxt (rule, rs, sigma) =
   let start = Unix.gettimeofday () in
   let (s, t) = Rule.to_terms rule in
   let cs = Rule.constraints rule in
@@ -297,7 +298,8 @@ let check_all c seqs =
   let seqs = L.filter (seq_has_dp_root c) seqs in
   let loops, seqs = List.fold_left chk ([],[]) seqs in
   let loops, seqs = L.filter (loop_init_rule_maximal c) loops, seqs in
-  explain_all loops;
+  if Util.query_debugging () then
+    explain_all loops;
   loops, seqs
 ;;
 
@@ -312,7 +314,7 @@ let to_ctxt ctx (rl,q,t) = (rl,Pos.append (Ctx.hole_pos ctx) q,Ctx.apply t ctx)
 let sub_constr_sat c cs tau = constr_sat c (L.map (Sub.apply_term tau) cs)
 
 (* Narrow last term in sequence using given rule at position p. *)
-let forward c ((st,rs,sigma) as seq) p (rl,rs',sigma') =
+let forward c (st,rs,sigma) p (rl,rs',sigma') =
   let rule',rho = rename_rule c rl in
   let l,r = Rule.lhs rule', Rule.rhs rule' in
   try
@@ -412,7 +414,6 @@ let rec unfold_all c ruleseqs i (loops,seqs) =
   let len = i + 1 in
   if len > c.max_length then loops
   else (
-    Format.printf "Looking for sequences of length %d\n%!" len;
     (* determine whether we can use precomputed result*)
     let seqs, ruleseqs =
       if len < 4 then seqs, ruleseqs
@@ -433,18 +434,17 @@ let rec unfold_all c ruleseqs i (loops,seqs) =
       L.rev_append lps loops', L.rev_append sqs seqs'
     in
     let rs1, rs2 = ruleseqs in
-    Format.printf "Combining %d sequences of length %d with %d rules %i\n%!"
-      (L.length seqs) i (L.length rs1 + (L.length rs2))
-      (if do_all then 1 else 0);
+    if Util.query_debugging () then
+      Format.printf "Combining %d sequences of length %d with %d rules %i\n%!"
+        (L.length seqs) i (L.length rs1 + (L.length rs2))
+        (if do_all then 1 else 0);
     let seqss =
       if is_final then L.filter (within_step c) seqs
       else if len <> (c.max_length + 1) / 2 then seqs
       else L.filter (within_2_steps c) seqs 
     in
-    Format.printf "throw out %d\n%!" (L.length seqs - (L.length seqss));
     let loops, seqs' = L.fold_left fold_unfold (loops,[]) seqss in
     let seqs'' = L.filter (small c) seqs' in
-    Format.printf "Found %d sequences of length %d\n%!" (L.length seqs'') len;
     if seqs'' = [] then loops
     else (
       H.add seq_cache len seqs'';
@@ -472,7 +472,6 @@ let non_size_dec =
 
 (* Main functionality *)
 let process verbose prob =
-  Format.printf "Go looping %f\n%!" !check_time;
   let dps = Dpproblem.get_dps prob in
   let rules = Dpproblem.get_rules prob in
   max_diff rules;
