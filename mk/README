@@ -1,0 +1,201 @@
+*** Build system for TTT2 ***
+
+Quick start
+
+  # (g)make
+  # (g)make ttt2|top|doc|clean|distclean|native-$(PACK)... (see Targets below)
+
+
+Routine tasks
+
+  - Add a new module in src/foo/src:
+    Add the file name to FILES in
+
+      src/foo/build.mk
+
+    (order does not matter.)
+
+  - More?
+
+
+*** Details of Build System ***
+
+Glossary
+
+  module: a single ML module.
+  package: a collection of modules, like Util.
+
+
+Design goals
+
+  - no recursive calls of make
+    (status: recursive make is only used to build minisat, minisat+ and yices)
+  - no blatant copying & pasting of Makefiles from one directory to the next
+    (status: mission accomplished)
+  - track dependencies
+    (status: works fairly well within package; inter-package dependencies are
+    coarsely grained. to make progress, we'd need a better tool for extracting
+    dependencies from ml file and analyse the whole system at once.
+    the main goal is achieved: 'make; make' does nothing on the second run.)
+  - no manual ordering of modules into dependency order
+    (done. however, on the package level, manual ordering is still required)
+
+
+Overview
+
+  src/*/build.mk:
+    - specify meta information for a package, includes mk/subdir.mk
+    - may contain package specific rules
+  mk/toplevel.mk:
+    - takes care of including src/*/build.mk
+    - some general rules and utility functions
+  mk/subdir.mk:
+    - provide common rules for building packages
+    (this is the main working horse of the build system)
+  mk/subdir-depend.mk
+    - calculate dependencies
+    - sort objects within a package into dependency order
+  build.mk
+    - toplevel targets
+
+
+Targets
+
+  ttt2 (src/ttt2/build.mk):
+    - build ttt2 tool
+    - this is the default target
+  ttt2.bytecode (src/ttt2/build.ml):
+    - bytecode version of ttt2
+  top (Makefile):
+    - build toplevel interpreter + wrapper script for invoking it
+  doc (Makefile):
+    - build (native libraries and) documentation
+
+  native-Foo, native (mk/subdir.mk):
+    - build native library(ies)
+  bytecode-Foo, bytecode (mk/subdir.mk):
+    - build bytecode library(ies)
+  clean-Foo, clean (various):
+    - clean most stuff
+  distclean-Foo, distclean (various):
+    - clean properly. also dist-clean(-Foo) and dist_clean(_Foo)
+
+  (TOOL in cat, csi, ttt2)
+  TOOL-runme:
+    - create script for running the corresponding tool in TOOL/runme
+  TOOL-dir:
+    - collect TTT2 sources in TOOL/...
+  TOOL-online:
+    - collect sources, pack a tar file, and scp it to some destination.
+      Will insist on building without Yices, and include the resulting
+      binary in the published tarball.
+
+  help:
+    - cat README
+  all, exec:
+    - other ways to build ttt2
+
+
+Options
+
+  BITS=32|64
+    - set machine word size if not detected automatically
+  STATIC=1
+    - enable static linking
+  DISABLE_MiniSat=1 DISABLE_MiniSatP=1 DISABLE_Yices=1
+    - build without the respective SAT solver.
+      Note: when altering these options, you may have to 'make clean-logic'
+
+
+Here Be Dragons
+
+  The build system makes use of some obscure GNU make features:
+
+  - secondary expansion: in prerequisites, $(FOO) is evaluated at parse time;
+    $$(FOO) is evaluated when the target is actually built. $$$$ becomes a
+    literal $.
+    we need secondary expansion for two reasons: first, they are useful
+    in pattern rules to add prerequisites that depend on some automatic
+    variable like $@, e.g.  %.baz: | $$(dir $$@)/.dir
+    The other use is to refer to a variable in a prerequisite before it is
+    defined:  foo: $$(LIB_Bar)  [and later]  LIB_Bar = baz
+
+  - per target variables (see Variables below)
+
+  - order only dependencies, foo: ... | bar/.dir
+    (bar/.dir will be made before foo is made, but if bar/.dir is made, that
+    does not cause foo to be remade)
+
+  also look out for uses of Perl
+
+
+Variables
+
+  There are (conceptually) two kinds of variables in this build system,
+  per subdirectory ones and global ones.
+
+  Global variables are available throughout the whole Makefile, once they
+  have been defined.
+
+  Per-subdir variables have a limited lifetime. They are defined in each
+  src/*/build.mk file and can only be used there and in the mk/subdir.mk
+  file. (They will be redefined by the next src/*/build.mk file to be
+  included.) The trick is that each of these is saved in a global variable
+  by subdir.mk. Finally, we can dynamically create rules that refer to
+  the right global variable by using per target variables:
+
+    $(BUILD)/foo.bar: PACK := $(PACK)
+    $(BUILD)/foo.bar:
+        echo Hello, world > $(BUILD_$(PACK))/foo.bar
+
+  global variables
+    see beginning of the toplevel build.mk
+
+  primary per-subdir variables
+    DIR:         base directory of package
+    PACK:        package name
+    DEP:         packages used by this package
+    FILES:       .ml files for package
+
+  secondary per-subdir variables
+    PACKL:       lower case version of $(PACK)
+    SRC:         source directory, $(DIR)/src
+    BUILD:       build directory, $(DIR)/build
+    DEPDIR:      dependency cache directory, $(BUILD)/.dep
+
+  global variables defined by build system
+    LIB_Foo:     .cmxa package file of Foo
+    LIBO_Foo:    .cma package file of Foo
+    DIR_Foo:     DIR (see above) of Foo
+    SRC_Foo:     SRC (see above) of Foo
+    DEP_Foo:     DEP (see above) of Foo
+    BUILD_Foo:   BUILD (see above) of Foo
+    FILES_Foo:   FILES (see above) of Foo
+    PACKL_Foo:   PACKL (see above) of Foo
+    SRCDIRS_Foo: source directories used by Foo
+
+    LINK_Logic (src/logic/build.mk):
+      extra flags for linking the Logic package
+    PACKS_Ttt2, LIBS_Ttt2 (src/ttt2/build.mk):
+      packages used by 'ttt2' and 'top' executables
+
+  per target variables
+    PACK (mostly by mk/subdir.mk):
+      package that the target was created for
+    BLACKLIST:
+      used by the dependency generation (mk/subdir-depend.mk), to prevent
+      falsely identifying external module references as internal ones. For
+      example, Ttt2 contains a module called 'Monad', and Ttt2.State uses
+      'Monad'. However, that one is actually 'Util.Monad', and having
+      Ttt2.State depend on Ttt2.Monad results in a circular dependency.
+      To solve this problem, src/ttt2/build.mk contains the hint
+          $(DEPDIR)/strategy/state.ml: BLACKLIST := Monad
+
+
+Todo
+
+  - per package Makefile for convenience
+    (plus maybe a way to ignore cross-package dependencies)
+  - some targets are not yet implemented: comp*, 2010
+  - new? that target should not be needed anymore ;)
+  - keep this file up to date
