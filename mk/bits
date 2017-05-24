@@ -1,0 +1,13 @@
+#! /bin/bash
+
+MAXINT="$(${OCAML:-ocaml} <(echo print_int max_int))"
+
+case "${MAXINT}" in
+    4611686018427387903)
+        echo 64;;
+    1073741823)
+        echo 32;;
+    *)
+        echo "$0": Unknown value for max_int \("${MAXINT}"\). >&2
+        exit 1
+esac
