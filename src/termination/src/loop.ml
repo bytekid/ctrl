@@ -184,7 +184,7 @@ let condition1 ctxt cs sigma =
    cs sigma is logical, and, if yes,
    cs /\ \bigwedge_{x \in Dom(sigma)} (x = x sigma) is satisfiable. If yes,
    the resulting substitution is a loop witness *)
-let refined_condition2 ctxt cs sigma =
+let refined_condition2 rl ctxt cs sigma =
   let mk_fun = T.make_function ctxt.alph ctxt.env in
   let eq = Alph.get_equal_symbol ctxt.alph in
   let app x t cs = (mk_fun eq [T.make_var x; t]) :: cs in
@@ -193,6 +193,9 @@ let refined_condition2 ctxt cs sigma =
   if not_logical then None
   else (
     let r = Smt.Solver.satisfiable_formulas [c] (smt ()) ctxt.env in
+    (if Util.query_debugging () then
+      Format.printf "Condition (2) on rule %s, substitution %s\n%!"
+        (P.to_string_rule rl) (substr (snd r)));
     if fst r = Smt.Smtresults.SAT then Some (snd r) else None)
 ;;
 
@@ -205,7 +208,7 @@ let refined_condition2 ctxt cs sigma =
    cs sigma is logical, and, if yes, 
    cs /\ \bigwedge_{x \in Dom(sigma)} (x = x sigma) is satisfiable. If yes,
    the resulting substitution is a loop witness *)
-let refined_condition3 ctxt cs sigma =
+let refined_condition3 rl ctxt cs sigma =
   let fresh_rep sub y =
     let s = T.get_sort ctxt.alph ctxt.env (T.Var y) in
     Sub.add y (T.make_var (Environment.create_sorted_var s [] ctxt.env)) sub 
@@ -214,8 +217,10 @@ let refined_condition3 ctxt cs sigma =
   let disj = Alph.get_or_symbol ctxt.alph in
   let conj = Alph.get_and_symbol ctxt.alph in
   let neg = Alph.get_not_symbol ctxt.alph in
-  let app_changed x t vs = if T.Var x = t then vs else x::(T.vars t) @ vs in
-  let ys = L.unique (Sub.fold app_changed sigma []) in
+  let not_rl x = not (L.mem x (Rule.vars rl)) in
+  let app x t vs = if T.Var x = t || not_rl x then vs else x::(T.vars t) @ vs in
+  let ys = L.unique (Sub.fold app sigma []) in
+  let ys = L.intersect ys (Rule.vars rl) in
   let ys_zs = L.fold_left fresh_rep Sub.empty ys in
   let c = conjunction ctxt cs in
   let csigma = Sub.apply_term sigma c in
@@ -225,9 +230,10 @@ let refined_condition3 ctxt cs sigma =
   if not_logical then None
   else (
     let r = Smt.Solver.forall_satisfiable ys phi (smt ()) ctxt.env in
-    if fst r = Smt.Smtresults.SAT then
-     Format.printf "Refined condition results in substitution %s\n%!"
-       (substr (snd r));
+    (if Util.query_debugging () then
+      let yss = L.fold_left (fun s x -> s^" "^(P.to_string_term (T.Var x))) in
+      Format.printf "Condition (3) on rule %s, qvs %s is substitution %s\n%!"
+        (P.to_string_rule rl) (yss "" ys) (substr (snd r)));
     if fst r <> Smt.Smtresults.SAT then None
     else Some (Sub.compose Sub.apply_term ys_zs (snd r)))
 ;;
@@ -276,7 +282,10 @@ let check ctxt (rule, rs, sigma) =
       let sub_map rho = (Rule.apply_sub rho rule', subst_terms rho rs') in
       let res1 = Option.map sub_map (condition1 ctxt cs sigma') in
       if Option.is_some res1 then res1
-      else Option.map sub_map (refined_condition3 ctxt cs sigma')
+      else
+        let res2 = refined_condition2 rule ctxt cs sigma' in
+        if Option.is_some res2 then Option.map sub_map res2
+        else Option.map sub_map (refined_condition3 rule ctxt cs sigma')
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
   (* Only return loops starting with a DP symbol to avoid duplicates. *)
@@ -334,7 +343,7 @@ let forward c (st,rs,sigma) p (rl,rs',sigma') =
 ;;
 
 (* Try to narrow subterm of lhs of seq forward or backwards using rule. *)
-let narrow c ((st,rs,sigma) as seq) p (rl,rs',sigma') =
+let narrow c (st,rs,sigma) p (rl,rs',sigma') =
   let rule',rho = rename_rule c rl in
   let l,r = Rule.lhs rule', Rule.rhs rule' in
   let fw = is_forward c in
