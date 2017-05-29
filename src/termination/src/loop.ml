@@ -214,7 +214,8 @@ let refined_condition3 ctxt cs sigma =
   let disj = Alph.get_or_symbol ctxt.alph in
   let conj = Alph.get_and_symbol ctxt.alph in
   let neg = Alph.get_not_symbol ctxt.alph in
-  let ys = Sub.fold (fun x _ vs -> x::vs) sigma [] in
+  let append_if_changed x t vs = if Term.Var x = t then vs else x::vs in
+  let ys = Sub.fold append_if_changed sigma [] in
   let ys_zs = L.fold_left fresh_rep Sub.empty ys in
   let c = conjunction ctxt cs in
   let csigma = Sub.apply_term sigma c in
