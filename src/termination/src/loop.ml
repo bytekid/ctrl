@@ -214,8 +214,8 @@ let refined_condition3 ctxt cs sigma =
   let disj = Alph.get_or_symbol ctxt.alph in
   let conj = Alph.get_and_symbol ctxt.alph in
   let neg = Alph.get_not_symbol ctxt.alph in
-  let append_if_changed x t vs = if Term.Var x = t then vs else x::vs in
-  let ys = Sub.fold append_if_changed sigma [] in
+  let app_changed x t vs = if T.Var x = t then vs else x::(T.vars t) @ vs in
+  let ys = L.unique (Sub.fold app_changed sigma []) in
   let ys_zs = L.fold_left fresh_rep Sub.empty ys in
   let c = conjunction ctxt cs in
   let csigma = Sub.apply_term sigma c in
@@ -225,9 +225,9 @@ let refined_condition3 ctxt cs sigma =
   if not_logical then None
   else (
     let r = Smt.Solver.forall_satisfiable ys phi (smt ()) ctxt.env in
-    (*if fst r = Smt.Smtresults.SAT then
+    if fst r = Smt.Smtresults.SAT then
      Format.printf "Refined condition results in substitution %s\n%!"
-       (substr (snd r));*)
+       (substr (snd r));
     if fst r <> Smt.Smtresults.SAT then None
     else Some (Sub.compose Sub.apply_term ys_zs (snd r)))
 ;;
