@@ -282,7 +282,9 @@ let weak_orthogonal trs =
 let knuth_bendix verbose trs =
   let verbose = false in
   if fst (T.check verbose true trs) <> T.TERMINATING then
-  UNKNOWN, "Knuth-Bendix criterion not applicable due to nontermination.\n"
+  let c = "Knuth-Bendix criterion not applicable as termination could not be" ^
+   "verified\n" in
+  UNKNOWN, c
   else (
     let (cps, newenv) = critical_pairs (Trs.get_rules trs) in
     (*List.iter print_cp cps ;*)
