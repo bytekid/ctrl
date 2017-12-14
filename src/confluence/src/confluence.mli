@@ -31,6 +31,8 @@ open Ctrs;;
 
 (** This module is used to interface with the SMT-solver. *)
 module Confluencechecker : sig
+  type possible_results = CONFLUENT | NONCONFLUENT | UNKNOWN
+
   type criticalpair = Term.t * Term.t * Term.t list
 
   (** {3 Constructors} *)
@@ -56,6 +58,13 @@ module Confluencechecker : sig
   between pairs of rules and critical pairs for calculations, and an
   environment for the variables in those critical pairs. *)
   val orthogonal : Trs.t -> bool
-  val weak_orthogonal : Trs.t -> bool
+  val weak_orthogonal : Trs.t -> possible_results
+
+  (* [knuth_bendix trs] checks termination and joinability of critical pairs. *)
+  val knuth_bendix : bool -> Trs.t -> possible_results * string
+
+  (* [all trs] runs first a weak orthogonality check and then the Knuth-Bendix
+  check. *)
+  val all : bool -> Trs.t -> possible_results * string
 end
 

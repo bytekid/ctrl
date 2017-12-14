@@ -22,10 +22,14 @@ open Ctrs;;
 open Util;;
 open Smt;;
 open Rewriting;;
+open Termination;;
+
+(*** MODULES *****************************************************************)
+module T = Terminator;;
 
 (*** TYPES *******************************************************************)
 
-type possible_results = TERMINATING | NONTERMINATING | UNKNOWN;;
+type possible_results = CONFLUENT | NONCONFLUENT | UNKNOWN;;
 type criticalpair = Term.t * Term.t * Term.t list;;
 
 (*** FUNCTIONS ***************************************************************)
@@ -259,7 +263,7 @@ let equivalent_under_constraint s t phis a e acceptablevar =
 
 let weak_orthogonal trs =
   let a = Trs.get_alphabet trs in
-  if not (Trs.is_left_linear trs) then false
+  if not (Trs.is_left_linear trs) then UNKNOWN
   else (
     let (cps, newenv) = critical_pairs (Trs.get_rules trs) in
     (*List.iter print_cp cps ;*)
@@ -270,7 +274,36 @@ let weak_orthogonal trs =
     in
     let answer = List.for_all equivalent cps in
     Environment.drop newenv ;
-    answer
+    if answer then CONFLUENT else UNKNOWN
   )
 ;;
 
+(* loops when supplied with a nonterminating system *)
+let knuth_bendix verbose trs =
+  let verbose = false in
+  if fst (T.check verbose true trs) <> T.TERMINATING then
+  UNKNOWN, "Knuth-Bendix criterion not applicable due to nontermination.\n"
+  else (
+    let (cps, newenv) = critical_pairs (Trs.get_rules trs) in
+    (*List.iter print_cp cps ;*)
+    let bounded_joinable k ((s, t, phis) as cp) =
+      let ss' = Rewriter.reduce_to_normal s in
+      let ts' = Rewriter.reduce_to_normal t in
+      Util.List.intersect ss' ts' <> []
+    in
+    let all_joinable = List.for_all (bounded_joinable 5) cps in
+    let c =
+      if all_joinable then
+      "Knuth-Bendix: The system is terminating and all CPs are joinable."
+      else
+      "The system is terminating but joinability of CPs could not be verified."
+    in
+    Environment.drop newenv;
+    (if all_joinable then CONFLUENT else UNKNOWN),c ^ "\n"
+  )
+;;
+
+let all verbose trs =
+  if weak_orthogonal trs = CONFLUENT then CONFLUENT,"Weak orthogonality applies"
+  else knuth_bendix verbose trs
+;;

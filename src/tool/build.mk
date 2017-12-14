@@ -1,12 +1,12 @@
 DIR   := src/tool
 PACK  := Tool
-DEP   := Util Parsec Ctrs Smt Rewriting Io Confluence Termination Inductive
+DEP   := Util Parsec Ctrs Smt Rewriting Io Termination Confluence Inductive
 GENERATED :=
 FILES := \
   main.ml
   $(GENERATED)
 # packs to include in executable, in dependency order
-PACKS_$(PACK) := Util Parsec Ctrs Smt Rewriting Io Confluence Termination Inductive Tool
+PACKS_$(PACK) := Util Parsec Ctrs Smt Rewriting Io Termination Confluence Inductive Tool
 EXECUTABLE_$(PACK) := ctrl
 
 # For normal use it should not be necessary to touch anything below.

@@ -708,7 +708,8 @@ let run trs eqs =
   let (backup, eqs) = Proverbase.initialise trs eqs in
   let response = match automatic 2 5 eqs with
     | (NO, f) ->
-      if Confluencechecker.weak_orthogonal trs then (NO, f)
+      if Confluencechecker.weak_orthogonal trs = Confluencechecker.CONFLUENT
+      then (NO, f)
       else (MAYBE, f)
     | pair -> pair
   in

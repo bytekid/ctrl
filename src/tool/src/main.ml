@@ -39,6 +39,12 @@ let txt_answer = function
   | Terminator.UNKNOWN -> "MAYBE"
 ;;
 
+let txt_answer_confluence = function
+  | Confluencechecker.CONFLUENT -> "YES"
+  | Confluencechecker.NONCONFLUENT -> "NO"
+  | Confluencechecker.UNKNOWN -> "MAYBE"
+;;
+
 let run _ =
   let filename = ref "" in
   let options = Arg.align 
@@ -79,9 +85,10 @@ let run _ =
       let (ans, comments) = Terminator.check_nontermination verbose trs in
       Printf.printf "%s\n%s" (txt_answer ans) (if verbose then "" else comments)
     | Reader.Confluence ->
-      if Confluencechecker.weak_orthogonal (Trs.get_current ()) then
-        Printf.printf "YES\n"
-      else Printf.printf "MAYBE\n"
+      let verbose = Util.query_debugging () in
+      let ans,comments = Confluencechecker.all verbose (Trs.get_current ()) in
+      Printf.printf "%s\n%s" (txt_answer_confluence ans)
+      (if verbose then "" else comments)
     | Reader.Equivalence lst -> (
       try match Theoremprover.run (Trs.get_current ()) lst with
         | (Theoremprover.YES, explain) -> Printf.printf "YES\n" ; explain ()
