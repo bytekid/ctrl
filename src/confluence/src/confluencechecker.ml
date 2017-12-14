@@ -26,6 +26,7 @@ open Termination;;
 
 (*** MODULES *****************************************************************)
 module T = Terminator;;
+module P = Io.Printer;;
 
 (*** TYPES *******************************************************************)
 
@@ -284,24 +285,30 @@ let knuth_bendix verbose trs =
   if fst (T.check verbose true trs) <> T.TERMINATING then
   let c = "Knuth-Bendix criterion not applicable as termination could not be" ^
    "verified\n" in
-  UNKNOWN, c
+  UNKNOWN, if verbose then c else ""
   else (
     let (cps, newenv) = critical_pairs (Trs.get_rules trs) in
     (*List.iter print_cp cps ;*)
-    let bounded_joinable k ((s, t, phis) as cp) =
+    let joinable (s, t, phis) =
       let ss' = Rewriter.reduce_to_normal s in
       let ts' = Rewriter.reduce_to_normal t in
-      Util.List.intersect ss' ts' <> []
+      List.intersect ss' ts' <> []
     in
-    let all_joinable = List.for_all (bounded_joinable 5) cps in
-    let c =
-      if all_joinable then
-      "Knuth-Bendix: The system is terminating and all CPs are joinable."
+    let not_joined_msg msg (s, t, phis) =
+      let s,t = P.to_string_term s, P.to_string_term t in
+      let c = P.to_string_constraints phis in
+      msg ^ "  " ^ s ^ " = " ^ t ^ " [" ^ c ^ "]\n"
+    in
+    let non_joinables = List.filter (fun cp -> not (joinable cp)) cps in
+    let msg =
+      if not verbose then ""
       else
-      "The system is terminating but joinability of CPs could not be verified."
+        let non_joinable_msg = List.fold_left not_joined_msg "" non_joinables in
+        if non_joinables <> [] then "Non-joinable CPs:\n" ^ non_joinable_msg
+        else "The system is terminating and all CPs are joinable.\n"
     in
     Environment.drop newenv;
-    (if all_joinable then CONFLUENT else UNKNOWN),c ^ "\n"
+    (if non_joinables = [] then CONFLUENT else NONCONFLUENT), msg
   )
 ;;
 

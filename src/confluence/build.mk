@@ -1,6 +1,6 @@
 DIR   := src/confluence
 PACK  := Confluence
-DEP   := Util Ctrs Smt Rewriting Termination
+DEP   := Util Io Ctrs Smt Rewriting Termination
 FILES := \
   confluencechecker.ml
 
