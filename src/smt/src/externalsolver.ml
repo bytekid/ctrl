@@ -328,6 +328,10 @@ let get_value sort (solver, logic) a =
 
 let check_formulas terms get_model (solver, logic) renamings translations a e =
   try
+  (*let print term = print_as_smt term renamings translations e in
+  let s = List.fold_left (^) "" (List.map print terms) in
+  let t = Printexc.get_callstack 13 |> Printexc.raw_backtrace_to_string in
+  Format.printf "check %s \n%s\n%!" s t;*)
   let vars = List.unique (List.flat_map (get_variables e) terms) in
   let print term = print_as_smt term renamings translations e in
   let formulas = List.map print terms in

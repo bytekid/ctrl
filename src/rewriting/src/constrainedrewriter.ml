@@ -276,9 +276,9 @@ let strong_simplified_form (term, phiparts) a e =
 ;;
 
 (** (strong) simplified form, but for outsiders *)
-let simplify_constrained_term (term, phi) strong =
-  let a = Trs.get_alphabet (Trs.get_current ()) in
-  let e = Trs.get_main_environment (Trs.get_current ()) in
+let simplify_constrained_term ?(trs=Trs.get_current ()) (term, phi) strong =
+  let a = Trs.get_alphabet trs in
+  let e = Trs.get_main_environment trs in
   let phiparts = split_conjunction a phi in
   let (s, psiparts) = (
     if strong then strong_simplified_form (term, phiparts) a e
@@ -329,6 +329,8 @@ let top_calc_reduce blockedvars (term, phi) alf env =
     let sort = Term.get_sort a e term in
     let anames = Alphabet.fun_names a in
     let x = Environment.create_sorted_var sort anames e in
+    if (Variable.find_name x) = "b476" then
+      Format.printf "b476 has sort %s\n%!" (Sort.to_string (Environment.find_sort x e));
     let xterm = Term.make_var x in
     let equality = create_equal xterm term a e in
     let newphi = create_and phi equality a e in
@@ -790,3 +792,46 @@ let rec reduce_to_normal (t, phi) general simp =
   (t, phi) :: try_all positions
 ;;
 
+(* bounded rewriting *)
+
+let do_root_steps rules calc simp gen tc =
+  let alph,env = Trs.get_alphabet rules, Trs.get_main_environment rules in
+  let option_list = function Some x -> [x] | _ -> [] in
+  let tc = if simp then simplify_constrained_term ~trs:rules tc true else tc in
+  let rs = option_list (calc_reduce tc Position.root (Some alph) (Some env)) in
+  if rs <> [] then rs
+  else  option_list (trs_reduce ~trs:rules tc Position.root calc gen)
+;;
+
+let rewrite_bounded calc simp general rules n t =
+  let rec one_step_reducts (t,phi) =
+      let root_rdcts = do_root_steps rules calc simp general (t,phi) in
+      let arg_rdcts = match t with
+        | Term.Var _ -> []
+        | Term.Fun (f, args) ->
+          arg_reducts (fun ts -> Term.Fun (f, ts)) phi [] args
+        | Term.InstanceFun (f, args,x) ->
+          arg_reducts (fun ts -> Term.InstanceFun (f, ts,x)) phi [] args
+        | Term.Forall (x, arg) ->
+          arg_reducts (fun ts -> Term.Forall(x, List.hd ts)) phi [] [arg]
+        | Term.Exists (x, arg) ->
+          arg_reducts (fun ts -> Term.Exists(x, List.hd ts)) phi [] [arg]
+      in root_rdcts @ arg_rdcts
+  and arg_reducts mk_term phi bef = function
+      [] -> []
+    | ti :: aft ->
+      let tis = one_step_reducts (ti,phi) in
+      let ts' = List.map (fun (u,psi) -> mk_term (bef @ (u :: aft)),psi) tis in
+      ts' @ (arg_reducts mk_term phi (bef @ [ti]) aft)
+  in
+  let rec rewrite acc n ts =
+    if n < 0 then acc
+    else
+      let reducts = List.map (fun t -> t,one_step_reducts t) ts in
+      let nfs, trdcts = List.partition (fun (_,rs) -> rs = []) reducts in
+      let acc' = List.map (fun (t,rs) -> (t, rs = [])) reducts @ acc in
+      let rdcts = List.concat (List.map snd trdcts) in
+      let ts_new = List.diff rdcts (List.map fst acc) in
+      rewrite acc' (n-1) ts_new
+  in rewrite [] n [t]
+;;

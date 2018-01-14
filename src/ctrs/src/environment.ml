@@ -139,7 +139,10 @@ let create_var_like x xenv l e =
   try
     let sort = find_sort x xenv in
     if reusename then create_var origname sort e
-    else create_sorted_var sort l e
+    else (*create_sorted_var sort l e*)
+      let name = generate_var_name false (Sort.to_string sort) l e in
+      let n = if String.sub name 0 1 = "C" then "C" ^ name else name in
+      create_var n sort e
   with Not_found ->
     if reusename then create_unsorted_var origname e
     else create_fresh_var l e

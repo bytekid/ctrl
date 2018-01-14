@@ -97,6 +97,15 @@ let unify_problem =
   let rec unify s = function
     | [] -> s
     | (u,v) :: p when u = v -> unify s p
+    | (Var x as u,(Var y as v)) :: p ->
+      if S.apply x v s = v then
+        let t =
+          if String.sub (Variable.find_name x) 0 1 = "C" then S.singleton x v 
+          else S.singleton y u
+        in
+        let apply = S.apply_term in
+        unify (S.compose apply s t) (List.rev_map (Pair.map (apply t)) p)
+      else raise Not_unifiable
     | (Var x as u,v) :: p | (v,(Var x as u)) :: p ->
       if not (Term.is_subterm u v) && S.apply x v s = v then
         let t = S.singleton x v and apply = S.apply_term in

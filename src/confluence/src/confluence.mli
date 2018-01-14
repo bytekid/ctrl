@@ -34,6 +34,8 @@ module Confluencechecker : sig
   type possible_results = CONFLUENT | NONCONFLUENT | UNKNOWN
 
   type criticalpair = Term.t * Term.t * Term.t list
+  
+  type overlap = Calc of Rule.t | Rules of (Rule.t * Rule.t)
 
   (** {3 Constructors} *)
 
@@ -53,10 +55,14 @@ module Confluencechecker : sig
   constraints.
   *)
   val critical_pairs : (Rule.t * Environment.t) list ->
-                       criticalpair list * Environment.t
+                       (criticalpair * overlap) list * Environment.t
   (* [critical_pairs rules] returns a list of all critical pairs
   between pairs of rules and critical pairs for calculations, and an
   environment for the variables in those critical pairs. *)
+
+  val all_critical_pairs : Rule.t -> Rule.t -> Alphabet.t -> Environment.t ->
+    bool -> criticalpair list
+  
   val orthogonal : Trs.t -> bool
   val weak_orthogonal : Trs.t -> possible_results
 

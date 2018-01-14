@@ -113,7 +113,7 @@ module Constrainedrewriter : sig
   result; the given environment is used to choose fresh variables, and
   if None is given, the main environment of the current TRS is used *)
 
-  val simplify_constrained_term : cterm -> bool -> cterm
+  val simplify_constrained_term : ?trs:Ctrs.Trs.t -> cterm -> bool -> cterm
   (* [simplify_constrained_term s strong] returns a simplified
   version of [s], where variables whose values are known are
   instantiated.  If [strong] is set to true, then we use the smt
@@ -198,5 +198,8 @@ module Constrainedrewriter : sig
   If [general] is set to false, then the reducts may not be the most
   general, as in the rule_reduce function.
   *)
+
+  val rewrite_bounded :
+  bool -> bool -> bool -> Trs.t -> int -> cterm -> (cterm * bool) list
 end
 

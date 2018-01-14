@@ -426,7 +426,7 @@ let rec unfold_all c ruleseqs i (loops,seqs) =
   else (
     (* determine whether we can use precomputed result*)
     let seqs, ruleseqs =
-      if len < 4 then seqs, ruleseqs
+      if len < 5 then seqs, ruleseqs
       else
         let j = (len + 1) / 2 in
         let rlseqs = H.find seq_cache (len - j) in

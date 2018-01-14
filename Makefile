@@ -18,7 +18,7 @@ STATIC    :=
 include mk/bits.mk
 
 # list of packages to consider
-TOPLEVEL  := Parsec Ctrs Util Smt Rewriting Io Termination Confluence Inductive Tool
+TOPLEVEL  := Parsec Ctrs Util Smt Rewriting Io Termination Confluence Completion Inductive Tool
 
 # flags for linking
 STDLIBS   := nums str unix

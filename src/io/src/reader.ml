@@ -26,8 +26,8 @@ open Util;;
 (*** TYPES *******************************************************************)
 
 type query = NormalForm of Term.t | ConstrainedNormalForm of Term.t * Term.t |
-             Termination of bool | Nontermination | Confluence |
-             SimplifiedLctrs of Function.t list * String.t |
+             Termination of bool | Nontermination | Completion of bool |
+             Confluence | SimplifiedLctrs of Function.t list * String.t |
              Equivalence of Rule.t list | AssistEquivalence of Rule.t list |
              NoQuery | Smt of Term.t list
 type infixkind = InfixLeft | InfixRight | InfixNeither | NoInfix
@@ -1309,6 +1309,12 @@ let rec parse_query filename _ =
   ) <|>
   ( Parser.lex (Parser.string "innermost-termination") >>= fun _ ->
     set_query (Termination false)
+  ) <|>
+  ( Parser.lex (Parser.string "completion") >>= fun _ ->
+    ((Parser.lex (Parser.string "true") >>= fun _ -> Parser.return true) <|>
+     (Parser.lex (Parser.string "false") >>= fun _ -> Parser.return false)
+    ) >>= fun keep_orientation ->
+    set_query (Completion keep_orientation)
   ) <|>
   ( Parser.lex (Parser.string "confluence") >>= fun _ ->
     set_query Confluence

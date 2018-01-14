@@ -33,6 +33,14 @@ module P = Io.Printer;;
 type possible_results = CONFLUENT | NONCONFLUENT | UNKNOWN;;
 type criticalpair = Term.t * Term.t * Term.t list;;
 
+(* context *)
+type t = {
+  alph: Alphabet.t;
+  env: Environment.t
+}
+
+type overlap = Calc of Rule.t | Rules of (Rule.t * Rule.t)
+
 (*** FUNCTIONS ***************************************************************)
 
 let smtsolver () = Rewriter.smt_solver (Rewriter.get_current ());;
@@ -140,7 +148,7 @@ let all_calculation_critical_pairs rule a e =
   List.flat_map pairs_at posses
 ;;
 
-let critical_pairs rules =
+let critical_pairs' rules =
   let rulelen = List.length rules in
   let newenv = Environment.empty rulelen in
   let alf = Trs.get_alphabet (Trs.get_current ()) in
@@ -162,15 +170,20 @@ let critical_pairs rules =
   in
   let pairs = List.map make_pair combinations in
   let get_cp (rule1, rule2, allow_top) =
-    all_critical_pairs rule1 rule2 alf newenv allow_top
+    let cps = all_critical_pairs rule1 rule2 alf newenv allow_top in
+    List.map (fun cp -> cp, Rules (rule1,rule2)) cps
   in
   let get_ccp (i, rule) =
-    all_calculation_critical_pairs rule alf newenv
+    let cps = all_calculation_critical_pairs rule alf newenv in
+    List.map (fun cp -> cp, Calc rule) cps
   in
   let rulecriticalpairs = List.flat_map get_cp pairs in
   let calccriticalpairs = List.flat_map get_ccp irules in
-  let criticalpairs = List.append calccriticalpairs rulecriticalpairs in
-  (criticalpairs, newenv)
+  (rulecriticalpairs, calccriticalpairs, newenv)
+;;
+
+let critical_pairs rules =
+  let (rcps,ccps,env) = critical_pairs' rules in rcps @ ccps,env
 ;;
 
 let orthogonal trs =
@@ -268,7 +281,7 @@ let weak_orthogonal trs =
   else (
     let (cps, newenv) = critical_pairs (Trs.get_rules trs) in
     (*List.iter print_cp cps ;*)
-    let equivalent (s, t, phis) =
+    let equivalent ((s, t, phis),_) =
       let vars = List.flat_map Term.vars phis in
       let acceptable x = List.mem x vars in
       equivalent_under_constraint s t phis a newenv acceptable
@@ -279,9 +292,23 @@ let weak_orthogonal trs =
   )
 ;;
 
-(* loops when supplied with a nonterminating system *)
+let cp_string msg ((s, t, phis),overlap) =
+  let o =
+    match overlap with
+      | Rules (rule1,rule2) -> 
+        let r1,r2 = P.to_string_rule rule1, P.to_string_rule rule2 in
+        "Rules\n  " ^ r1 ^ "\n  " ^ r2 ^ "\ngive rise to the CP\n  "
+      | Calc rule ->
+        let r = P.to_string_rule rule in
+        "Rule\n" ^ r ^ "\ngives rise to the calculation CP\n  "
+  in
+  let s,t = P.to_string_term s, P.to_string_term t in
+  let c = P.to_string_constraints phis in
+  msg ^ o ^ s ^ " = " ^ t ^ " [" ^ c ^ "]\n"
+;;
+
+
 let knuth_bendix verbose trs =
-  let verbose = false in
   if fst (T.check verbose true trs) <> T.TERMINATING then
   let c = "Knuth-Bendix criterion not applicable as termination could not be" ^
    "verified\n" in
@@ -289,21 +316,16 @@ let knuth_bendix verbose trs =
   else (
     let (cps, newenv) = critical_pairs (Trs.get_rules trs) in
     (*List.iter print_cp cps ;*)
-    let joinable (s, t, phis) =
+    let joinable ((s, t, phis),_) =
       let ss' = Rewriter.reduce_to_normal s in
       let ts' = Rewriter.reduce_to_normal t in
       List.intersect ss' ts' <> []
-    in
-    let not_joined_msg msg (s, t, phis) =
-      let s,t = P.to_string_term s, P.to_string_term t in
-      let c = P.to_string_constraints phis in
-      msg ^ "  " ^ s ^ " = " ^ t ^ " [" ^ c ^ "]\n"
     in
     let non_joinables = List.filter (fun cp -> not (joinable cp)) cps in
     let msg =
       if not verbose then ""
       else
-        let non_joinable_msg = List.fold_left not_joined_msg "" non_joinables in
+        let non_joinable_msg = List.fold_left cp_string "" non_joinables in
         if non_joinables <> [] then "Non-joinable CPs:\n" ^ non_joinable_msg
         else "The system is terminating and all CPs are joinable.\n"
     in
@@ -312,7 +334,192 @@ let knuth_bendix verbose trs =
   )
 ;;
 
+let conjunction ctxt =
+  let mk_fun = Term.make_function ctxt.alph ctxt.env in
+  let conj = Alphabet.get_and_symbol ctxt.alph in
+  let top = mk_fun (Alphabet.get_top_symbol ctxt.alph) [] in
+  function
+    | [] -> top
+    | c :: cs -> List.fold_left (fun a b -> mk_fun conj [a; b]) c cs
+;;
+
+let sat ctxt form =
+  (*Format.printf "... check %s\n" (P.to_string_term form);*)
+  let solver = Rewriter.smt_solver (Rewriter.get_current ()) in
+  fst (Solver.satisfiable_formulas [form] solver ctxt.env) = Smtresults.SAT
+;;
+
+let tcap ctxt trs (t,phi) =
+  let unifies_with u (rl, _) =
+      let l,psi = Rule.lhs rl, Rule.constraints rl in
+      Elogic.are_unifiable u l && sat ctxt (conjunction ctxt (phi :: psi))
+  in
+  let unifiable u = List.exists (unifies_with u) (Trs.get_rules trs) in
+  let var s = Term.make_var (Environment.create_sorted_var s [] ctxt.env) in
+  let rec tcap t =
+    let sort = Term.get_sort ctxt.alph ctxt.env t in
+    match t with
+      | Term.Var _ -> var sort
+      | Term.Fun (f, ts) ->
+        let u = Term.Fun (f, List.map tcap ts) in
+        if unifiable u then var sort else u
+      | Term.InstanceFun (f, ts, d) ->
+        let u = Term.InstanceFun (f, List.map tcap ts, d) in
+        if unifiable u then var sort else u
+      | Term.Forall (x,t) -> Term.Forall (x, tcap t)
+      | Term.Exists (x,t) -> Term.Exists (x, tcap t)
+  in tcap t
+;;
+
+let hat ctxt t =
+  let sym x =
+    let sort = Term.get_sort ctxt.alph ctxt.env (Term.Var x) in
+    let sd = Sortdeclaration.create [] sort in
+    let n = Variable.find_name x in
+    Term.make_fun (Alphabet.create_fun sd ("hat"^n) ctxt.alph) []
+  in
+  let rec hat t =
+    match t with
+      | Term.Var x -> sym x
+      | Term.Fun (f, ts) -> Term.Fun (f, List.map hat ts)
+      | Term.InstanceFun (f, ts, d) -> Term.InstanceFun (f, List.map hat ts, d)
+      | Term.Forall (x,t) -> Term.Forall (x, hat t)
+      | Term.Exists (x,t) -> Term.Exists (x, hat t)
+  in hat t
+;;
+
+let non_canonical_nf ((t,phi), nf) = 
+  if not nf then false
+  else
+    let rooted syms = function
+      | Term.Fun (f,_) -> List.mem (Function.find_name f) syms
+      | Term.InstanceFun (f,_,_) -> List.mem (Function.find_name f) syms
+      | _ -> false
+    in
+    let rec has_nesting syms1 syms2 = function
+      | Term.Fun (f,ts) ->
+        let at_root = List.mem (Function.find_name f) syms1 in
+        (at_root && List.exists (rooted syms2) ts) ||
+        List.exists (has_nesting syms1 syms2) ts
+      | Term.InstanceFun (f,ts,_) ->
+        let at_root = List.mem (Function.find_name f) syms1 in
+        (at_root && List.exists (rooted syms2) ts) ||
+        List.exists (has_nesting syms1 syms2) ts
+      | _ -> false
+    in
+    let shifts = ["ashr"; "lshr";"shl"] in
+    let disj = ["or"] in
+    let conj = ["and"] in
+    let xor = ["xor"] in
+    has_nesting shifts (disj @ conj @ xor) t ||
+    has_nesting disj (conj @ xor) t ||
+    has_nesting conj xor t
+;;
+
+let nonjoinable_nfs ctxt ((u,nf),(v,nf')) = 
+  let neq (u,phi) (v,psi) = u <> v && sat ctxt (conjunction ctxt [phi;psi]) in
+  nf && nf' && neq u v  
+;;
+
+let nonjoinable_tcap ctxt trs (((u,phi),_),((v, psi),_)) =
+  let u' = tcap ctxt trs (hat ctxt u, phi) in
+  let v' = tcap ctxt trs (hat ctxt v, psi) in
+  (*Format.printf "  tcapped %s ~ %s:\n%!" (P.to_string_term u') (P.to_string_term v');*)
+  not (Elogic.are_unifiable u' v') && sat ctxt (conjunction ctxt [phi;psi])
+;;
+
+let find_nonjoinable_reducts ctxt trs ((s,t,phis),o) =
+  let show_reducts (t,phi) ts =
+    Format.printf "Reducts of %s:\n" (P.to_string_term t);
+    let show ((u,psi),nf) =
+      Format.printf "  %s [%s] %s\n"
+      (P.to_string_term u) (P.to_string_term psi) (if nf then "NF" else "")
+    in
+    List.iter show ts;
+    Format.printf "\n%!"
+  in
+  let phi = conjunction ctxt phis in
+  (* calc simp gen *)
+  let rewrite = Constrainedrewriter.rewrite_bounded false false true trs 2 in
+  (*Format.printf "Rewrite %s = %s\n  [%s]\n" (P.to_string_term s)
+    (P.to_string_term t) (P.to_string_term phi);*)
+  let ss = rewrite (s,phi) in
+  let ts = rewrite (t,phi) in
+  (*show_reducts (t,phi) ts;
+  show_reducts (s,phi) ss;
+  Format.printf "check conditions\n%!";*)
+  let nonjoinable ((((u,phi),_),((v,psi),_)) as uv) =
+    if nonjoinable_nfs ctxt uv then (
+      Format.printf "%s" (cp_string "" ((s,t,phis),o));
+      Format.printf "and the reduct pair %s ~ %s [%s]:\n"
+        (P.to_string_term u) (P.to_string_term v)
+        (P.to_string_term (conjunction ctxt [phi;psi]));
+      Format.printf "    nonjoinable NFs found\n\n%!";
+      true
+    ) else false
+  in
+  let check_nfs ((t,phi),nf) =
+    if non_canonical_nf ((t,phi),nf) then (
+    Format.printf "%s" (cp_string "" ((s,t,phis),o));
+    Format.printf " gives rise to possibly non-canonical NF\n   %s\n   [%s]\n%!"
+      (Term.to_string t) (Term.to_string phi))
+  in
+  List.map check_nfs ss;
+  List.map check_nfs ts;
+  List.exists nonjoinable (List.product ss ts)
+;;
+
+(* replaces the variables of [rule] by variables in [newenv] *)
+let update_environment newenv alf (rule, oldenv) =
+  try Rule.environment_transfer rule oldenv newenv (Alphabet.fun_names alf), newenv
+  with Failure msg ->
+    failwith ("Variable error with rule " ^ (Rule.to_string rule) ^
+              ": " ^ msg)
+;;
+
+let nonconfluence verbose trs =
+  let alph = Trs.get_alphabet trs in
+  let e = Trs.get_main_environment trs in
+  let rls = Trs.get_rules trs in
+  let not_flag_removing (rl,_) =
+    let l,r,c = Rule.lhs rl, Rule.rhs rl, Rule.constraints rl in
+    match l,r with
+      | Term.Fun (f,_), Term.Fun(g,_) ->
+        let fn,gn = Function.find_name f, Function.find_name g in
+        not (Term.size l = 3 && Term.size r = 3 &&
+             String.length fn > String.length gn &&
+             String.equal (String.sub fn 0 (String.length gn)) gn)
+      | _ -> true
+  in
+  let rls' = List.filter not_flag_removing rls in
+  let (cps, _, newenv) = critical_pairs' rls' in
+
+  (*if Util.query_debugging () then*) Format.printf "%d CPs computed\n%!"
+    (List.length cps);
+  let ctxt = { alph = alph; env = newenv} in
+  let rules = Trs.get_rules trs in
+  let rules' = List.map (update_environment newenv alph) rules in
+  let trs' = Trs.create alph newenv in
+  Trs.set_rules rules' trs';
+
+  let non_joinables = List.filter (find_nonjoinable_reducts ctxt trs') cps in
+  let msg =
+    if not verbose then ""
+    else
+      let non_joinable_msg = List.fold_left cp_string "" non_joinables in
+      if non_joinables <> [] then
+        let n = (string_of_int (List.length non_joinables)) in
+        n ^ " non-joinable peaks:\n" ^ non_joinable_msg
+      else ""
+  in
+  Format.printf "%s\n%!" msg;
+  Environment.drop newenv;
+  (if non_joinables = [] then UNKNOWN else NONCONFLUENT), msg
+;;
+
 let all verbose trs =
   if weak_orthogonal trs = CONFLUENT then CONFLUENT,"Weak orthogonality applies"
-  else knuth_bendix verbose trs
+  else match nonconfluence verbose trs with
+    | NONCONFLUENT, msg -> NONCONFLUENT, msg
+    | r -> r(*knuth_bendix verbose trs*)
 ;;

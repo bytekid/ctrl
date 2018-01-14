@@ -327,4 +327,3 @@ let rec normalise_innermost rules term =
 (* Main functionality *)
 
 let reduce_to_normal t = t :: normalise_innermost None t;;
-

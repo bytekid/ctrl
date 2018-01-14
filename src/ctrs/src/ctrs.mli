@@ -122,7 +122,7 @@ module Function : FUNCTION
 
 module type VARIABLE = sig
   (*** TYPES *******************************************************************)
-  type t
+  type t = int * string
 
   (*** VALUES ******************************************************************)
   (** {3 Miscellaneous} *)

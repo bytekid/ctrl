@@ -51,7 +51,7 @@ module type FUNCTION = sig
 end
 
 module type VARIABLE = sig
-  type t
+  type t = int * string
  
   val create : int -> string -> t
   val copy : t -> t

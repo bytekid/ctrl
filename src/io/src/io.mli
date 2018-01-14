@@ -131,6 +131,7 @@ module Reader : sig
                ConstrainedNormalForm of Term.t * Term.t |
                Termination of bool |
                Nontermination |
+               Completion of bool |
                Confluence |
                SimplifiedLctrs of Function.t list * String.t |
                Equivalence of Rule.t list |

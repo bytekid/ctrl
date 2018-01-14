@@ -163,10 +163,15 @@ let get_value sort t =
 
 let satisfiable_formulas' formulas get_model t e =
   let a = Trs.get_alphabet (Trs.get_current ()) in
-  internal_or_external t a e
-    (Internalsolver.solve_satisfiability formulas "intsolver")
-    (Externalsolver.check_formulas formulas get_model)
-    (Manualsolver.satisfiability formulas)
+  let top = Term.make_function a e (Alphabet.get_top_symbol a) [] in
+  match formulas with
+    | [] -> SAT,Substitution.empty
+    | [f] when f = top -> SAT,Substitution.empty
+    | _ ->
+      internal_or_external t a e
+        (Internalsolver.solve_satisfiability formulas "intsolver")
+        (Externalsolver.check_formulas formulas get_model)
+        (Manualsolver.satisfiability formulas)
 ;;
 
 let valid_formulas formulas t e =
@@ -176,9 +181,11 @@ let valid_formulas formulas t e =
     with Not_found -> failwith ("Cannot check formula " ^
       "validity: no negation symbol has been set.")
   ) in
+  let top = Term.make_function a e (Alphabet.get_top_symbol a) [] in
   let rec exter formulas data ren tr a e =
     match formulas with
       | [] -> SAT
+      | [t] when t = top -> SAT
       | head :: tail ->
         let negated = Term.make_function a e negation [head] in
         let (result, _) =
