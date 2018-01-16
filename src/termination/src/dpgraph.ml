@@ -60,7 +60,7 @@ let equality alphabet environment a b =
   let message = "Cannot do termination analysis: standard " ^
     "techniques require a (boolean) equality symbol = to use in " ^
     "the SMT-solver." in
-  try
+  (*try*)
     (*
     Printf.printf "creating equality [%s] = [%s]\n"
       (Term.to_stringm alphabet environment a)
@@ -68,7 +68,7 @@ let equality alphabet environment a b =
     *)
     let eq = Alphabet.get_equal_symbol alphabet in
     Term.make_function alphabet environment eq [a;b]
-  with _ -> failwith message
+  (*with _ -> failwith message*)
 ;;
 
 (** if [empty] is the empty set of some kind, and [add] is a function

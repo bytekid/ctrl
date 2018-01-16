@@ -201,5 +201,10 @@ module Constrainedrewriter : sig
 
   val rewrite_bounded :
   bool -> bool -> bool -> Trs.t -> int -> cterm -> (cterm * bool) list
+
+  val equivalent_cterms: Alphabet.t -> Environment.t -> Term.t -> Term.t ->
+    Term.t list -> bool
+
+  val equalities_into_rule: Alphabet.t -> Environment.t -> Rule.t -> Rule.t
 end
 

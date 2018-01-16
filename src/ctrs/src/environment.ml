@@ -137,6 +137,8 @@ let create_var_like x xenv l e =
   let reusename = (not (List.mem origname l)) &&
                   (not (mem_var_name origname e)) in
   try
+    (*if origname= "b12" then Format.printf "b12 has sort? %d\n%!"
+      (if has_sort x xenv then 1 else 0);*)
     let sort = find_sort x xenv in
     if reusename then create_var origname sort e
     else (*create_sorted_var sort l e*)

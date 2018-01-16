@@ -70,29 +70,27 @@ let critical_pair rule1 rule2 alphabet environment pos =
   let (l, r, phis) = (Rule.lhs rule1, Rule.rhs rule1, Rule.constraints rule1) in
   let (u, v, psis) = (Rule.lhs rule2, Rule.rhs rule2, Rule.constraints rule2) in
   let lsub = Term.subterm pos l in
-  let phisvars = List.unique (List.flat_map Term.vars phis) in
-  let psisvars = List.unique (List.flat_map Term.vars psis) in
-  let cvars = List.union phisvars psisvars in
+  let cvars = List.unique (List.flat_map Term.vars (phis @ psis)) in
   try
-    if not (Term.is_fun lsub) then raise Elogic.Not_unifiable ;
-    let unifier = Elogic.unify lsub u in
-    let dom = Substitution.domain unifier in
-    let dangerousvars = List.intersect dom cvars in
-    let getunivalue x = Substitution.find x unifier in
-    let results = List.map getunivalue dangerousvars in
-    if List.filter (notvarorval alphabet) results <> [] then []
+    if not (Term.is_fun lsub) then []
     else (
-      let phisgamma = List.map (Substitution.apply_term unifier) phis in
-      let psisgamma = List.map (Substitution.apply_term unifier) psis in
-      let together = List.union phisgamma psisgamma in
-      if Solver.satisfiable together (smtsolver ()) environment then (
-        let runi = Substitution.apply_term unifier r in
-        let vuni = Substitution.apply_term unifier v in
-        let cvuni = Term.replace pos vuni l in
-        [(runi, cvuni, together)]
-      )
-      else []
-    )
+      let gamma = Elogic.unify lsub u in
+      let dom = Substitution.domain gamma in
+      let apply_gamma x = Substitution.find x gamma in
+      let results = List.map apply_gamma (List.intersect dom cvars) in
+      if List.filter (notvarorval alphabet) results <> [] then []
+      else (
+        let phisgamma = List.map (Substitution.apply_term gamma) phis in
+        let psisgamma = List.map (Substitution.apply_term gamma) psis in
+        let together = List.union phisgamma psisgamma in
+        if Solver.satisfiable together (smtsolver ()) environment then (
+          let r_gamma = Substitution.apply_term gamma r in
+          let v_gamma = Substitution.apply_term gamma v in
+          let lv_gamma = Substitution.apply_term gamma (Term.replace pos v l) in
+          [(r_gamma, lv_gamma, together)]
+        )
+        else []
+      ))
   with Elogic.Not_unifiable -> []
 ;;
 

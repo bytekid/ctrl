@@ -92,6 +92,33 @@ let make_var x = Var x;;
 let make_forall x s = Forall (x, s);;
 let make_exists x s = Exists (x, s);;
 
+
+(* Printers *)
+
+let rec to_string = function
+| Var x -> Variable.to_string x
+| Fun (f,ts) | InstanceFun (f,ts,_) ->
+  (Function.to_string ~debug:true f) ^ "(" ^ (List.implode to_string "," ts) ^ ")"
+| Forall (x, s) -> "?A" ^ (Variable.to_string x) ^ "." ^ (to_string s)
+| Exists (x, s) -> "?E" ^ (Variable.to_string x) ^ "." ^ (to_string s)
+;;
+
+let rec to_stringm = function
+| Var x -> Variable.to_string x
+| Fun (f,ts) | InstanceFun (f,ts,_) ->
+  (Function.to_string ~debug:false f) ^ "(" ^ (List.implode to_stringm "," ts) ^ ")"
+| Forall (x, s) -> "?A" ^ (Variable.to_string x) ^ "." ^ (to_stringm s)
+| Exists (x, s) -> "?E" ^ (Variable.to_string x) ^ "." ^ (to_stringm s)
+;;
+
+let rec fprintf fmt = function
+| Var x -> Variable.fprintf fmt x
+| Fun (f,ts) | InstanceFun (f,ts,_) ->
+  Format.fprintf fmt "@[%a@[(%a)@]@]" Function.fprintf f (List.fprintf fprintf ",") ts
+| Forall (x, s) -> Format.fprintf fmt "@[?A%a.@[%a@]@]" Variable.fprintf x fprintf s
+| Exists (x, s) -> Format.fprintf fmt "@[?E%a.@[%a@]@]" Variable.fprintf x fprintf s
+;;
+
 (*
 let rec reflect = function
   | Var _ as x -> x
@@ -516,9 +543,9 @@ let make_function a e f ts =
     | Left sd -> make_fun f ts
     | Right spd ->
       let inputs = (
-        try List.map (get_sort a e) ts
+        List.map (fun ti -> try get_sort a e ti
         with Not_found -> failwith ("Attempting to dynamically " ^
-          "make a function with unsorted subterms.")
+          "make a function with unsorted subterms." ^ (to_string ti))) ts
       ) in
       let osort = Specialdeclaration.output_sort spd in
       let outsort =
@@ -702,29 +729,4 @@ let rec read_value txt a source =
     | Right answer -> answer
 ;;
 
-(* Printers *)
-
-let rec to_string = function
-  | Var x -> Variable.to_string x
-  | Fun (f,ts) | InstanceFun (f,ts,_) ->
-    (Function.to_string ~debug:true f) ^ "(" ^ (List.implode to_string "," ts) ^ ")"
-  | Forall (x, s) -> "?A" ^ (Variable.to_string x) ^ "." ^ (to_string s)
-  | Exists (x, s) -> "?E" ^ (Variable.to_string x) ^ "." ^ (to_string s)
-;;
-
-let rec to_stringm = function
-  | Var x -> Variable.to_string x
-  | Fun (f,ts) | InstanceFun (f,ts,_) ->
-    (Function.to_string ~debug:false f) ^ "(" ^ (List.implode to_stringm "," ts) ^ ")"
-  | Forall (x, s) -> "?A" ^ (Variable.to_string x) ^ "." ^ (to_stringm s)
-  | Exists (x, s) -> "?E" ^ (Variable.to_string x) ^ "." ^ (to_stringm s)
-;;
-
-let rec fprintf fmt = function
-  | Var x -> Variable.fprintf fmt x
-  | Fun (f,ts) | InstanceFun (f,ts,_) ->
-    Format.fprintf fmt "@[%a@[(%a)@]@]" Function.fprintf f (List.fprintf fprintf ",") ts
-  | Forall (x, s) -> Format.fprintf fmt "@[?A%a.@[%a@]@]" Variable.fprintf x fprintf s
-  | Exists (x, s) -> Format.fprintf fmt "@[?E%a.@[%a@]@]" Variable.fprintf x fprintf s
-;;
 

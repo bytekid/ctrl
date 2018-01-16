@@ -22,6 +22,8 @@ open Util;;
 open Ctrs;;
 open Smt;;
 
+module Sub = Substitution
+
 (*** TYPES *******************************************************************)
 type cterm = Term.t * Term.t;;
 
@@ -176,22 +178,33 @@ let calculate_constraints constraintlist a =
   else List.filter notop normalised
 ;;
 
+let cstr = List.fold_left (fun s phi -> s ^" ^ "^ (Term.to_string phi)) ""
+
 (* performs calculations in the constraints and splits off fully
 defined definitions *)
 let simplify_constraints alf lst =
   let normalised = calculate_constraints lst alf in
+  let rec split_conj term = match term with
+    | Term.Fun (f, [a;b]) | Term.InstanceFun (f, [a;b], _) ->
+      if f <> and_symbol alf then [term]
+      else split_conj a @ (split_conj b)
+    | _ -> [term]
+  in
+  let normalised' = List.concat (List.map split_conj normalised) in
   let split_def term =
     match term with
       | Term.Var x -> Left (x, Term.make_fun (top_symbol alf) [])
       | Term.Fun (f, args) | Term.InstanceFun (f, args, _) -> (
           if f <> eq_symbol alf then Right term
           else match args with
-            | a :: b :: [] ->
-              if (Term.is_var a) && (Term.is_value alf b)
-              then Left (List.hd (Term.vars a), b)
-              else if (Term.is_var b) && (Term.is_value alf a)
-              then Left (List.hd (Term.vars b), a)
-              else Right term
+            (* do no longer require that a/b are values; ok?*)
+            | (Term.Var x) :: b :: [] -> (
+              Format.printf " map  %s  -> %s\n" (Term.to_string (Term.Var x)) (Term.to_string b);
+              Left (x, b))
+            | a :: (Term.Var x) :: [] -> 
+            Format.printf " map  %s  -> %s\n" (Term.to_string (Term.Var x)) (Term.to_string a);
+              Left (x, a)
+            | _ :: _ :: [] -> Right term
             | _ -> failwith ("Unexpected equality: should have " ^
                              "exactly two arguments!")
           )
@@ -206,26 +219,26 @@ let simplify_constraints alf lst =
       ) in
       split_list sofar tail
   in
-  let (defs, constraints) = split_list ([], []) normalised in
+  let (defs, constraints) = split_list ([], []) normalised' in
   try
-    let gamma = Substitution.of_list defs in
+    let gamma = Sub.of_list defs in
     if defs = [] then (List.rev constraints, gamma)
     else (
-      let subst = Substitution.apply_term gamma in
+      let subst = Sub.apply_term gamma in
       let newconstraints = List.rev_map subst constraints in
       (newconstraints, gamma)
     )
-  with Substitution.Inconsistent ->
+  with Sub.Inconsistent ->
     let bottom = Term.make_fun (bot_symbol alf) [] in
-    ([bottom], Substitution.of_list [])
+    ([bottom], Sub.of_list [])
 ;;
 
 (* given a constrained term s [[phi /\ x = t]], returns the term
 s[x:=t] [[ phi[x:=t] ]] *)
 let rec simplified_form (term, phiparts) a =
   let (phiparts, gamma) = simplify_constraints a phiparts in
-  if Substitution.is_empty gamma then (term, phiparts)
-  else simplified_form (Substitution.apply_term gamma term, phiparts) a
+  if Sub.is_empty gamma then (term, phiparts)
+  else simplified_form (Sub.apply_term gamma term, phiparts) a
 ;;
 
 (* given a constrained term s [phi] where a variable of x is uniquely
@@ -242,7 +255,7 @@ let strong_simplified_form (term, phiparts) a e =
     | [] -> []
     | x :: tail ->
       try
-        let xval = Substitution.find x gamma in
+        let xval = Sub.find x gamma in
         let eq = eq_symbol a in
         let equal = Term.make_fun eq [Term.make_var x; xval] in
         let different = Term.make_fun (not_symbol a) [equal] in
@@ -251,7 +264,7 @@ let strong_simplified_form (term, phiparts) a e =
         if (result = Smtresults.UNSAT) then (x, xval) :: test_uniques tail
         else if (result = Smtresults.SAT) then (
           let maybeunique y =
-            (Substitution.find y gamma) = (Substitution.find y newgamma)
+            (Sub.find y gamma) = (Sub.find y newgamma)
           in
           test_uniques (List.filter maybeunique tail)
         )
@@ -268,8 +281,8 @@ let strong_simplified_form (term, phiparts) a e =
       let var_values = test_uniques logical_vars in
       if var_values = [] then (term, phiparts)
       else (
-        let gamma = Substitution.of_list var_values in
-        let subst = Substitution.apply_term gamma in
+        let gamma = Sub.of_list var_values in
+        let subst = Sub.apply_term gamma in
         (subst term, calculate_constraints (List.map subst phiparts) a)
       )
     )
@@ -398,9 +411,9 @@ let calc_normalise = calc_normalise_recurse [];;
 let suitable_substitution gamma terms alphabet acceptable_variables allincluded =
   let vars = List.flat_map Term.vars terms in
   let test_variable x =
-    if not (Substitution.mem x gamma) then not allincluded
+    if not (Sub.mem x gamma) then not allincluded
     else (
-      let value = Substitution.find x gamma in
+      let value = Sub.find x gamma in
       if Term.is_value alphabet value then true
       else if not (Term.is_var value) then false
       else if !assume_value_instantiations then true
@@ -414,8 +427,8 @@ let suitable_substitution gamma terms alphabet acceptable_variables allincluded 
 let add_fresh_var_mapping gamma x a xenv newenv =
   let fn = Alphabet.fun_names a in
   let replace_var x = Environment.create_var_like x xenv fn newenv in
-  if Substitution.mem x gamma then gamma
-  else Substitution.add x (Term.make_var (replace_var x)) gamma
+  if Sub.mem x gamma then gamma
+  else Sub.add x (Term.make_var (replace_var x)) gamma
 ;;
 
 (** Adds a mapping x:=y in gamma, with y fresh, for all variables x
@@ -441,7 +454,7 @@ let rec check_similar substitution phi psi forbidden sub_allowed =
   let badreplacement (x, value) =
     if not (sub_allowed x value) then false
     else if (List.mem x forbidden) then false
-    else value <> (Substitution.find x substitution)
+    else value <> (Sub.find x substitution)
   in
   (* given Some substitution, checks whether it contains at least
   one variable occurring in substitution, and where it corresponds,
@@ -449,8 +462,8 @@ let rec check_similar substitution phi psi forbidden sub_allowed =
   let domain_okay = function
     | None -> false
     | Some gamma ->
-      let parts = Substitution.to_list gamma in
-      let existing = List.filter (fun (x,_) -> Substitution.mem x substitution) parts in
+      let parts = Sub.to_list gamma in
+      let existing = List.filter (fun (x,_) -> Sub.mem x substitution) parts in
       let badones = List.filter badreplacement existing in
       (existing <> []) && (badones = [])
   in
@@ -480,8 +493,8 @@ let rec degeneralise substitution phi psi forbidden sub_allowed =
       match check_similar substitution phipart c forbidden sub_allowed with
         | None -> update_for_constraint substitution c tail
         | Some gamma ->
-          try Some (Substitution.union substitution gamma)
-          with Substitution.Inconsistent ->
+          try Some (Sub.union substitution gamma)
+          with Sub.Inconsistent ->
             update_for_constraint substitution c tail
       )
   in
@@ -491,7 +504,7 @@ let rec degeneralise substitution phi psi forbidden sub_allowed =
     | [] -> (substitution, didsomething)
     | psipart :: tail ->
       let psipartvars = Term.vars psipart in
-      let notinsubst x = not (Substitution.mem x substitution) in
+      let notinsubst x = not (Sub.mem x substitution) in
       let relevantvars = List.filter notinsubst psipartvars in
       if relevantvars = [] then update_for_all substitution didsomething tail
       else ( match update_for_constraint substitution psipart phi with
@@ -529,7 +542,7 @@ let top_applicable (term, phi) e (rule, env) forbidden_variables
       ) in
       let gamma = add_fresh_termsvars_mapping subst
         ((Rule.rhs rule) :: cs) forbidden_variables a env e in
-      let csgamma = List.map (Substitution.apply_term gamma) cs in
+      let csgamma = List.map (Sub.apply_term gamma) cs in
       (* Now we split csgamma into psi1 and psi2, such that all new
       variables occur in psi1. *)
       let oldvars = List.unique (List.flat_map Term.vars (term :: phiparts)) in
@@ -557,7 +570,7 @@ let top_applicable (term, phi) e (rule, env) forbidden_variables
   with
     | Elogic.Not_matchable -> None
     | Rule.Not_an_lctrs -> failwith "Please use constrained reduction only for LCTRS rules"
-    | Substitution.Inconsistent -> failwith "Inconsistent substitution"
+    | Sub.Inconsistent -> failwith "Inconsistent substitution"
 ;;
 
 (* given a simplified constrained term and a rule, tries to reduce
@@ -569,7 +582,7 @@ let top_rule_reduce cterm ctermenv (rule, env) calculate
     | None -> None
     | Some (gamma, phi) -> (
         let rhs = Rule.rhs rule in
-        let q = Substitution.apply_term gamma rhs in
+        let q = Sub.apply_term gamma rhs in
         if not calculate then Some (q, phi)
         else Some (calc_normalise (q,phi) None (Some ctermenv))
       )
@@ -834,4 +847,51 @@ let rewrite_bounded calc simp general rules n t =
       let ts_new = List.diff rdcts (List.map fst acc) in
       rewrite acc' (n-1) ts_new
   in rewrite [] n [t]
+;;
+exception Not_equal
+
+let equivalent_cterms alph env s t phis =
+  let term f = Alphabet.find_symbol_kind f alph = Alphabet.Terms in
+  match s,t with 
+  | Term.Fun (f,_), Term.Fun(g,_) when term f && term g && f<>g -> false
+  | _ ->
+    (*Format.printf "equivalent?  %s %s\n"
+      (Term.to_string s) (Term.to_string t);*)
+    let _,sigma = simplify_constraints alph phis in
+    (*Format.printf "sub  %s \n" (Sub.to_string sigma);*)
+    let s',t' = Sub.apply_term sigma s, Sub.apply_term sigma t in
+    (*Format.printf "simp equivalent?  %s %s\n"
+      (Term.to_string s') (Term.to_string t');*)
+    if s' = t' then true
+    else (
+      let logical t = Term.check_logical_term alph t = None in
+      let rec constraints s t =
+        if s = t then []
+        else match (s,t) with
+          | Term.Fun (f,ss), Term.Fun(g,ts) when f = g ->
+            List.concat (List.map2 constraints ss ts)
+          | _ -> 
+            if logical s && logical t then [create_equal s t alph env]
+            else raise Not_equal
+      in
+      try
+        let cs = constraints s t in
+        let phi = create_logical and_symbol phis alph env in
+        let c = create_logical and_symbol cs alph env in
+        let c_imp_phi = create_imply phi c alph env in
+        if Solver.valid [c_imp_phi] (solver ()) env then
+         (Format.printf "this was useful\n%!"; true) else false
+      with Not_equal -> false
+    )
+      
+;;
+
+let equalities_into_rule alph env rl =
+  let l,r,phis = Rule.lhs rl, Rule.rhs rl, Rule.constraints rl in
+  let term f = Alphabet.find_symbol_kind f alph = Alphabet.Terms in
+  let psi,sigma = simplify_constraints alph phis in
+  (*Format.printf "sub  %s \n" (Sub.to_string sigma);*)
+  let l',r' = Sub.apply_term sigma l, Sub.apply_term sigma r in
+  if l' <> l && not (Term.is_value alph l') then Rule.create l r' phis
+  else Rule.create l' r' psi
 ;;
