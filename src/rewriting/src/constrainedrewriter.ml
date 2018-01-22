@@ -860,8 +860,6 @@ let equivalent_cterms alph env s t phis =
     let _,sigma = simplify_constraints alph phis in
     (*Format.printf "sub  %s \n" (Sub.to_string sigma);*)
     let s',t' = Sub.apply_term sigma s, Sub.apply_term sigma t in
-    Format.printf "simp equivalent?  %s %s\n"
-      (Term.to_string s') (Term.to_string t');
     if s' = t' then true
     else (
       let logical t = Term.check_logical_term alph t = None in

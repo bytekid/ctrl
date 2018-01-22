@@ -43,7 +43,6 @@ let conjunction (alph,env) =
 ;;
 
 let deduce rule rules =
-  Format.printf "deduce for %s\n%!" (Rule.to_string (fst rule));
   let n = List.length rules in
   let newenv = Environment.empty n in
   let alf = Trs.get_alphabet (Trs.get_current ()) in
@@ -136,10 +135,10 @@ let simplify (alph,env) (e,e_env) rr =
     Crew.equivalent_cterms alph e_env l r phis
   in
   let rec simplify e =
-    Format.printf "  simplify iteration: %!";
-    Format.printf "  %s\n" (P.to_string_rule e);
+    (*Format.printf "  simplify iteration: %!";
+    Format.printf "  %s\n" (P.to_string_rule e);*)
     let l,r,phis = Rule.lhs e, Rule.rhs e, Rule.constraints e in
-    if equiv e then (Format.printf "DELETE\n%!"; None)
+    if equiv e then None
     else
       let rewrite = Crew.rewrite_bounded true false false trs 1 in
       let cterm = Term.Fun(f,[l;r]), conjunction (alph,env) phis in
@@ -179,7 +178,7 @@ let take_smallest e ee =
   m, List.remove m (e::ee)
 ;;
 
-let compose_collapse (alph,_) (r,env) rr =
+let compose_collapse v (alph,_) (r,env) rr =
   let f = Alphabet.create_unsorted_fun 2 "_pair" alph in
   Alphabet.set_symbol_kind f Alphabet.Terms alph;
   let trs = Trs.create alph env in
@@ -195,7 +194,9 @@ let compose_collapse (alph,_) (r,env) rr =
         if l' = l && r' = r then (ee,(rl,env)::rr)
         else if l' = l then (
           let rl' = Rule.create l' r' [phi'] in
-          Format.printf "COMPOSE %s to %s\n" (to_string_rule rl) (to_string_rule rl');
+          if v then
+            Format.printf "COMPOSE %s to %s\n" (to_string_rule rl)
+              (to_string_rule rl');
           (ee,(rl',env) :: rr))
         else (*
           Format.printf "collapse %s\n" (to_string_rule rl);
@@ -218,27 +219,30 @@ let no_variant ee =
   List.filter no_var ee
 ;;
 
-let complete ctxt prec (ee,rr) =
+let complete v ctxt prec (ee,rr) =
   let rec complete i (ee,rr) =
-    print i (List.map fst ee,rr);
+    if v then print i (List.map fst ee,rr);
     match ee with
     | [] -> rr
     | e :: ee ->
       let ((e,env), keep_oriented), ee = take_smallest e ee in
-      Format.printf "CHOOSE %s\n" (to_string_rule e);
+      if v then Format.printf "CHOOSE %s\n" (to_string_rule e);
       (* do not simplify if this is an input rule to be maintained *)
       let e' = if keep_oriented then Some e else simplify ctxt (e,env) rr in
       match e' with
       | None -> complete (i+1) (ee,rr)
       | Some e' ->
-        Format.printf "SIMPLIFIED %s to %s\n%!"
-          (to_string_rule e) (to_string_rule e');
+        if v then
+          Format.printf "SIMPLIFIED %s to %s\n%!"
+            (to_string_rule e) (to_string_rule e');
         let r = orient ctxt prec keep_oriented (e',env) rr in
-        Format.printf "ORIENT %s\n%!" (to_string_rule r);
+        if v then
+          Format.printf "ORIENT %s\n%!" (to_string_rule r);
         let cps = List.map (fun e -> e,false) (deduce (r,env) rr) in
-        if cps <> [] then (Format.printf "DEDUCE\n%!"; print_all (List.map fst cps));
+        if v && cps <> [] then 
+          Format.printf "DEDUCE\n%!"; print_all (List.map fst cps);
         let cps' = List.filter (no_variant_in ctxt ee rr) cps in
-        let collapsed,rr' = compose_collapse ctxt (r,env) rr in
+        let collapsed,rr' = compose_collapse v ctxt (r,env) rr in
         let ee' = no_variant ((List.map (fun e -> e,false) collapsed) @ cps') in
         all := ((r, env), true) :: ee' @ !all;
         let rr'' = if (List.exists (fun (r',_) -> Rule.is_variant r r') rr') then rr' else (r,env)::rr' in
@@ -257,7 +261,7 @@ let standard v trs prec keep_oriented =
       raise Fail); 
     let rs_ko = List.map (fun r -> r,keep_oriented) rs in
     all := rs_ko;
-    Some (complete (alph,env) prec (rs_ko,[]))
+    Some (complete v (alph,env) prec (rs_ko,[]))
   with Fail -> None
 ;;
 
@@ -293,30 +297,31 @@ let add_unless_variant (e,env) ee =
   else (e,env) :: ee
 ;;
 
-let ocomplete ctxt prec ee =
+let ocomplete v ctxt prec ee =
   let rec ocomplete i ee_open (ee,rr) =
-    oprint i (List.map fst ee_open) (ee,rr);
+    if v then oprint i (List.map fst ee_open) (ee,rr);
     match ee_open with
     | [] -> (ee,rr)
     | e :: ee_open ->
       let ((e,env), keep_oriented), ee_open = take_smallest e ee_open in
-      Format.printf "CHOOSE %s\n" (to_string_rule e);
+      if v then Format.printf "CHOOSE %s\n" (to_string_rule e);
       (* do not simplify if this is an input rule to be maintained *)
       (* ordered? *)
       let e' = if keep_oriented then Some e else simplify ctxt (e,env) rr in
       match e' with
       | None -> ocomplete (i+1) ee_open (ee,rr)
       | Some e' ->
-        Format.printf "SIMPLIFIED %s to %s\n%!"
+        if v then Format.printf "SIMPLIFIED %s to %s\n%!"
           (to_string_rule e) (to_string_rule e');
         let r, is_oriented = orient ctxt prec keep_oriented (e',env) rr in
-        Format.printf "ORIENT %s\n%!" (to_string_rule r);
+        if v then Format.printf "ORIENT %s\n%!" (to_string_rule r);
         let ded_new = if is_oriented then [r,env] else [r,env;flip r, env] in
         let cps = List.map (fun e -> e,false) (odeduce ctxt prec ded_new rr) in
-        if cps <> [] then (Format.printf "DEDUCE\n%!"; print_all (List.map fst cps));
+        if v && cps <> [] then 
+          Format.printf "DEDUCE\n%!"; print_all (List.map fst cps);
         let cps' = List.filter (no_variant_in ctxt ee_open (ee@rr)) cps in
         let collapsed,rr' =
-          if is_oriented then compose_collapse ctxt (r,env) rr
+          if is_oriented then compose_collapse v ctxt (r,env) rr
           else [],rr
         in
         let eeo = no_variant ((List.map (fun e -> e,false) collapsed) @ cps') in
@@ -337,6 +342,6 @@ let ordered v trs prec keep_oriented =
     let rs = Trs.get_rules trs in
     let rs_ko = List.map (fun r -> r,keep_oriented) rs in
     all := rs_ko;
-    Some (ocomplete (alph,env) prec rs_ko)
+    Some (ocomplete v (alph,env) prec rs_ko)
   with Fail -> None
 ;;
