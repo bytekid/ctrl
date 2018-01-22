@@ -89,11 +89,18 @@ let run _ =
       let ans,comments = Confluencechecker.all verbose (Trs.get_current ()) in
       Printf.printf "%s\n%s" (txt_answer_confluence ans)
       (if verbose then "" else comments)
-    | Reader.Completion orient -> (
-      let verbose = Util.query_debugging () in
-      match Completion.KB.standard verbose (Trs.get_current ()) orient with
-      | Some trs ->  Printer.print_rules trs " -> " " if "; Printer.flush ()
-      | None -> Printf.printf "No completion found.\n")
+    | Reader.Completion (prec,orient,ordered) -> (
+      let v = Util.query_debugging () in
+      if not ordered then 
+        match Completion.KB.standard v (Trs.get_current ()) prec orient with
+          | Some trs ->  Printer.print_rules trs " -> " " if "; Printer.flush ()
+          | None -> Printf.printf "No completion found.\n"
+      else
+        match Completion.KB.ordered v (Trs.get_current ()) prec orient with
+          | Some (ee,rr) -> 
+            Printer.print_rules ee " = " " if ";
+            Printer.print_rules rr " -> " " if "; Printer.flush ()
+          | None -> Printf.printf "No completion found.\n")
     | Reader.Equivalence lst -> (
       try match Theoremprover.run (Trs.get_current ()) lst with
         | (Theoremprover.YES, explain) -> Printf.printf "YES\n" ; explain ()

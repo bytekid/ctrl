@@ -26,7 +26,8 @@ open Util;;
 (*** TYPES *******************************************************************)
 
 type query = NormalForm of Term.t | ConstrainedNormalForm of Term.t * Term.t |
-             Termination of bool | Nontermination | Completion of bool |
+             Termination of bool | Nontermination |
+             Completion of (Function.t list * bool * bool) |
              Confluence | SimplifiedLctrs of Function.t list * String.t |
              Equivalence of Rule.t list | AssistEquivalence of Rule.t list |
              NoQuery | Smt of Term.t list
@@ -92,6 +93,8 @@ but this should be kept in mind for future extensions.
 
 (*** FUNCTIONS ***************************************************************)
 
+let return = Parser.return
+
 (* ===== Accessing the current TRS ===== *)
 
 let trs () = Trs.get_current ()
@@ -112,27 +115,27 @@ let (<|>) = Parser.(<|>);;
 
 let ident = (Parser.many1 (Parser.noneof " \t\n\r(),:;[]{}") >>= function
   | ['-';'>'] | ['<';'-';'-'] | ['-';'>';'*'] | ['-';'>';'<';'-'] -> Parser.fail
-  | i -> Parser.return i) <?> "identifier"
+  | i -> return i) <?> "identifier"
 ;;
 
 let ident_with_array = (Parser.many1 (Parser.noneof " \t\n\r(),;[]") >>= function
   | ['-';'>'] | ['<';'-';'-'] | ['-';'>';'*'] | ['-';'>';'<';'-'] -> Parser.fail
-  | i -> Parser.return i) <?> "identifier"
+  | i -> return i) <?> "identifier"
 ;;
 
 let number = Parser.many1 Parser.digit <?> "non-negative integer"
 
 let integer =
   Parser.lex number >>= fun n ->
-  Parser.return (int_of_string (String.of_char_list n))
+  return (int_of_string (String.of_char_list n))
 ;;
 
 let sortident = (Parser.many1 (Parser.noneof " \t\n\r(),.:;[]^*<>?") >>=
-  fun i ->Parser.return i) <?> "sort"
+  fun i ->return i) <?> "sort"
 ;;
 
 let parse_identifier f =
-  Parser.lex f >>= fun i -> Parser.return (String.of_char_list i)
+  Parser.lex f >>= fun i -> return (String.of_char_list i)
 ;;
 
 (* ===== Advanced Parsing Functions ===== *)
@@ -159,7 +162,7 @@ not read it; if it is, the given value "ret" is returned *)
 let parse_keyword ret =
   let check_keyword word =
     ( Parser.tempt (Parser.lookahead (Parser.string word)) ) >>
-    Parser.return ret
+    return ret
   in
   ( Parser.choice (List.map check_keyword keywords) ) <?> "keyword"
 ;;
@@ -168,12 +171,12 @@ let parse_keyword ret =
 end of the file *)
 let end_of_part ret =
   ( parse_keyword ret ) <|>
-  ( Parser.eoi >> Parser.return ret )
+  ( Parser.eoi >> return ret )
 ;;
 
 (* this function checks whether we have reached the end of the file *)
 let end_of_input _ =
-  ( Parser.eoi >> Parser.return () )
+  ( Parser.eoi >> return () )
 ;;
 
 (* this function is called after reading one element of a 'list',
@@ -198,7 +201,7 @@ let start_state = (InfixMap.empty, ChainMap.empty, NoQuery, None);;
 
 (* start the parser with the given function on the given text *)
 let parse_text f arg txt startstate filename =
-  let m = f arg >>= Parser.return in
+  let m = f arg >>= return in
   match Parser.run ~file:filename m startstate (Parsec.StringInput.of_string txt) with
     | Left e -> failwith (Parsec.Error.to_string e)
     | Right answer -> answer
@@ -209,7 +212,7 @@ otherwise just return b *)
 let attempt_parse keyword f b =
   Parser.spaces >>= fun _ ->
   ( Parser.tempt (Parser.lex (Parser.string keyword)) >>= fun _ -> f b ) <|>
-  ( Parser.get_state >> Parser.return b )
+  ( Parser.get_state >> return b )
 ;;
 
 (* ===== File Access ===== *)
@@ -241,7 +244,7 @@ let rec parse_comments start i =
   let text = start ^ stxt in
   ( Parser.eoi >>= fun _ ->
     if i > 0 then failwith "Error reading file: unclosed comment!"
-    else Parser.return text
+    else return text
   ) <|>
   ( Parser.tempt (Parser.string "/*") >>= fun _ -> parse_comments text (i+1) ) <|>
   ( Parser.tempt (Parser.string "*/") >>= fun _ ->
@@ -301,11 +304,11 @@ let register_infix name (priority, kind) =
   ) in
   let update_infix (ifk, p) =
     if ifk = NoInfix then
-      Parser.return (kind, priority)
+      return (kind, priority)
     else if p <> priority || kind != ifk then
       parser_fail ("Symbol " ^ name ^ " redeclared with different " ^
                    "infix properties.")
-    else Parser.return (ifk, p)
+    else return (ifk, p)
   in
   update_infix symbolprops >>= fun updatedsymbolprops ->
   let infixes = InfixMap.replace name updatedsymbolprops infixes in
@@ -314,11 +317,11 @@ let register_infix name (priority, kind) =
 
 (* register a new sort declaration for an already existing symbol *)
 let register_sortdeclaration f normal special a =
-  if normal = None && special = None then Parser.return ()
+  if normal = None && special = None then return ()
   else if not (Alphabet.mem_sortdec f a) then (
-    if normal <> None then Parser.return
+    if normal <> None then return
       (Alphabet.add_normal_sortdec f (Option.the normal) a)
-    else Parser.return
+    else return
       (Alphabet.add_special_sortdec f (Option.the special) a)
   )
   else
@@ -330,7 +333,7 @@ let register_sortdeclaration f normal special a =
           if special = None then false
           else original = (Option.the special)
     ) in
-    if ok then Parser.return ()
+    if ok then return ()
     else parser_fail ("Trying to override previously declared " ^
             "symbol " ^ (Function.find_name f)^
             " with a different sort declaration.")
@@ -341,7 +344,7 @@ let register_integers normal special a =
   let check_sortdec sd =
     if Sortdeclaration.arity sd <> 0 then
       parser_fail "Integers may only have arity 0!"
-    else Parser.return (Sortdeclaration.output_sort sd)
+    else return (Sortdeclaration.output_sort sd)
   in
   if special <> None then
     parser_fail ("Cannot declare the integers with a polymorphic " ^
@@ -351,11 +354,11 @@ let register_integers normal special a =
       parser_fail ("Integers must always be declared with a sort.")
     else (
       check_sortdec (Option.the normal) >>= fun sort ->
-      Parser.return (Alphabet.include_integers sort a)
+      return (Alphabet.include_integers sort a)
     )
   )
   else (
-    if normal = None then Parser.return ()
+    if normal = None then return ()
     else ( 
       check_sortdec (Option.the normal) >>= fun sort ->
       if Alphabet.integer_sort a <> sort then
@@ -363,7 +366,7 @@ let register_integers normal special a =
           (Sort.to_string sort) ^ " but were previously declared " ^
           "with sort " ^ (Sort.to_string (Alphabet.integer_sort a))
           ^ ".")
-      else Parser.return ()
+      else return ()
     )
   )
 ;;
@@ -373,7 +376,7 @@ let register_arrays isort normal special a =
   let check_sortdec sd =
     if Sortdeclaration.arity sd <> 0 then
       parser_fail "Arrays may only have arity 0!"
-    else Parser.return (Sortdeclaration.output_sort sd)
+    else return (Sortdeclaration.output_sort sd)
   in
   if special <> None then
     parser_fail ("Cannot declare the arrays with a polymorphic " ^
@@ -381,20 +384,20 @@ let register_arrays isort normal special a =
   else (
     try
       let osort = Alphabet.array_sort isort a in
-      if normal = None then Parser.return () else
+      if normal = None then return () else
       check_sortdec (Option.the normal) >>= fun sort ->
       if osort <> sort then
         parser_fail ((Sort.to_string isort) ^ "-arrays declared " ^
           "with sort " ^ (Sort.to_string sort) ^ " but were " ^
           "previously declared with sort " ^ (Sort.to_string osort) ^
           ".")
-      else Parser.return ()
+      else return ()
     with Not_found ->
       if normal = None then
         parser_fail ("Arrays must always be declared with a sort.")
       else (
         check_sortdec (Option.the normal) >>= fun sort ->
-        Parser.return (Alphabet.include_arrays isort sort a)
+        return (Alphabet.include_arrays isort sort a)
       )
   )
 ;;
@@ -404,7 +407,7 @@ let register_mixed bo bc normal special a =
   let check_sortdec sd =
     if Sortdeclaration.arity sd <> 0 then
       parser_fail "Mixed symbols must be constants!"
-    else Parser.return (Sortdeclaration.output_sort sd)
+    else return (Sortdeclaration.output_sort sd)
   in
   if special <> None then
     parser_fail ("Cannot declare mixed symbols with a polymorphic " ^
@@ -412,20 +415,20 @@ let register_mixed bo bc normal special a =
   else (
     try
       let osort = Alphabet.mixed_sort (bo, bc) a in
-      if normal = None then Parser.return () else
+      if normal = None then return () else
       check_sortdec (Option.the normal) >>= fun sort ->
       if osort <> sort then
         parser_fail (bo ^ "-" ^ bc ^ "-arrays declared " ^
           "with sort " ^ (Sort.to_string sort) ^ " but were " ^
           "previously declared with sort " ^ (Sort.to_string osort) ^
           ".")
-      else Parser.return ()
+      else return ()
     with Not_found ->
       if normal = None then
         parser_fail ("Mixed symbols must always be declared with a sort.")
       else (
         check_sortdec (Option.the normal) >>= fun sort ->
-        Parser.return (Alphabet.include_mixed bo bc sort a)
+        return (Alphabet.include_mixed bo bc sort a)
       )
   )
 ;;
@@ -454,7 +457,7 @@ let register_declaration name sd logical =
       if not (Specialdeclaration.is_polymorphic outp) then true
       else check_occurrence outp (Specialdeclaration.input_sorts d)
   in
-  let add_symbol_kind a f = Parser.return (
+  let add_symbol_kind a f = return (
       if logical then Alphabet.add_symbol_kind f Alphabet.Logical a
       else Alphabet.add_symbol_kind f Alphabet.Terms a
     )
@@ -515,7 +518,7 @@ let parse_infix name ret =
     integer >>= fun n ->
     Parser.lex (Parser.char ')') >>= fun _ ->
     register_infix name (n, kind) >>
-    Parser.return (name, ret)
+    return (name, ret)
   in
   Parser.char '(' >>= fun _ ->
   ( Parser.lex (Parser.string "infix") >>= fun _ ->
@@ -579,10 +582,10 @@ let parse_declaration _ =
     Parser.lex (Parser.char ':') >>= fun _ ->
     parse_sortdec (*[] false false*) >>= fun sd ->
     ( parse_infix name (Some sd) ) <|>
-    ( Parser.return (name, (Some sd)) )
+    ( return (name, (Some sd)) )
   ) <|>
   ( parse_infix name None ) <|>
-  ( Parser.return (name, None) )
+  ( return (name, None) )
 ;;
 
 (* alphabet = declaration list *)
@@ -612,7 +615,7 @@ let rec parse_check_signature logical =
   Parser.get_state >>= fun (infixes,_,_,_) ->
   try
     InfixMap.iter check_infix infixes ;
-    Parser.return logical
+    return logical
   with Failure msg -> parser_fail msg
 ;;
 
@@ -671,13 +674,13 @@ let check_is_infix f =
     | (NoInfix,_) ->
         parser_fail ("symbol " ^ f ^ " occurring in chain " ^
           "transformation list is not declared as an infix symbol!")
-    | _ -> Parser.return ()
+    | _ -> return ()
   )
 ;;
 
 let rec parse_replace_list vars symbs =
   parse_identifier ident >>= fun x ->
-  ( Parser.lookahead (Parser.oneof ",;") >> Parser.return (x::vars,symbs) ) <|>
+  ( Parser.lookahead (Parser.oneof ",;") >> return (x::vars,symbs) ) <|>
   ( parse_identifier ident >>= fun f ->
     Parser.get_state >>= fun (infixes, _, _, _) ->
     if not (InfixMap.mem f infixes) then
@@ -698,7 +701,7 @@ let parse_chain_elem _ =
   Parser.lex (Parser.char ':') >>= fun _ ->
   parse_replace_list [] [] >>= fun (lst1, lst2) ->
   let rec numerify rest = function
-    | [] -> Parser.return rest
+    | [] -> return rest
     | name :: tail ->
       if name = x1 then numerify (1 :: rest) tail
       else if name = x2 then numerify (2 :: rest) tail
@@ -745,7 +748,7 @@ let rec parse_smt_term_sub sofar =
   let read = sofar ^ (String.of_char_list x) in
   (
     Parser.lex (Parser.char ')') >>= fun _ ->
-    Parser.return (read ^ ")")
+    return (read ^ ")")
   ) <|>
   (
     Parser.lex (Parser.char '(') >>= fun _ ->
@@ -824,7 +827,7 @@ let use_solver name =
 let parse_single f _ =
   parse_identifier ident >>= fun name ->
   f name ;
-  parse_rest_of_list [',';';'] Parser.return ()
+  parse_rest_of_list [',';';'] return ()
 ;;
 
 let rec parse_list f _ =
@@ -842,7 +845,7 @@ let make_variable_term name env =
       Environment.find_var name env
     else Environment.create_unsorted_var name env
   in
-  Parser.return (Term.make_var x)
+  return (Term.make_var x)
 ;;
 
 (* create a function with the given name and the given list of
@@ -851,7 +854,7 @@ doing checks that the term is okay! *)
 let make_functional_term name lst =
   let a = alphabet () in
   let n = List.length lst in
-  let ok f = Parser.return (Term.make_fun f lst) in
+  let ok f = return (Term.make_fun f lst) in
   if not (Alphabet.mem_fun_name name a) then (
     (*
     if name = "forall" || name = "exists" then (
@@ -863,8 +866,8 @@ let make_functional_term name lst =
             with _ -> failwith ("Occurrence of " ^ name ^
               " is only allowed if the integers are explicitly included.")
           ) ;
-          if name = "forall" then Parser.return (Term.Forall (x, arg))
-          else Parser.return (Term.Exists (x, arg))
+          if name = "forall" then return (Term.Forall (x, arg))
+          else return (Term.Exists (x, arg))
         | _ -> parser_fail ("Occurrence of " ^ name ^ " with " ^
           "unsuitable arguments (should be: variable, formula).")
     )
@@ -910,7 +913,7 @@ let make_functional_term name lst =
 use lists of pairs *)
 let ($::) (a,b) x =
   x >>= fun (lst1,lst2) ->
-  Parser.return (a::lst1,b::lst2)
+  return (a::lst1,b::lst2)
 ;;
 
 (* Given a chain of infix symbols and terms, this modifies the chain
@@ -947,12 +950,12 @@ let build_from_infix_list termlist symblist =
     make_chain_transformations termlist symblist chains
   in
   let rec local_top top p k = function
-    | [] -> Parser.return (top, k)
+    | [] -> return (top, k)
     | f :: tail ->
       let (kind, priority) = InfixMap.find f infixes in
       if priority > p then local_top f priority kind tail
-      else if priority < p then Parser.return (top, k)
-      else if k = InfixLeft && kind = InfixLeft then Parser.return (top, k)
+      else if priority < p then return (top, k)
+      else if k = InfixLeft && kind = InfixLeft then return (top, k)
       else if (k = InfixRight && kind = InfixRight) || top = f then
         local_top f priority kind tail
       else parser_fail ("Ambiguous sequence: symbol " ^ top ^
@@ -968,14 +971,14 @@ let build_from_infix_list termlist symblist =
         else
           let t2, terms = List.hd terms, List.tl terms in
           make_functional_term f [t1;t2] >>= fun newterm ->
-          Parser.return (newterm :: terms, tail)
+          return (newterm :: terms, tail)
   in
   let rec handle_right_symbol f terms symbs =
     match symbs with
       | [] -> failwith "strange error, top symbol doesn't occur in list"
       | g :: [] ->
         make_functional_term g terms >>= fun term ->
-        Parser.return ([term], [])
+        return ([term], [])
       | g :: h :: tail ->
         let t1, terms = List.hd terms, List.tl terms in
         let continue _ =
@@ -990,7 +993,7 @@ let build_from_infix_list termlist symblist =
           else
             let t2, terms = List.hd terms, List.tl terms in
             make_functional_term f [t1;t2] >>= fun newterm ->
-            Parser.return (newterm :: terms, h :: tail)
+            return (newterm :: terms, h :: tail)
         )
   in
   let rec handle_neither_symbol f terms symbs sofar =
@@ -999,14 +1002,14 @@ let build_from_infix_list termlist symblist =
     match symbs with
       | [] ->
         make_functional_term f (List.rev sf) >>= fun t ->
-        Parser.return ([t],[])
+        return ([t],[])
       | g :: tail ->
         if f = g then
           handle_neither_symbol f terms tail sf
         else (
           if sofar <> [] then
             make_functional_term f (List.rev sf) >>= fun t ->
-            Parser.return (t :: terms, symbs)
+            return (t :: terms, symbs)
           else
             (t1,g) $:: (handle_neither_symbol f terms tail [])
         )
@@ -1019,7 +1022,7 @@ let build_from_infix_list termlist symblist =
   in
   let rec make_term terms symbs =
     match symbs with
-      | [] -> Parser.return (List.hd terms)
+      | [] -> return (List.hd terms)
       | _ ->
         handle_best terms symbs >>= fun (t, s) -> make_term t s
   in
@@ -1038,22 +1041,22 @@ let rec parse_term e =
 and parse_term_list e =
   parse_basic_term e >>= fun t ->
   ( Parser.tempt (Parser.lookahead (Parser.string "\\in ")) >>= fun _ ->
-    Parser.return ([t], [])
+    return ([t], [])
   ) <|>
   (
     ( ( Parser.tempt
         ( parse_identifier ident_with_array >>= fun ret ->
           if is_keyword ret then Parser.fail
-          else Parser.return ret
+          else return ret
         )
       ) <|>
-      ( Parser.return "" )
+      ( return "" )
     ) >>= fun symbol ->
     Parser.get_state >>= fun (infixes, _, _, _) ->
-    if symbol = "" then Parser.return ([t], [])
+    if symbol = "" then return ([t], [])
     else if InfixMap.mem symbol infixes then (
       parse_term_list e >>= fun (terms, symbs) ->
-      Parser.return (t :: terms, symbol :: symbs)
+      return (t :: terms, symbol :: symbs)
     )
     else parser_fail ("Symbol " ^ symbol ^ " used, but not " ^
                       "declared, as an infix symbol.")
@@ -1063,7 +1066,7 @@ and parse_basic_term e =
   ( Parser.lex (Parser.char '(') >>= fun _ ->
     parse_term e >>= fun ret ->
     Parser.lex (Parser.char ')') >>= fun _ ->
-    Parser.return ret
+    return ret
   ) <|>
   (
     parse_identifier ident_with_array >>= fun name ->
@@ -1093,7 +1096,7 @@ let parse_constraint e =
     Parser.lex (Parser.char '[') >>= fun _ ->
     parse_term e >>= fun term ->
     Parser.lex (Parser.char ']') >>
-    Parser.return term
+    return term
   )
   (*
   <|>
@@ -1104,20 +1107,20 @@ let parse_constraint e =
       Parser.string("->") >>= fun _ ->
       ( Parser.lex (Parser.string "*") >>= fun _ ->
         parse_term e >>= fun otherterm ->
-        Parser.return (Constraint.reduce_condition term otherterm)
+        return (Constraint.reduce_condition term otherterm)
       ) <|>
       ( Parser.lex (Parser.string "<-") >>= fun _ ->
         parse_term e >>= fun otherterm ->
-        Parser.return (Constraint.join_condition term otherterm)
+        return (Constraint.join_condition term otherterm)
       )
     ) <|>
     (
       Parser.lex (Parser.string "\\in") >>= fun _ ->
       ( Parser.lex (Parser.string "CNF") >>
-        Parser.return (Constraint.constructor_form_constraint term)
+        return (Constraint.constructor_form_constraint term)
       ) <|>
       ( Parser.lex (Parser.string "GCNF") >>
-        Parser.return (Constraint.ground_constructor_form_constraint term)
+        return (Constraint.ground_constructor_form_constraint term)
       )
     )
   )
@@ -1132,10 +1135,10 @@ let parse_constraint e =
     let varlist = List.map makevar lst in
     Parser.lex (Parser.string "\\in") >>= fun _ ->
     ( Parser.lex (Parser.string "CNF") >>
-      Parser.return (Constraint.constructor_form_constraint varlist)
+      return (Constraint.constructor_form_constraint varlist)
     ) <|>
     ( Parser.lex (Parser.string "GCNF") >>
-      Parser.return (Constraint.ground_constructor_form_constraint varlist)
+      return (Constraint.ground_constructor_form_constraint varlist)
     )
   )
   *)
@@ -1155,15 +1158,15 @@ let parse_rule e =
   (
     Parser.lex (Parser.string "<--") >>= fun _ ->
     parse_constraints e >>= fun c ->
-    Parser.return (Rule.create l r c)
+    return (Rule.create l r c)
   ) <|>
   (
     Parser.lookahead (Parser.char '[') >>= fun _ ->
     parse_constraint e >>= fun c ->
-    Parser.return (Rule.create l r [c])
+    return (Rule.create l r [c])
   ) <|>
   (
-    Parser.return (Rule.create l r [])
+    return (Rule.create l r [])
   )
 ;;
 
@@ -1179,7 +1182,7 @@ let rec parse_rules_list trs =
 
 let parse_rules _ =
   parse_rules_list (trs ()) >>= fun _ ->
-  Parser.return ()
+  return ()
 ;;
 
 (* ===== Parsing ERROR indication ===== *)
@@ -1198,7 +1201,7 @@ let parse_error _ =
   parse_identifier ident >>= fun name ->
   Parser.lex (Parser.char ':') >>= fun _ ->
   parse_sort_list [] >>= fun sorts ->
-  Parser.return (name, sorts)
+  return (name, sorts)
 ;;
 *)
 
@@ -1232,9 +1235,9 @@ let parse_cs_entry _ =
         "sensitivity list uses position " ^ (string_of_int (h+1)) ^
         " which is not a position because " ^ symbol ^ " has " ^
         "arity " ^ (string_of_int ar) ^ "!")
-      else Parser.return ()
+      else return ()
     )
-    else Parser.return ()
+    else return ()
   )
 ;;
 
@@ -1269,13 +1272,13 @@ let parse_constrained_term () =
   Parser.lex (Parser.char '[') >>= fun _ ->
   parse_term (environment ()) >>= fun phi ->
   Parser.lex (Parser.char ']') >>= fun _ ->
-  Parser.return (s, phi)
+  return (s, phi)
 ;;
 
 let rec parse_symbol_list sofar =
   Parser.spaces >>= fun _ ->
   ( Parser.lex (Parser.char ']') >>= fun _ ->
-    Parser.return sofar
+    return sofar
   ) <|>
   ( parse_identifier ident >>= fun name ->
     let f =
@@ -1310,11 +1313,15 @@ let rec parse_query filename _ =
   ( Parser.lex (Parser.string "innermost-termination") >>= fun _ ->
     set_query (Termination false)
   ) <|>
-  ( Parser.lex (Parser.string "completion") >>= fun _ ->
-    ((Parser.lex (Parser.string "true") >>= fun _ -> Parser.return true) <|>
-     (Parser.lex (Parser.string "false") >>= fun _ -> Parser.return false)
+  ( Parser.lex (Parser.string "completion [") >>= fun _ ->
+    parse_symbol_list [] >>= fun prec ->
+    ((Parser.lex (Parser.string "keep_oriented") >>= fun _ -> return true) <|>
+     (Parser.lex (Parser.string "any_orientation") >>= fun _ -> return false)
     ) >>= fun keep_orientation ->
-    set_query (Completion keep_orientation)
+    ((Parser.lex (Parser.string "standard") >>= fun _ -> return false) <|>
+     (Parser.lex (Parser.string "ordered") >>= fun _ -> return true)
+    ) >>= fun ordered ->
+    set_query (Completion (List.rev prec, keep_orientation, ordered))
   ) <|>
   ( Parser.lex (Parser.string "confluence") >>= fun _ ->
     set_query Confluence
@@ -1362,7 +1369,7 @@ let parse_theory _ =
   attempt_parse "CHAIN" parse_chain () >>= fun _ ->
   attempt_parse "SMT-RENAMINGS" parse_renamings () >>= fun _ ->
   attempt_parse "SMT-TRANSLATIONS" parse_translations () >>= fun _ ->
-  Parser.eoi >> Parser.get_state >>= Parser.return
+  Parser.eoi >> Parser.get_state >>= return
 ;;
 
 let read_theory = parse_text parse_theory ();;
@@ -1379,7 +1386,7 @@ let inform_printer _ =
         Printer.add_infix_symbol name priority false
       | NoInfix -> ()
   in
-  Parser.return (InfixMap.iter inform infixes)
+  return (InfixMap.iter inform infixes)
 ;;
 
 let typecheck_query query =
@@ -1415,9 +1422,9 @@ let parse_trs filename =
   attempt_parse "CHAIN" parse_chain () >>= fun _ ->
   attempt_parse "RULES" parse_rules () >>= fun _ ->
   attempt_parse "CONTEXT-SENSITIVE" parse_cs () >>= fun _ ->
-  attempt_parse "NON-STANDARD" (fun _ -> Parser.return true) false >>= fun ns ->
+  attempt_parse "NON-STANDARD" (fun _ -> return true) false >>= fun ns ->
   (*attempt_parse "ERROR" parse_error ("", []) >>= fun (errname, errorsorts) ->*)
-  attempt_parse "IRREGULAR" (fun _ -> Parser.return true) false >>= fun ln ->
+  attempt_parse "IRREGULAR" (fun _ -> return true) false >>= fun ln ->
   attempt_parse "QUERY" (parse_query filename) () >>= fun _ ->
   Parser.eoi >>
   let msg = Trs.test_variables (trs ()) (not ln) in
@@ -1433,7 +1440,7 @@ let parse_trs filename =
   typecheck_query q >>= fun _ ->
   Solver.setup_core_symbols (smtsolver ()) (alphabet ()) ;
   inform_printer () >>
-  Parser.get_state >>= Parser.return
+  Parser.get_state >>= return
 ;;
 
 let read_trs contents state fname =
@@ -1457,20 +1464,20 @@ let rec parse_itrs_vars sofar =
   ( parse_identifier ident >>= fun name ->
     parse_itrs_vars (name :: sofar)
   ) <|>
-  ( Parser.return sofar )
+  ( return sofar )
 ;;
 
 let itrs_ident = (Parser.many1 (Parser.noneof " \t\n\r(),:;[]{}/%+-*><=") >>= function
-  | i -> Parser.return i) <?> "identifier"
+  | i -> return i) <?> "identifier"
 ;;
 
 (* this checks whether the next thing in line is a keyword, but does
 not read it; if it is, the given value "ret" is returned *)
 let parse_itrs_infix infixes =
   let check_name word =
-    ( ( Parser.tempt (Parser.string (word ^ "@z")) ) >> Parser.return word )
+    ( ( Parser.tempt (Parser.string (word ^ "@z")) ) >> return word )
     <|>
-    ( ( Parser.tempt (Parser.string word) ) >> Parser.return word )
+    ( ( Parser.tempt (Parser.string word) ) >> return word )
   in
   ( Parser.choice (List.map check_name infixes) ) <?> "keyword"
 ;;
@@ -1483,7 +1490,7 @@ let negative_term term =
   if isint then (
     let k = Function.integer_to_int (List.hd (Term.funs term)) in
     let mink = Function.integer_symbol (-k) in
-    Parser.return (Term.make_fun mink [])
+    return (Term.make_fun mink [])
   )
   else (
     let nulterm = Term.make_fun (Function.integer_symbol 0) [] in
@@ -1508,21 +1515,21 @@ and parse_itrs_term_list e =
   parse_basic_itrs_term e >>= fun t ->
   Parser.get_state >>= fun (infixes, _, _, _) ->
   ( Parser.tempt (Parser.lookahead (Parser.string "->")) >>= fun _ ->
-    Parser.return ([t], [])
+    return ([t], [])
   ) <|>
   ( parse_itrs_infix (InfixMap.domain infixes) >>= fun symbol ->
     Parser.spaces >>
     parse_itrs_term_list e >>= fun (terms, symbs) ->
-    Parser.return (t :: terms, symbol :: symbs)
+    return (t :: terms, symbol :: symbs)
   ) <|>
-  ( Parser.return ([t], []) )
+  ( return ([t], []) )
 
 and parse_basic_itrs_term e =
   (* terms in brackets *)
   ( Parser.lex (Parser.char '(') >>= fun _ ->
     parse_itrs_term e >>= fun ret ->
     Parser.lex (Parser.char ')') >>= fun _ ->
-    Parser.return ret
+    return ret
   ) <|>
   (* negative terms *)
   ( Parser.lex (Parser.char '-') >>= fun _ ->
@@ -1560,10 +1567,10 @@ let parse_itrs_rule e =
   (
     Parser.lex (Parser.string ":|:") >>= fun _ ->
     parse_itrs_term e >>= fun c ->
-    Parser.return (Rule.create l r [c])
+    return (Rule.create l r [c])
   ) <|>
   (
-    Parser.return (Rule.create l r [])
+    return (Rule.create l r [])
   )
 ;;
 
@@ -1572,7 +1579,7 @@ let rec parse_itrs_rules e trs =
     Trs.add rule e trs ;
     parse_itrs_rules e trs
   ) <|>
-  ( Parser.return trs )
+  ( return trs )
 ;;
 
 let set_all_integers trs =
@@ -1623,7 +1630,7 @@ let parse_itrs _ =
   Solver.setup_core_symbols (smtsolver ()) (alphabet ()) ;
   (*Cleaner.innermost_cleanup (trs ()) ;*)
   inform_printer () >>
-  Parser.get_state >>= Parser.return
+  Parser.get_state >>= return
 ;;
 
 let read_itrs contents state fname =
@@ -1634,7 +1641,7 @@ let read_itrs contents state fname =
 (* ===== Reading an smt file, to send to the internal solver ===== *)
 
 let rec parse_variables e =
-  ( Parser.lex (Parser.char ')') >>= Parser.return )
+  ( Parser.lex (Parser.char ')') >>= return )
   <|>
   ( Parser.lex (Parser.char '(') >>= fun _ ->
     parse_identifier ident >>= fun varname ->
@@ -1678,7 +1685,7 @@ let make_smt_func name args =
       else if name = "<" then (Alphabet.get_smaller_symbol a, args)
       else (Alphabet.find_fun name a, args)
     in
-    Parser.return (Term.make_fun f arguments)
+    return (Term.make_fun f arguments)
   with Not_found ->
     parser_fail ("Undeclared symbol " ^ name ^ ".")
 ;;
@@ -1688,7 +1695,7 @@ let rec parse_smt_term e =
     parse_identifier ident_with_array >>= fun name ->
     let rec parse_list sofar =
       ( Parser.lex (Parser.char ')') >>= fun _ ->
-        Parser.return (List.rev sofar)
+        return (List.rev sofar)
       ) <|>
       ( parse_smt_term e >>= fun term ->
         parse_list (term :: sofar)
@@ -1698,11 +1705,11 @@ let rec parse_smt_term e =
     try
       let x = Environment.find_var name e in
       if lst <> [] then parser_fail ("Variable " ^ name ^ " given arguments!")
-      else Parser.return (Term.make_var x)
+      else return (Term.make_var x)
     with Not_found -> make_smt_func name lst
   ) <|>
   ( parse_identifier ident_with_array >>= fun name ->
-    try Parser.return (Term.make_var (Environment.find_var name e))
+    try return (Term.make_var (Environment.find_var name e))
     with Not_found -> make_smt_func name []
   )
 ;;
@@ -1715,7 +1722,7 @@ let parse_smt _ =
       read_part logic assumptions
     ) <|>
     ( Parser.lex (Parser.char ')') >>= fun _ ->
-      Parser.return (logic, assumptions)
+      return (logic, assumptions)
     )
   and read_part logic assumptions =
     ( Parser.lex (Parser.string "logic") >>= fun _ ->
@@ -1741,7 +1748,7 @@ let parse_smt _ =
       | Some l -> Solver.use_logic l (smtsolver ())
       | None -> ()
   ) ;
-  Parser.return goals
+  return goals
 ;;
 
 let read_smt contents state fname =

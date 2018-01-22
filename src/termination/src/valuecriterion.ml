@@ -892,7 +892,7 @@ let reverse_candidates a e dps functioninfo =
 
 let reverse_process v p =
   try simple_process reverse_candidates "reverse" v p
-  with NoIntegerSymbols -> None
+  with NoIntegerSymbols | Not_found -> None
 ;;
 
 (*****************************************************************************)
@@ -1118,5 +1118,5 @@ let extended_process_main verbose prob =
 
 let extended_process verbose prob =
   try extended_process_main verbose prob
-  with NoIntegerSymbols -> None
+  with NoIntegerSymbols | Not_found -> None
 ;;

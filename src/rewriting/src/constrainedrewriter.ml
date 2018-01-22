@@ -860,8 +860,8 @@ let equivalent_cterms alph env s t phis =
     let _,sigma = simplify_constraints alph phis in
     (*Format.printf "sub  %s \n" (Sub.to_string sigma);*)
     let s',t' = Sub.apply_term sigma s, Sub.apply_term sigma t in
-    (*Format.printf "simp equivalent?  %s %s\n"
-      (Term.to_string s') (Term.to_string t');*)
+    Format.printf "simp equivalent?  %s %s\n"
+      (Term.to_string s') (Term.to_string t');
     if s' = t' then true
     else (
       let logical t = Term.check_logical_term alph t = None in
@@ -894,4 +894,59 @@ let equalities_into_rule alph env rl =
   let l',r' = Sub.apply_term sigma l, Sub.apply_term sigma r in
   if l' <> l && not (Term.is_value alph l') then Rule.create l r' phis
   else Rule.create l' r' psi
+;;
+
+let simplify_constraints' alf lst =
+  let normalised = calculate_constraints lst alf in
+  let rec split_conj term = match term with
+    | Term.Fun (f, [a;b]) | Term.InstanceFun (f, [a;b], _) ->
+      if f <> and_symbol alf then [term]
+      else split_conj a @ (split_conj b)
+    | _ -> [term]
+  in
+  let normalised' = List.concat (List.map split_conj normalised) in
+  let split_def term =
+    match term with
+      | Term.Var x -> Left (x, Term.make_fun (top_symbol alf) [])
+      | Term.Fun (f, args) | Term.InstanceFun (f, args, _) -> (
+          if f <> eq_symbol alf then Right term
+          else match args with
+            | (Term.Var x) :: b :: [] when Term.is_value alf b -> Left (x, b)
+            | a :: (Term.Var x) :: [] when Term.is_value alf a ->  Left (x, a)
+            | _ :: _ :: [] -> Right term
+            | _ -> failwith ("Unexpected equality: should have " ^
+                             "exactly two arguments!")
+          )
+      | Term.Forall _ | Term.Exists _ -> Right term
+  in
+  let rec split_list (defs, constraints) = function
+    | [] -> (defs, constraints)
+    | head :: tail ->
+      let sofar = ( match split_def head with
+        | Left (var, value) -> ( (var, value) :: defs, constraints )
+        | Right term -> ( defs, term :: constraints )
+      ) in
+      split_list sofar tail
+  in
+  let (defs, constraints) = split_list ([], []) normalised' in
+  try
+    let gamma = Sub.of_list defs in
+    if defs = [] then (List.rev constraints, gamma)
+    else (
+      let subst = Sub.apply_term gamma in
+      let newconstraints = List.rev_map subst constraints in
+      (newconstraints, gamma)
+    )
+  with Sub.Inconsistent ->
+    let bottom = Term.make_fun (bot_symbol alf) [] in
+    ([bottom], Sub.of_list [])
+;;
+
+let equalities_into_rule alph env rl =
+  let l,r,phis = Rule.lhs rl, Rule.rhs rl, Rule.constraints rl in
+  let term f = Alphabet.find_symbol_kind f alph = Alphabet.Terms in
+  let psi,sigma = simplify_constraints' alph phis in
+  (*Format.printf "sub  %s \n" (Sub.to_string sigma);*)
+  let l',r' = Sub.apply_term sigma l, Sub.apply_term sigma r in
+  Rule.create l' r' psi
 ;;

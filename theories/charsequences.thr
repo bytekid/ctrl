@@ -6,6 +6,7 @@ DECLARE
   select     : String * Int => Char               ;
   replace    : String * Int * Char => String      ;
   concat     : String * String => String          ;
+  app        : Char * String => String          ;
   length     : String => Int                      ;
   substring  : String * Int * Int => String       ;
   charcmp    : Char * Char => Int                 ;

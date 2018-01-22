@@ -35,9 +35,10 @@ module KB : sig
   (** {3 Constructors} *)
   type result = (Ctrs.Rule.t * Ctrs.Environment.t) list
 
-  val standard : bool -> Trs.t -> bool -> result option
-  (** [run v trs] returns a completed TRS if possible *)
+  val standard : bool -> Trs.t -> Function.t list -> bool -> result option
+  (** [standard v trs prec orient] returns a completed TRS if possible *)
 
-  val ordered : bool -> Trs.t -> bool -> (result * result) option
-  (** [run v trs] returns a ground completed TRS if possible *)
+  val ordered : bool -> Trs.t -> Function.t list -> bool ->
+    (result * result) option
+  (** [ordered v trs prec orient] returns a ground completed TRS if possible *)
 end

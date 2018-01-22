@@ -24,5 +24,6 @@ module Valuecriterion = Terminationx.Valuecriterion;;
 module Subtermcriterion = Terminationx.Subtermcriterion;;
 module Dpframework = Terminationx.Dpframework;;
 module Loop = Terminationx.Loop;;
+module Crpo = Terminationx.Crpo;;
 module Terminator = Terminationx.Terminator;;
 

@@ -228,6 +228,13 @@ module Loop : sig
   (* [process verbose prob] applies the loop processor on the given problem *)
 end
 
+(** {2 Module Crpo} *)
+
+module Crpo : sig
+  val orient : Function.t list -> Trs.t -> bool
+  (* [orient prec trs] checks whether trs can be oriented with this precedence*)
+end
+
 (** {2 Module Terminator} *)
 
 (** This module is used to interface with the SMT-solver. *)

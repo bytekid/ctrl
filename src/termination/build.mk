@@ -3,6 +3,7 @@ PACK  := Termination
 DEP   := Util Ctrs Smt Rewriting Io
 FILES := \
   chainer.ml \
+  crpo.ml \
   dpgraph.ml \
   dpframework.ml \
   dpproblem.ml \

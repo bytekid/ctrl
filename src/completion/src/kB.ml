@@ -24,11 +24,14 @@ open Termination
 
 module Conf = Confluence.Confluencechecker
 module P = Io.Printer
+module Crew = Constrainedrewriter
 
 type result = (Ctrs.Rule.t * Ctrs.Environment.t) list
 
 exception Fail
 
+
+let to_string_rule = Io.Printer.to_string_rule
 
 let conjunction (alph,env) =
   let mk_fun = Term.make_function alph env in
@@ -40,6 +43,7 @@ let conjunction (alph,env) =
 ;;
 
 let deduce rule rules =
+  Format.printf "deduce for %s\n%!" (Rule.to_string (fst rule));
   let n = List.length rules in
   let newenv = Environment.empty n in
   let alf = Trs.get_alphabet (Trs.get_current ()) in
@@ -48,10 +52,12 @@ let deduce rule rules =
     (i, Rule.fresh_renaming rule e newenv funnames)
   in
   let irules = List.mapi info_rename rules in
-  let combinations = List.product [info_rename n rule] irules in
+  let combinations = List.product [info_rename n rule] irules @
+                     (List.product irules [info_rename n rule]) in
   let make_pair ((i, rule1), (j, rule2)) =
-    if i < j then (rule1, rule2, true)
-    else if i > j then (rule1, rule2, false)
+    let no_var = not (Rule.is_variant rule1 rule2) in
+    if i < j && no_var then (rule1, rule2, true)
+    else if i > j && no_var then (rule1, rule2, true)
     else (
       let l = Rule.lhs rule1 in
       let r = Rule.rhs rule1 in
@@ -65,40 +71,12 @@ let deduce rule rules =
   in
   let rulecps = List.flat_map get_cp pairs in
   let calccps, newenv = Conf.critical_pairs [rule] in
-  let to_equation (l,r,phis) = Rule.create l r phis, newenv in
-  let cps = List.map to_equation (rulecps @ (List.map fst calccps)) in
-
-  Format.printf "deduce\n";
-  let print_all =
-    List.iter (fun (e,_) -> Format.printf " %s\n" (P.to_string_rule e))
+  let cps = rulecps @ (List.map fst calccps) in
+  let cps = List.filter (fun (l,r,_) -> l <> r) cps in
+  let to_equation (l,r,phis) = 
+    Crew.equalities_into_rule alf newenv (Rule.create l r phis), newenv
   in
-  print_all cps;
-  cps
-;;
-
-let is_terminating (alph,env) rs =
-  let trs = Trs.create alph env in
-  Trs.set_rules rs trs;
-  let (ans, _) = Terminator.check false true trs in
-  ans = Terminator.TERMINATING
-;;
-
-let orient ((alph, _) as ctxt) keep_oriented (e,e_env) rr =
-  let rl = 
-  Format.printf "start orient\n%!";
-  let l,r,phi = Rule.lhs e, Rule.rhs e, Rule.constraints e in
-  let maybe_lhs l = not (Term.is_value alph l) && not (Term.is_var l) in
-  if maybe_lhs l && is_terminating ctxt ((e,e_env)::rr) then e
-  else (
-    let e' = Rule.create r l phi in
-    let rr' = (e',e_env) :: rr in
-    if not keep_oriented && maybe_lhs r && is_terminating ctxt rr' then e'
-    else raise Fail)
-  in
-  let rl' = Constrainedrewriter.equalities_into_rule (fst ctxt) e_env rl in
-  Format.printf "ORIENTED %s, simp to %s\n%!"
-    (Rule.to_string rl) (Rule.to_string rl');
-  rl'
+  List.map to_equation cps
 ;;
 
 let transfer_trs alph rs newenv =
@@ -106,8 +84,46 @@ let transfer_trs alph rs newenv =
   let move (rule, oldenv) =
     try Rule.environment_transfer rule oldenv newenv fnames, newenv
     with _ ->
-      failwith ("Variable error with rule " ^ (Rule.to_string rule))
+      failwith ("Variable error with rule " ^ (to_string_rule rule))
   in List.map move rs
+;;
+
+let all_terminating (alph,env) prec rs =
+  let trs = Trs.create alph env in
+  Trs.set_rules rs trs;
+  if prec <> [] then
+    Crpo.orient prec trs
+  else (
+    let (ans, _) = Terminator.check false true trs in
+    ans = Terminator.TERMINATING)
+;;
+
+let is_terminating (alph,env) prec rl rs =
+  if prec <> [] then
+    let trs = Trs.create alph env in
+    Trs.set_rules [rl] trs;
+    Crpo.orient prec trs
+  else (
+    let trs = Trs.create alph env in
+    Trs.set_rules (rl::rs) trs;
+    let (ans, _) = Terminator.check false true trs in
+    ans = Terminator.TERMINATING)
+;;
+
+let orient ((alph, _) as ctxt) prec keep_oriented (e,e_env) rr =
+  let rl = 
+  let l,r,phi = Rule.lhs e, Rule.rhs e, Rule.constraints e in
+  let maybe_lhs l = not (Term.is_value alph l) && not (Term.is_var l) in
+  let rr = transfer_trs alph rr e_env in
+  if maybe_lhs l && is_terminating (alph,e_env) prec (e,e_env) rr then e
+  else (
+    let e' = Rule.create r l phi in
+    if not keep_oriented && maybe_lhs r &&
+       is_terminating (alph,e_env) prec (e',e_env) rr then e'
+    else raise Fail)
+  in
+  let rl' = Crew.equalities_into_rule (fst ctxt) e_env rl in
+  rl'
 ;;
 
 let simplify (alph,env) (e,e_env) rr =
@@ -115,33 +131,41 @@ let simplify (alph,env) (e,e_env) rr =
   Alphabet.set_symbol_kind f Alphabet.Terms alph;
   let trs = Trs.create alph e_env in
   Trs.set_rules (transfer_trs alph rr e_env) trs;
-  let rec simplify e =
-    Format.printf "  simplify iteration\n%!";
-    Format.printf "  %s\n" (P.to_string_rule e);
-    (*let e = Constrainedrewriter.equalities_into_rule alph e_env e in
-    Format.printf " after equalities_into_rule  %s\n" (P.to_string_rule e);*)
-    (* calc simp general *)
-    let rewrite = Constrainedrewriter.rewrite_bounded true false false trs 1 in
+  let equiv e = 
     let l,r,phis = Rule.lhs e, Rule.rhs e, Rule.constraints e in
-    if Constrainedrewriter.equivalent_cterms alph e_env l r phis then
-      (Format.printf "DELETE\n%!"; None)
+    Crew.equivalent_cterms alph e_env l r phis
+  in
+  let rec simplify e =
+    Format.printf "  simplify iteration: %!";
+    Format.printf "  %s\n" (P.to_string_rule e);
+    let l,r,phis = Rule.lhs e, Rule.rhs e, Rule.constraints e in
+    if equiv e then (Format.printf "DELETE\n%!"; None)
     else
+      let rewrite = Crew.rewrite_bounded true false false trs 1 in
       let cterm = Term.Fun(f,[l;r]), conjunction (alph,env) phis in
       match rewrite cterm with
-        | [] ->  (Format.printf "  no reduct\n%!"; Some e)
+        | [] ->  Some e
         | ((Term.Fun (_,[l';r']),phi'), is_nf) :: _ ->
           if l' = r' then None
           else
             let e' = (Rule.create l' r' [phi']) in
-            if is_nf then Some e' else simplify e'
+            if is_nf then
+              (if equiv e' then None else Some e')
+            else simplify e'
         | _ -> failwith "simplify: unexpected result pattern"
-  in simplify e
+  in 
+  match simplify e with
+      None -> None
+    | Some e -> Some (Crew.equalities_into_rule alph e_env e)
 ;;
 
+let print_all =
+  List.iter (fun (e,_) -> Format.printf " %s\n" (P.to_string_rule e))
+;;
+
+let flip rl = Rule.create (Rule.rhs rl) (Rule.lhs rl) (Rule.constraints rl)
+
 let print i (ee,rr) =
-  let print_all =
-    List.iter (fun (e,_) -> Format.printf " %s\n" (P.to_string_rule e))
-  in
   Format.printf "Iteration %i\n%!EE:\n" i;
   print_all ee;
   Format.printf "RR:\n";
@@ -152,44 +176,167 @@ let print i (ee,rr) =
 let take_smallest e ee =
   let size ((r,_),_) = Term.size (Rule.lhs r) + Term.size (Rule.rhs r) in
   let m = List.fold_left (fun x y -> if size y < size x then y else x) e ee in
-  m, List.remove m ee
+  m, List.remove m (e::ee)
 ;;
 
-let complete ctxt (ee,rr) =
+let compose_collapse (alph,_) (r,env) rr =
+  let f = Alphabet.create_unsorted_fun 2 "_pair" alph in
+  Alphabet.set_symbol_kind f Alphabet.Terms alph;
+  let trs = Trs.create alph env in
+  Trs.set_rules [r,env] trs;
+  let rr = transfer_trs alph rr env in
+  let rewrite (ee,rr) rl =
+    let l,r,phis = Rule.lhs rl, Rule.rhs rl, Rule.constraints rl in
+    let cterm = Term.Fun(f,[l;r]), conjunction (alph,env) phis in
+    let rewrite = Crew.rewrite_bounded false false false trs 1 in
+    match rewrite cterm with
+      | [] -> (ee,(rl,env)::rr)
+      | ((Term.Fun (_,[l';r']),phi'), is_nf) :: _ -> 
+        if l' = l && r' = r then (ee,(rl,env)::rr)
+        else if l' = l then (
+          let rl' = Rule.create l' r' [phi'] in
+          Format.printf "COMPOSE %s to %s\n" (to_string_rule rl) (to_string_rule rl');
+          (ee,(rl',env) :: rr))
+        else (*
+          Format.printf "collapse %s\n" (to_string_rule rl);
+          ((Rule.create l' r' [phi'],env) :: ee,rr)*) (ee,(rl,env)::rr)
+      | _ -> failwith "simplify: unexpected result pattern"
+  in List.fold_left (fun er (rl,_) -> rewrite er rl) ([],[]) rr
+;;
+
+let no_variant_in ctxt ee rr ((e,_),_) =
+  let all = List.map fst ee @ rr in
+  not (List.exists (fun (e',_) -> Rule.is_variant e e') all)
+;;
+
+
+let all = ref []
+
+let no_variant ee =
+  let var_of e ((e',_),_) = Rule.is_variant e e' in
+  let no_var ((e,_),_) = not (List.exists (var_of e) !all) in
+  List.filter no_var ee
+;;
+
+let complete ctxt prec (ee,rr) =
   let rec complete i (ee,rr) =
     print i (List.map fst ee,rr);
     match ee with
     | [] -> rr
     | e :: ee ->
       let ((e,env), keep_oriented), ee = take_smallest e ee in
-      Format.printf "pick equation %s\n" (Io.Printer.to_string_rule e);
+      Format.printf "CHOOSE %s\n" (to_string_rule e);
       (* do not simplify if this is an input rule to be maintained *)
       let e' = if keep_oriented then Some e else simplify ctxt (e,env) rr in
       match e' with
       | None -> complete (i+1) (ee,rr)
       | Some e' ->
         Format.printf "SIMPLIFIED %s to %s\n%!"
-          (Io.Printer.to_string_rule e) (Io.Printer.to_string_rule e');
-        let r = orient ctxt keep_oriented (e',env) rr in
-        Format.printf "ORIENT %s\n%!" (Io.Printer.to_string_rule r);
+          (to_string_rule e) (to_string_rule e');
+        let r = orient ctxt prec keep_oriented (e',env) rr in
+        Format.printf "ORIENT %s\n%!" (to_string_rule r);
         let cps = List.map (fun e -> e,false) (deduce (r,env) rr) in
-        Format.printf "deduced\n%!";
-        complete (i+1) (cps @ ee, (r,env)::rr)
+        if cps <> [] then (Format.printf "DEDUCE\n%!"; print_all (List.map fst cps));
+        let cps' = List.filter (no_variant_in ctxt ee rr) cps in
+        let collapsed,rr' = compose_collapse ctxt (r,env) rr in
+        let ee' = no_variant ((List.map (fun e -> e,false) collapsed) @ cps') in
+        all := ((r, env), true) :: ee' @ !all;
+        let rr'' = if (List.exists (fun (r',_) -> Rule.is_variant r r') rr') then rr' else (r,env)::rr' in
+        complete (i+1) (ee' @ ee, rr'')
   in complete 0 (ee,rr)
 ;;
 
-let standard v trs keep_oriented =
+let standard v trs prec keep_oriented =
   try
     let alph = Trs.get_alphabet trs in
     let env = Trs.get_main_environment trs in
     let ee = Trs.get_main_environment trs in
     let rs = Trs.get_rules trs in
-    if keep_oriented && not (is_terminating (alph,env) rs) then (
+    if keep_oriented && not (all_terminating (alph,env) prec rs) then (
       Format.printf "Termination using input orientation cannot be verified";
       raise Fail); 
     let rs_ko = List.map (fun r -> r,keep_oriented) rs in
-    Some (complete (alph,env) (rs_ko,[]))
+    all := rs_ko;
+    Some (complete (alph,env) prec (rs_ko,[]))
   with Fail -> None
 ;;
 
-let ordered v trs keep_oriented = None
+
+let oprint i eeo (ee,rr) =
+  Format.printf "Iteration %i\n%!EE open:\n" i;
+  print_all eeo;
+  Format.printf "EE closed:\n";
+  print_all ee;
+  Format.printf "RR:\n";
+  print_all rr;
+  Format.printf "\n%!"
+;;
+
+let orient ctxt prec keep_oriented (e',env) rr =
+  try orient ctxt prec keep_oriented (e',env) rr, true with Fail -> e', false
+;;
+
+let odeduce (alph,env) prec rls_new rr =
+  let check (rl, env) =
+    let trs = Trs.create alph env in
+    Trs.set_rules [flip rl,env] trs;
+    if Crpo.orient prec trs then [] else deduce (rl,env) rr
+  in
+  match rls_new with
+      [rl] -> deduce rl rr
+    | [rl1; rl2] -> check rl1 @ (check rl2)
+    | _ -> failwith "odeduce: unexpected rule set"
+;;
+
+let add_unless_variant (e,env) ee =
+  if (List.exists (fun (e',_) -> Rule.is_variant e e') ee) then ee
+  else (e,env) :: ee
+;;
+
+let ocomplete ctxt prec ee =
+  let rec ocomplete i ee_open (ee,rr) =
+    oprint i (List.map fst ee_open) (ee,rr);
+    match ee_open with
+    | [] -> (ee,rr)
+    | e :: ee_open ->
+      let ((e,env), keep_oriented), ee_open = take_smallest e ee_open in
+      Format.printf "CHOOSE %s\n" (to_string_rule e);
+      (* do not simplify if this is an input rule to be maintained *)
+      (* ordered? *)
+      let e' = if keep_oriented then Some e else simplify ctxt (e,env) rr in
+      match e' with
+      | None -> ocomplete (i+1) ee_open (ee,rr)
+      | Some e' ->
+        Format.printf "SIMPLIFIED %s to %s\n%!"
+          (to_string_rule e) (to_string_rule e');
+        let r, is_oriented = orient ctxt prec keep_oriented (e',env) rr in
+        Format.printf "ORIENT %s\n%!" (to_string_rule r);
+        let ded_new = if is_oriented then [r,env] else [r,env;flip r, env] in
+        let cps = List.map (fun e -> e,false) (odeduce ctxt prec ded_new rr) in
+        if cps <> [] then (Format.printf "DEDUCE\n%!"; print_all (List.map fst cps));
+        let cps' = List.filter (no_variant_in ctxt ee_open (ee@rr)) cps in
+        let collapsed,rr' =
+          if is_oriented then compose_collapse ctxt (r,env) rr
+          else [],rr
+        in
+        let eeo = no_variant ((List.map (fun e -> e,false) collapsed) @ cps') in
+        all := ((r, env), true) :: eeo @ !all;
+        let rr'' =
+          if not is_oriented then rr' else add_unless_variant (r,env) rr'
+        in
+        let ee' = if not is_oriented then add_unless_variant (r,env) ee else ee in
+        ocomplete (i+1) (eeo @ ee_open) (ee', rr'')
+  in ocomplete 0 ee ([],[])
+;;
+
+let ordered v trs prec keep_oriented =
+  try
+    let alph = Trs.get_alphabet trs in
+    let env = Trs.get_main_environment trs in
+    let ee = Trs.get_main_environment trs in
+    let rs = Trs.get_rules trs in
+    let rs_ko = List.map (fun r -> r,keep_oriented) rs in
+    all := rs_ko;
+    Some (ocomplete (alph,env) prec rs_ko)
+  with Fail -> None
+;;
