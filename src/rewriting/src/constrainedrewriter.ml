@@ -198,12 +198,8 @@ let simplify_constraints alf lst =
           if f <> eq_symbol alf then Right term
           else match args with
             (* do no longer require that a/b are values; ok?*)
-            | (Term.Var x) :: b :: [] -> (
-              Format.printf " map  %s  -> %s\n" (Term.to_string (Term.Var x)) (Term.to_string b);
-              Left (x, b))
-            | a :: (Term.Var x) :: [] -> 
-            Format.printf " map  %s  -> %s\n" (Term.to_string (Term.Var x)) (Term.to_string a);
-              Left (x, a)
+            | (Term.Var x) :: b :: [] -> Left (x, b)
+            | a :: (Term.Var x) :: [] -> Left (x, a)
             | _ :: _ :: [] -> Right term
             | _ -> failwith ("Unexpected equality: should have " ^
                              "exactly two arguments!")
@@ -877,8 +873,7 @@ let equivalent_cterms alph env s t phis =
         let phi = create_logical and_symbol phis alph env in
         let c = create_logical and_symbol cs alph env in
         let c_imp_phi = create_imply phi c alph env in
-        if Solver.valid [c_imp_phi] (solver ()) env then
-         (Format.printf "this was useful\n%!"; true) else false
+        Solver.valid [c_imp_phi] (solver ()) env
       with Not_equal -> false
     )
       
