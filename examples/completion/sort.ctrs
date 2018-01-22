@@ -1,0 +1,52 @@
+THEORY ints     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+SIGNATURE insert, sort, cons, nil, rev, app, tsort, flatten, leaf, node,!INTEGER ;
+
+RULES
+  app(nil, xs) -> xs ;
+  app(cons(x,xs),ys) -> cons(x,app(xs,ys));
+
+
+  insert(x,nil)      -> cons(x,nil)          ;
+  insert(x, cons(y,nil))     -> cons(x, cons(y,nil)) [x < y]                       ;
+  insert(x, cons(y, ys))     -> cons(y, insert(x,ys)) [x >= y]                       ;
+  sort(nil) -> nil;
+  sort(cons(x,xs)) -> insert(x,sort(xs));
+
+  flatten(leaf(x)) -> cons(x,nil);
+  flatten(node(x,y)) -> app(flatten(x), flatten(y));
+  node(x,y) -> node(y,x);
+
+  tsort(X) -> sort(flatten(X));
+
+
+NON-STANDARD IRREGULAR
+
+QUERY completion [tsort sort flatten insert rev app cons node leaf nil] any_orientation ordered
+
+END OF FILE
+
+  merge(xs,nil) -> xs ;
+  merge(nil,ys) -> ys;
+  merge(cons(x,xs), cons(y,ys)) -> cons(x, merge(xs, cons(y,ys))) [x < y];
+  merge(cons(x,xs), cons(y,ys)) -> cons(y, merge(cons(x,xs), ys)) [x > y];
+
+
+
+    add(zext_i1(a), b) -> select(a, add(b, #x01), b);
+ add(Xor(a, C1), C2) -> add(a, CL0)  [ (((C1 ^ C2) = CL0) /\ isSignBit(C1))] ;
+  
+
+    add_i1(X0, X1) -> add(X0, X1);
+    sub_nsw(X0, X1) -> sub(X0, X1);
+    sub_i1(X0, X1) -> sub(X0, X1);
+    sext_i1(X0) -> sext(X0);
+    zext_i1(X0) -> zext(X0);
+    shl_nuw(X0, X1) -> shl(X0, X1);
+    add_nuw(X0, X1) -> add(X0, X1);
+    add_nsw(X0, X1) -> add(X0, X1);
+    shl_nsw(X0, X1) -> shl(X0, X1);
+    sub_nuw(X0, X1) -> sub(X0, X1);
+    sdiv_i9(X0, X1) -> sdiv(X0, X1);
