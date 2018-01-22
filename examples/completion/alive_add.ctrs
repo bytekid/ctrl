@@ -1,0 +1,27 @@
+THEORY bitvectors8;
+LOGIC QF_UFBV;
+SOLVER external;
+SIGNATURE Xor, add_i1, lshr, sub_nuw, zext_i1, select, sub, shl_nsw, sub_nsw, add_nuw, add, shl_nuw, mul, sub_i1, add_nsw, sext, sdiv_i9, sext_i1, Or, trunc, And, sdiv, zext, shl, ashr,  !BITVECTOR;
+
+RULES
+
+
+    
+  add(sub(#x00, a), b) -> sub(b, a);
+  add(And(a, b), Xor(a, b)) -> Or(a, b);
+  add(And(a, b), Or(a, b)) -> add(a, b);    
+  add(x, y) -> Or(x, y)  [ ((computeKnownZeroBits(x) | computeKnownZeroBits(y)) = #xff)] ;
+  add(And(x, C2), C1) -> And(add(x, C1), C2)  [ (hasOneUse /\ (~(((C1 & neg(C1)) -i #x01)) = (~(((C1 & neg(C1)) -i #x01)) & C2)))] ;
+  add(select(x, #x00, sub(n, a)), a) -> select(x, a, n)  [ hasOneUse] ;
+  add(select(x, sub(n, a), #x00), a) -> select(x, n, a)  [ hasOneUse] ;
+  add(add(Xor(And(Z, C1), C1), #x01), RHS) -> sub(RHS, Or(Z, ~(C1)));
+  add(add(Xor(Or(Z, C2), C1), #x01), RHS) -> sub(RHS, And(Z, C1))  [ (C2 = ~(C1))] ;
+  add(Xor(Y, C2), C1) -> sub(CL0, Y)  [ (((C1 +i C2) = CL0) /\ (hasOneUse /\ (isPowerOf2((C2 +i #x01)) /\ ((C2 | computeKnownZeroBits(Y)) = #xff))))] ;
+  add(b, b) -> shl(b, #x01);
+
+NON-STANDARD IRREGULAR
+
+QUERY completion [ add shl sub select Xor Or And] keep_oriented standard
+
+END OF FILE
+   

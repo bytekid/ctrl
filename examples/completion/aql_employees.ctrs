@@ -1,0 +1,37 @@
+THEORY charsequences     ;
+LOGIC QF_LIA    ;
+SOLVER internal ;
+
+
+SIGNATURE  works_in, manager, department, age, secretary, first, last, name,
+ works_in, cumulative_age,  m,s,a,b,c, !INTEGER;
+
+RULES
+
+works_in(manager(x)) -> works_in(x) ;
+works_in(secretary(x)) -> department(x) ;
+first(a) -> "al";
+first(b) -> "bob";
+last(b) -> "builder";
+first(c) -> "carl" ;
+name(m)  -> "math";
+name(s) -> "cs";
+age(a) -> age(c) ;
+manager(a) -> b;
+manager(b) -> b;
+manager(c) -> c;
+works_in(a) -> m;
+works_in(b) -> m;
+works_in(c) -> s;
+secretary(s) -> c;
+secretary(m) -> b ;
+secretary(works_in(a)) -> manager(a);
+works_in(a) -> works_in(manager(a));
+age(a) -> 28;
+age(manager(a)) -> 54;
+cumulative_age(e) -> age(e) + age(manager(e))
+
+
+NON-STANDARD IRREGULAR
+
+QUERY completion [] any_orientation standard
