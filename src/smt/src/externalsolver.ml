@@ -136,7 +136,7 @@ let call_solver problem solver =
   let file = Filename.temp_file "ctrl" ".smt" in
   let out = Str.string_before file (String.length file - 4) ^ ".out" in
   write_file file problem;
-  let _ = Unix.system ("timeout 3 ./" ^ solver ^ " " ^ file ^ " > " ^ out) in
+  let _ = Unix.system ("./timeout 3 ./" ^ solver ^ " " ^ file ^ " > " ^ out) in
   let ret = read_file out in
   ignore (Unix.system ("rm " ^ file));
   if Sys.file_exists out then (* might not exist if error/timeout occurred *)
