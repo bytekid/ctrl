@@ -43,7 +43,9 @@ module SmtResultReader = struct
     let psort = P.lex (P.between (P.char '(') no_rparen (P.char ')')) in
     let num =
       P.string "Int" >> P.spaces >>
-      P.many1 P.digit >>= fun cs -> P.return (String.of_char_list cs)
+      ((P.many1 P.digit) <|>
+       (P.string "(- " >> P.many1 P.digit >>= fun n -> P.string ")" >> P.return ('-'::n) ))
+      >>= fun cs ->  P.return (String.of_char_list cs)
     in
     let boolval =
       P.string "Bool" >> P.spaces >>
@@ -336,7 +338,7 @@ let check_formulas terms get_model (solver, logic) renamings translations a e =
   let print term = print_as_smt term renamings translations e in
   let formulas = List.map print terms in
   let contents = print_file vars formulas logic get_model in
-  (*Format.printf "SMT checks %s\n%!" contents;*)
+  if Util.query_debugging () then Format.printf "SMT checks %s\n%!" contents;
   check_smt_file_and_parse contents solver e a
   with Not_found -> failwith "Not_found in check_formulas"
 ;;
