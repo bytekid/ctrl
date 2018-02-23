@@ -1,7 +1,7 @@
 INCLUDE ints ;
 
 DECLARE
-  !BITVECTOR : (BitVec _)                             ;
+  !MIXED : (BitVec _)                             ;
   !=          : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
   i<=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;
   i>=         : (BitVec _) * (BitVec _) => Bool (infix 70)    ;

@@ -235,7 +235,7 @@ let create_smt_file env params exprs tostr logic =
   (*"(set-logic " ^ logic ^ ")\n" ^*) (* skip logic for now *)
   (List.implode build_param " " params) ^ "\n" ^
   (List.implode build_formula "\n" exprs) ^
-  "(check-sat)\n"
+  "(check-sat)\n(get-model)\n"
 ;;
 
 (* turns the given combination into SMTLIB v.2.0 *)
