@@ -7,17 +7,17 @@ RULES
 
 
     
-  add(sub(#x00, a), b) -> sub(b, a);
+  add(sub(bv8"#x00", a), b) -> sub(b, a);
   add(And(a, b), Xor(a, b)) -> Or(a, b);
   add(And(a, b), Or(a, b)) -> add(a, b);    
-  add(x, y) -> Or(x, y)  [ ((computeKnownZeroBits(x) | computeKnownZeroBits(y)) = #xff)] ;
-  add(And(x, C2), C1) -> And(add(x, C1), C2)  [ (hasOneUse /\ (~(((C1 & neg(C1)) -i #x01)) = (~(((C1 & neg(C1)) -i #x01)) & C2)))] ;
-  add(select(x, #x00, sub(n, a)), a) -> select(x, a, n)  [ hasOneUse] ;
-  add(select(x, sub(n, a), #x00), a) -> select(x, n, a)  [ hasOneUse] ;
-  add(add(Xor(And(Z, C1), C1), #x01), RHS) -> sub(RHS, Or(Z, ~(C1)));
-  add(add(Xor(Or(Z, C2), C1), #x01), RHS) -> sub(RHS, And(Z, C1))  [ (C2 = ~(C1))] ;
-  add(Xor(Y, C2), C1) -> sub(CL0, Y)  [ (((C1 +i C2) = CL0) /\ (hasOneUse /\ (isPowerOf2((C2 +i #x01)) /\ ((C2 | computeKnownZeroBits(Y)) = #xff))))] ;
-  add(b, b) -> shl(b, #x01);
+  add(x, y) -> Or(x, y)  [ ((x |.8 y) = bv8"#xff")] ;
+  add(And(x, C2), C1) -> And(add(x, C1), C2)  [ (hasOneUse /\ (neg.8(((C1 &.8 neg.8(C1)) -.8 bv8"#x01")) = (neg.8(((C1 &.8 neg.8(C1)) -.8 bv8"#x01")) &.8 C2)))] ;
+  add(select(x, bv8"#x00", sub(n, a)), a) -> select(x, a, n)  [ hasOneUse] ;
+  add(select(x, sub(n, a), bv8"#x00"), a) -> select(x, n, a)  [ hasOneUse] ;
+  add(add(Xor(And(Z, C1), C1), bv8"#x01"), RHS) -> sub(RHS, Or(Z, neg.8(C1)));
+  add(add(Xor(Or(Z, C2), C1), bv8"#x01"), RHS) -> sub(RHS, And(Z, C1))  [ (C2 = neg.8(C1))] ;
+  add(Xor(Y, C2), C1) -> sub(CL0, Y)  [ (((C1 +.8 C2) = CL0) /\ (hasOneUse /\ (isPowerOf2.8((C2 +.8 bv8"#x01")) /\ ((C2 |.8 Y) = bv8"#xff"))))] ;
+  add(b, b) -> shl(b, bv8"#x01");
 
 NON-STANDARD IRREGULAR
 

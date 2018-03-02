@@ -62,4 +62,6 @@ SMT-RENAMINGS
 SMT-TRANSLATIONS
   !=.32(x, y)	-> (not (= x y));
   neg.32(x)	-> (bvneg x) ;
+  isPowerOf2.8(x) -> (and (= (bvand x (bvsub x #x00000001)) #x00000000) (not (= x #x00000000))) ;
+  isPowerOf2OrZero.8(x) -> (= (bvand x (bvsub x #x00000001)) #x00000000) ;
 

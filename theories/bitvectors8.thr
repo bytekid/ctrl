@@ -30,6 +30,9 @@ DECLARE
   >>s.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (r-infix 100);
   >>u.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (r-infix 100);
 
+  isPowerOf2.8		:  (BitVec 8) => Bool;
+  isPowerOf2OrZero.8		:  (BitVec 8) => Bool;
+
 WELLFOUNDED >s.8, >u.8 ;
 
 SMT-RENAMINGS
@@ -62,4 +65,6 @@ SMT-RENAMINGS
 SMT-TRANSLATIONS
   !=.8(x, y) -> (not (= x y));
   neg.8(x) -> (bvneg x) ;
+  isPowerOf2.8(x) -> (and (= (bvand x (bvsub x #x01)) #x00) (not (= x #x00))) ;
+  isPowerOf2OrZero.8(x) -> (= (bvand x (bvsub x #x01)) #x00) ;
 
