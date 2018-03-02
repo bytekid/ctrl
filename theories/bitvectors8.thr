@@ -1,0 +1,65 @@
+INCLUDE ints ;
+
+DECLARE
+  !MIXED!bv8"!"	: (BitVec 8) ;
+  =.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  !=.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  <s.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  <u.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  <=s.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  <=u.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  >s.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  >u.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  >=s.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+  >=u.8		: (BitVec 8) * (BitVec 8) => Bool (infix 70)    ;
+
+  ~.8		: (BitVec 8) => (BitVec 8);
+  &.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 150) ;
+  |.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 100) ;
+  ^.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 100) ;
+
+  neg.8		: (BitVec 8) => (BitVec 8);
+  +.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 100);
+  -.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 1000);
+  *.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 150);
+  /s.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 150);
+  /u.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 150);
+  %s.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 150);
+  %u.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (l-infix 150);
+  <<.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (r-infix 100);
+  >>s.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (r-infix 100);
+  >>u.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (r-infix 100);
+
+WELLFOUNDED >s.8, >u.8 ;
+
+SMT-RENAMINGS
+  <s.8 		-> bvslt;
+  <u.8 		-> bvult;
+  <=s.8   	-> bvsle;
+  <=u.8  	-> bvule;
+  >s.8 		-> bvsgt;
+  >u.8 		-> bvugt;
+  >=s.8   	-> bvsge;
+  >=u.8  	-> bvuge;
+
+  +.8 		-> bvadd;
+  -.8    	-> bvsub;
+  *.8 		-> bvmul;
+  /s.8		-> bvsdiv;
+  /u.8 		-> bvudiv;
+  %s.8 		-> bvsrem;
+  %u.8 		-> bvurem;
+
+  <<.8 		-> bvshl;
+  >>s.8		-> bvashr;
+  >>u.8  	-> bvlshr;
+
+  ~.8		-> bvnot;
+  &.8		-> bvand;
+  |.8		-> bvor;
+  ^.8		-> bvxor;
+
+SMT-TRANSLATIONS
+  !=.8(x, y) -> (not (= x y));
+  neg.8(x) -> (bvneg x) ;
+

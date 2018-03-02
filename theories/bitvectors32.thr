@@ -1,0 +1,65 @@
+INCLUDE ints ;
+
+DECLARE
+  !MIXED!bv32"!": (BitVec 32) ;
+  =.32		: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  !=.32		: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  <s.32		: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  <u.32		: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  <=s.32	: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  <=u.32	: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  >s.32		: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  >u.32		: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  >=s.32	: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+  >=u.32	: (BitVec 32) * (BitVec 32) => Bool (infix 70)    ;
+
+  ~.32		: (BitVec 32) => (BitVec 32);
+  &.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 150) ;
+  |.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 100) ;
+  ^.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 100) ;
+
+  neg.32	: (BitVec 32) => (BitVec 32);
+  +.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 100);
+  -.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 1000);
+  *.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 150);
+  /s.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 150);
+  /u.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 150);
+  %s.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 150);
+  %u.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (l-infix 150);
+  <<.32		: (BitVec 32) * (BitVec 32) => (BitVec 32) (r-infix 100);
+  >>s.32	: (BitVec 32) * (BitVec 32) => (BitVec 32) (r-infix 100);
+  >>u.32	: (BitVec 32) * (BitVec 32) => (BitVec 32) (r-infix 100);
+
+WELLFOUNDED >s.32, >u.32 ;
+
+SMT-RENAMINGS
+  <s.32 	-> bvslt;
+  <u.32 	-> bvult;
+  <=s.32   	-> bvsle;
+  <=u.32  	-> bvule;
+  >s.32 	-> bvsgt;
+  >u.32 	-> bvugt;
+  >=s.32   	-> bvsge;
+  >=u.32  	-> bvuge;
+
+  +.32 		-> bvadd;
+  -.32    	-> bvsub;
+  *.32 		-> bvmul;
+  /s.32		-> bvsdiv;
+  /u.32 	-> bvudiv;
+  %s.32 	-> bvsrem;
+  %u.32 	-> bvurem;
+
+  <<.32 	-> bvshl;
+  >>s.32	-> bvashr;
+  >>u.32  	-> bvlshr;
+
+  ~.32		-> bvnot;
+  &.32		-> bvand;
+  |.32		-> bvor;
+  ^.32		-> bvxor;
+
+SMT-TRANSLATIONS
+  !=.32(x, y)	-> (not (= x y));
+  neg.32(x)	-> (bvneg x) ;
+
