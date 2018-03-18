@@ -37,6 +37,23 @@ module SmtResultReader = struct
   let (>>) = P.(>>)
   let (<|>) = P.(<|>)
 
+  let bin2hex bs =
+    let hex n = char_of_int (if n < 10 then n + 48 else n + 87) in
+    let bin2hex =
+      let rec b2h k num bs =
+        if k > 3 then hex num :: b2h 0 0 bs
+        else match bs with
+            [] -> []
+          | 0 :: bs -> b2h (k + 1) (num * 2) bs
+          | 1 :: bs -> b2h (k + 1) (num * 2 + 1) bs
+          | _ -> failwith "bin2hex: unexpected value in bit list"
+      in b2h 0 0
+    in
+    let zeros = List.gen (fun _ -> 0) (4 - (List.length bs mod 4)) in
+    let bs = List.map (fun c -> int_of_char c - 48 ) bs in
+    bin2hex (zeros @ bs)
+  ;;
+
   let assign =
     let ident = P.many1 (P.noneof " \t\n\r(),:;[]{}") >>= fun i -> P.return i in
     let no_rparen = P.many (P.noneof ")") in
@@ -53,13 +70,17 @@ module SmtResultReader = struct
       P.return (String.of_char_list b)
     in
     let hexdec =
-      psort >> P.spaces >>
-      P.string "#x" >> P.many1 (P.oneof "0123456789abcdef") >>= fun n ->
+      P.string "x" >> P.many1 (P.oneof "0123456789abcdef") >>= fun n ->
       P.return ("#x" ^ (String.of_char_list n))
     in
+    let binary =
+      P.string "b" >> P.many1 (P.oneof "01") >>= fun n ->
+      P.return ("#x" ^ (String.of_char_list (bin2hex n)))
+    in
+    let bitvector = psort >> P.spaces >> P.char '#' >> (hexdec <|> binary) in
     P.lex (P.string "(define-fun" >> P.spaces >> ident >>= fun id ->
           P.spaces >> P.string "()" >>
-          P.spaces >> (num <|> hexdec <|> boolval) >>= fun v ->
+          P.spaces >> (num <|> bitvector <|> boolval) >>= fun v ->
           P.char ')' >> P.return (String.of_char_list id, v))
   ;;
 
