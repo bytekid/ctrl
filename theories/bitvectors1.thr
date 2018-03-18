@@ -1,0 +1,67 @@
+INCLUDE ints ;
+
+DECLARE
+  !MIXED!bv1"!": (BitVec 1) ;
+  =.1		: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  !=.1		: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  <s.1		: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  <u.1		: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  <=s.1	: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  <=u.1	: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  >s.1		: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  >u.1		: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  >=s.1	: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+  >=u.1	: (BitVec 1) * (BitVec 1) => Bool (infix 70)    ;
+
+  ~.1		: (BitVec 1) => (BitVec 1);
+  &.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 150) ;
+  |.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 100) ;
+  ^.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 100) ;
+
+  neg.1	: (BitVec 1) => (BitVec 1);
+  +.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 100);
+  -.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 1000);
+  *.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 150);
+  /s.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 150);
+  /u.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 150);
+  %s.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 150);
+  %u.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (l-infix 150);
+  <<.1		: (BitVec 1) * (BitVec 1) => (BitVec 1) (r-infix 100);
+  >>s.1	: (BitVec 1) * (BitVec 1) => (BitVec 1) (r-infix 100);
+  >>u.1	: (BitVec 1) * (BitVec 1) => (BitVec 1) (r-infix 100);
+
+WELLFOUNDED >s.1, >u.1 ;
+
+SMT-RENAMINGS
+  <s.1 	-> bvslt;
+  <u.1 	-> bvult;
+  <=s.1   	-> bvsle;
+  <=u.1  	-> bvule;
+  >s.1 	-> bvsgt;
+  >u.1 	-> bvugt;
+  >=s.1   	-> bvsge;
+  >=u.1  	-> bvuge;
+
+  +.1 		-> bvadd;
+  -.1    	-> bvsub;
+  *.1 		-> bvmul;
+  /s.1		-> bvsdiv;
+  /u.1 	-> bvudiv;
+  %s.1 	-> bvsrem;
+  %u.1 	-> bvurem;
+
+  <<.1 	-> bvshl;
+  >>s.1	-> bvashr;
+  >>u.1  	-> bvlshr;
+
+  ~.1		-> bvnot;
+  &.1		-> bvand;
+  |.1		-> bvor;
+  ^.1		-> bvxor;
+
+SMT-TRANSLATIONS
+  !=.1(x, y)	-> (not (= x y));
+  neg.1(x)	-> (bvneg x) ;
+  isPowerOf2.1(x) -> (and (= (bvand x (bvsub x #x00000001)) #x00000000) (not (= x #x00000000))) ;
+  isPowerOf2OrZero.1(x) -> (= (bvand x (bvsub x #x00000001)) #x00000000) ;
+
