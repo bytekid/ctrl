@@ -40,12 +40,7 @@ type substitution = S.t;;
 type term = Term.t = Var of Var.t | Fun of Fun.t * term list |
             InstanceFun of Fun.t * term list * Sortdeclaration.t |
             Forall of Var.t * term | Exists of Var.t * term;;
- 
-(*** EXCEPTIONS **************************************************************)
-exception Not_semi_unifiable = Not_semi_unifiable;;
-exception Not_unifiable = Not_unifiable;;
-exception Not_matchable = Not_matchable;;
- 
+
 (*** FUNCTIONS ***************************************************************)
  
 (* Renaming *)

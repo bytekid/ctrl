@@ -137,6 +137,7 @@ module Arg : sig
    | Tuple of spec list
    | Symbol of string list * (string -> unit)
    | Rest of (string -> unit)
+   | Expand of (string -> string array)
   type usage_msg = string
   
   exception Bad of string
