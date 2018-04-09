@@ -757,8 +757,25 @@ let rec parse_smt_term_sub sofar =
   )
 
 let parse_smt_term _ =
-  Parser.lex (Parser.char '(') >>= fun _ ->
+  Parser.many (Parser.noneof "()") >>= fun x ->
   parse_smt_term_sub "("
+;;
+
+let parse_smt_term_with_vars vars =
+  let rec find_index i y = function
+    | [] -> raise Not_found
+    | hd :: tl -> if hd = y then i else find_index (i+1) y tl
+  in
+  let find_var x = find_index 0 x vars in
+  let chunk =
+    ((Parser.many1 (Parser.oneof "() ")) >>= fun x ->
+     return (Left (String.of_char_list x))) <|>
+    (Parser.many1 (Parser.noneof "(); ") >>= fun x ->
+      let x = String.of_char_list x in
+      return (try Right (find_var x) with Not_found -> Left x)
+    )
+  in
+  Parser.many chunk
 ;;
 
 let register_translation original translation =
@@ -799,8 +816,9 @@ let rec parse_translations _ =
     (Parser.lex (Parser.char ',')) >>= fun vars ->
   Parser.lex (Parser.char ')') >>= fun _ ->
   Parser.lex (Parser.string "->") >>= fun _ ->
-  parse_smt_term () >>= fun translation ->
-  let tr = split_smt vars 0 "" translation in
+  (* parse_smt_term () >>= fun translation ->
+  let tr = split_smt vars 0 "" translation in (* very slow! *) *)
+  parse_smt_term_with_vars vars >>= fun tr ->
   register_translation original tr ;
   parse_rest_of_list [',';';'] parse_translations ()
 ;;
