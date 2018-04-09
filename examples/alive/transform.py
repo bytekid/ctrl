@@ -30,26 +30,36 @@ class Expr:
   def visit(self, vvar, vfun, vbinop, rec):
     return self
 
-
-class Skip(Expr):
-  def __init__(self):
-    pass
-
-  def toString(self):
-    return "skip"
+  def cast(self,bits):
+    f = FunApp(str(self.bits) + "_to_" + str(bits),False)
+    f.setArgs([self])
+    return f
 
 
 class Constant(Expr):
+  def __init__(self, c, b):
+    self.val = c
+    self.bits = b
+  
   def __init__(self, c):
     self.val = c
+    self.bits = 32
 
   def toString(self):
     return self.val
 
+  def cast(self,bits):
+    return Constant(self.val,bits)
+
 
 class Num(Expr):
+  def __init__(self, c, b):
+    self.val = c
+    self.bits = b
+  
   def __init__(self, c):
     self.val = c
+    self.bits = 32
 
   def padTo(x,n):
     if len(x) >= 4:
@@ -58,21 +68,33 @@ class Num(Expr):
       return padTo("0" + x, n)
 
   def toString(self):
-    h = tohex(int(self.val),32)[2:]
-    while len(h) < 8: # 32 bit for now
+    h = tohex(int(self.val), self.bits)[2:]
+    l = self.bits / 4
+    while len(h) < l:
       h = "0" + h
-    return "#x" + h
+    return "bv"+str(self.bits)+"\"#x" + h + "\""
+
+  def cast(self,bits):
+    return Num(self.val,bits)
 
 
 class Ident(Expr):
+  def __init__(self, c, b):
+    self.val = c
+    self.bits = b
+  
   def __init__(self, c):
     self.val = c
+    self.bits = 32
 
   def toString(self):
     return self.val
 
   def visit(self, vvar, vfun, vbinop, rec):
     return vvar(self)
+
+  def cast(self,bits):
+    return Ident(self.val,bits)
 
 
 class Unop(Expr):
@@ -83,9 +105,10 @@ class Unop(Expr):
     rep_op = self.replace_name.get(op)
     self.op = rep_op if rep_op else op
     self.val = v
+    self.bits = v.bits
 
   def toString(self):
-    return self.op + "(" + self.val.toString() + ")"
+    return self.op + "." + str(self.bits) + "(" + self.val.toString() + ")"
 
   def visit(self, vvar, vfun, vbinop, rec):
     return Unop(self.op, self.val.visit(vvar, vfun, vbinop, rec))
@@ -93,20 +116,22 @@ class Unop(Expr):
 
 class Binop(Expr):
   replace_name = { "&&" : "/\\", "||" : "\\/", "==" : "=", \
-                   "+" : "+i", "-" : "-i", "*" : "*i",
                    "<=" : "i<=", ">=" : "i>=", "<" : "i<", ">" : "i>"}
+  boolOps = ["/\\", "\\/"]
 
   def __init__(self, op, a, b):
     assert isinstance(a, Expr)
     assert(isinstance(b, Expr))
     self.op = op
-    self.val1 = a
-    self.val2 = b
+    self.val1 = a if a.bits >= b.bits else a.cast(b.bits)
+    self.val2 = b if b.bits >= a.bits else b.cast(a.bits)
+    self.bits = max(a.bits, b.bits)
 
   def toString(self):
     rep = self.replace_name.get(self.op)
     op = rep if rep else self.op
-    return "(" + self.val1.toString() + " " + op + " " + \
+    op = op if op in self.boolOps else op + "." + str(self.bits)
+    return "(" + self.val1.toString() + " " + op + " " +\
 		       self.val2.toString() + ")"
 
   def visit(self, vvar, vfun, vbinop, rec):
@@ -121,6 +146,8 @@ class Binop(Expr):
 class FunApp(Expr):
   replace_name = { "and" : "And",  "xor" : "Xor", "not" : "Not", "or" : "Or", \
                    "true" : "True", "false" : "False", "abs" : "Abs" }
+  countFuns = ["countTrailingZeros", "countLeadingZeros", "width"]
+  predicates = ["isSignBit"]
   # hasOneUse tends to have non-logical terms as arguments
   # since we can not faithfully encode it anyway, suppress for now
   suppress_args = { "hasOneUse" : True }
@@ -130,6 +157,7 @@ class FunApp(Expr):
     self.name =  rep if rep else name
     self.args = []
     self.is_term = is_term
+    self.bits = 8 if name in self.countFuns else 32
 
   def setArgs(self, args):
     self.args = args
@@ -151,7 +179,10 @@ class FunApp(Expr):
     args = "" if len(self.args) == 0 or suppress else "(" + \
            reduce(lambda s, e: s + ("" if len(s) == 0 else ", ") + \
                                e.toString(), self.args, "") + ")"
-    return self.name + args
+    name = self.name
+    if name in self.countFuns or name in self.predicates:
+      name = name + "." + str(self.args[0].bits)
+    return name + args
   
   def visit(self, vvar, vfun, vbinop, rec):
     if rec(self):
@@ -194,12 +225,11 @@ def symbols(rules):
   return list(set(fs))
 
 def printLCTRS(rules):
-  print("THEORY bitvectors;")
+  print("THEORY bitvectors-cast;")
   print("LOGIC QF_UFBV;")
   print("SOLVER external;")
   syms = symbols(rules)
-  print("SIGNATURE " + reduce(lambda s, e: s + e + ", ", syms, "") + \
-        " !BITVECTOR;")
+  print("SIGNATURE " + reduce(lambda s, e: s + e + ", ", syms, ""))
   print("\nRULES")
   for r in rules:
     print("  " + r.toString() + "; /*" + r.getName() + "*/")
