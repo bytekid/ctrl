@@ -1,0 +1,16 @@
+INCLUDE bitvectors1, bitvectors8, bitvectors32 ;
+
+DECLARE
+
+  1_to_8   : (BitVec 1) => (BitVec 8) ;
+  8_to_32  : (BitVec 8) => (BitVec 32) ;
+  32_to_8  : (BitVec 32) => (BitVec 8) ;
+  nth_of_8 : Int * (BitVec 8) => (BitVec 1) ;
+
+SMT-TRANSLATIONS
+
+  1_to_8(x) -> ((_ zero_extend 7) x) ;
+  8_to_32(x) -> ((_ zero_extend 24) x) ;
+  32_to_8(x) -> ((_ extract 7 0) x);
+  nth_of_8(n, x) -> ((_ extract n n) x);
+  
