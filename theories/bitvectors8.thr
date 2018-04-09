@@ -32,6 +32,8 @@ DECLARE
 
   isPowerOf2.8		:  (BitVec 8) => Bool;
   isPowerOf2OrZero.8		:  (BitVec 8) => Bool;
+  countLeadingZeros.8		:  (BitVec 8) => (BitVec 8);
+  countTrailingZeros.8		:  (BitVec 8) => (BitVec 8);
 
 WELLFOUNDED >s.8, >u.8 ;
 
@@ -67,4 +69,5 @@ SMT-TRANSLATIONS
   neg.8(x) -> (bvneg x) ;
   isPowerOf2.8(x) -> (and (= (bvand x (bvsub x #x01)) #x00) (not (= x #x00))) ;
   isPowerOf2OrZero.8(x) -> (= (bvand x (bvsub x #x01)) #x00) ;
-
+  isSignBit.8(x) -> (= ((_ extract 7 7) x) #b1) ;
+  countLeadingZeros.8(x) -> (ite (bvult x #x01) #x08 (ite (bvult x #x02) #x07 (ite (bvult x #x04) #x06 (ite (bvult x #x08) #x05 (ite (bvult x #x10) #x04 (ite (bvult x #x20) #x03 (ite (bvult x #x40) #x02 (ite (bvult x #x80) #x01 #x00 ) ) ) ) ) ) ) );

@@ -30,6 +30,11 @@ DECLARE
   >>s.32	: (BitVec 32) * (BitVec 32) => (BitVec 32) (r-infix 100);
   >>u.32	: (BitVec 32) * (BitVec 32) => (BitVec 32) (r-infix 100);
 
+  isPowerOf2.32		    :  (BitVec 32) => Bool;
+  isPowerOf2OrZero.32	:  (BitVec 32) => Bool;
+  isSignBit.32	      :  (BitVec 32) => Bool;
+  countLeadingZeros.32:  (BitVec 32) => (BitVec 32);
+
 WELLFOUNDED >s.32, >u.32 ;
 
 SMT-RENAMINGS
@@ -64,4 +69,44 @@ SMT-TRANSLATIONS
   neg.32(x)	-> (bvneg x) ;
   isPowerOf2.32(x) -> (and (= (bvand x (bvsub x #x00000001)) #x00000000) (not (= x #x00000000))) ;
   isPowerOf2OrZero.32(x) -> (= (bvand x (bvsub x #x00000001)) #x00000000) ;
+  isSignBit.32(x) -> (= ((_ extract 31 31) x) #b1) ;
+  countLeadingZeros.32(x) ->
+   (ite (= x #x00000000) #x00000020
+   (ite (bvult x #x00000002) #x0000001f
+   (ite (bvult x #x00000004) #x0000001e
+   (ite (bvult x #x00000008) #x0000001d
+   (ite (bvult x #x00000010) #x0000001c
+   (ite (bvult x #x00000020) #x0000001b
+   (ite (bvult x #x00000040) #x0000001a
+   (ite (bvult x #x00000080) #x00000019
+   (ite (bvult x #x00000100) #x00000018
+   (ite (bvult x #x00000200) #x00000017
+   (ite (bvult x #x00000400) #x00000016
+   (ite (bvult x #x00000800) #x00000015
+   (ite (bvult x #x00001000) #x00000014
+   (ite (bvult x #x00002000) #x00000013
+   (ite (bvult x #x00004000) #x00000012
+   (ite (bvult x #x00008000) #x00000011
+   (ite (bvult x #x00010000) #x00000010
+   (ite (bvult x #x00020000) #x0000000f
+   (ite (bvult x #x00040000) #x0000000e
+   (ite (bvult x #x00080000) #x0000000d
+   (ite (bvult x #x00100000) #x0000000c
+   (ite (bvult x #x00200000) #x0000000b
+   (ite (bvult x #x00400000) #x0000000a
+   (ite (bvult x #x00800000) #x00000009
+   (ite (bvult x #x01000000) #x00000008
+   (ite (bvult x #x02000000) #x00000007
+   (ite (bvult x #x04000000) #x00000006
+   (ite (bvult x #x08000000) #x00000005
+   (ite (bvult x #x10000000) #x00000004
+   (ite (bvult x #x20000000) #x00000003
+   (ite (bvult x #x40000000) #x00000002
+   (ite (bvult x #x80000000) #x00000001
+     #x00000000
+   ) ) ) ) ) ) ) )
+   ) ) ) ) ) ) ) )
+   ) ) ) ) ) ) ) )
+   ) ) ) ) ) ) ) )
+  ;
 
