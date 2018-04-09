@@ -1,7 +1,7 @@
 Welcome to CTRL.
 
 Before compiling, check if you have at least
- - ocaml 3.12
+ - ocaml 4.05
  - camlidl 1.05
 
 The following things may already be available on your machine:
@@ -30,3 +30,7 @@ You can contact the author at Cynthia.Kop@uibk.ac.at
 The supplied smt-solver is Z3, and can be downloaded (including source) at http://z3.codeplex.com/
 It is also called by the script external, which may be modified accordingly.
 
+Note:
+In case you have an earlier Ocaml version, it might help to drop the Expand
+constructor in the type Arg.spec (currently, lines 140 in util.mli and 46 of
+argx.ml in the src/util/src directory).
