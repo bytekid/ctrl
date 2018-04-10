@@ -30,10 +30,23 @@ DECLARE
   >>s.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (r-infix 100);
   >>u.8		: (BitVec 8) * (BitVec 8) => (BitVec 8) (r-infix 100);
 
-  isPowerOf2.8		:  (BitVec 8) => Bool;
-  isPowerOf2OrZero.8		:  (BitVec 8) => Bool;
-  countLeadingZeros.8		:  (BitVec 8) => (BitVec 8);
-  countTrailingZeros.8		:  (BitVec 8) => (BitVec 8);
+  isPowerOf2.8	    	:  (BitVec 8) => Bool;
+  isPowerOf2OrZero.8	:  (BitVec 8) => Bool;
+  MaskedValueIsZero.8	:  (BitVec 8) * (BitVec 8) => Bool;
+  WillNotOverflowSignedAdd.8	 :  (BitVec 8) * (BitVec 8) => Bool;
+  WillNotOverflowUnsignedAdd.8 :  (BitVec 8) * (BitVec 8) => Bool;
+  WillNotOverflowSignedSub.8	 :  (BitVec 8) * (BitVec 8) => Bool;
+  WillNotOverflowUnsignedSub.8 :  (BitVec 8) * (BitVec 8) => Bool;
+
+  countLeadingZeros.8	  :  (BitVec 8) => (BitVec 8);
+  countTrailingZeros.8  :  (BitVec 8) => (BitVec 8);
+  width.8		            :  (BitVec 8) => (BitVec 8);
+  log2.8                :  (BitVec 8) => (BitVec 8);
+  computeKnownZeroBits.8:  (BitVec 8) => (BitVec 8);
+  trunc.8               :  (BitVec 8) => (BitVec 8);
+  sext.8		            :  (BitVec 8) => (BitVec 8);
+  zext.8                :  (BitVec 8) => (BitVec 8);
+  abs.32                :  (BitVec 32) => (BitVec 32);
 
 WELLFOUNDED >s.8, >u.8 ;
 
@@ -66,8 +79,40 @@ SMT-RENAMINGS
 
 SMT-TRANSLATIONS
   !=.8(x, y) -> (not (= x y));
+  =.8(x, y) -> (= x y);
   neg.8(x) -> (bvneg x) ;
   isPowerOf2.8(x) -> (and (= (bvand x (bvsub x #x01)) #x00) (not (= x #x00))) ;
   isPowerOf2OrZero.8(x) -> (= (bvand x (bvsub x #x01)) #x00) ;
   isSignBit.8(x) -> (= ((_ extract 7 7) x) #b1) ;
   countLeadingZeros.8(x) -> (ite (bvult x #x01) #x08 (ite (bvult x #x02) #x07 (ite (bvult x #x04) #x06 (ite (bvult x #x08) #x05 (ite (bvult x #x10) #x04 (ite (bvult x #x20) #x03 (ite (bvult x #x40) #x02 (ite (bvult x #x80) #x01 #x00 ) ) ) ) ) ) ) );
+  countTrailingZeros.8(x) -> (ite (= ((_ extract 0 0) x) #b1) #x00
+    (ite (= ((_ extract 1 1) x) #b1) #x01
+    (ite (= ((_ extract 2 2) x) #b1) #x02
+    (ite (= ((_ extract 3 3) x) #b1) #x03
+    (ite (= ((_ extract 4 4) x) #b1) #x04
+    (ite (= ((_ extract 5 5) x) #b1) #x05
+    (ite (= ((_ extract 6 6) x) #b1) #x06
+    (ite (= ((_ extract 7 7) x) #b1) #x07 #x08)
+    )))))));
+  width.8(x) -> #x08 ;
+  log2.8(x) -> (ite (= ((_ extract 7 7) x) #b1) #x07
+    (ite (= ((_ extract 6 6) x) #b1) #x06
+    (ite (= ((_ extract 5 5) x) #b1) #x05
+    (ite (= ((_ extract 4 4) x) #b1) #x04
+    (ite (= ((_ extract 3 3) x) #b1) #x03
+    (ite (= ((_ extract 2 2) x) #b1) #x02
+    (ite (= ((_ extract 1 1) x) #b1) #x01 #x00)))))));
+  MaskedValueIsZero.8(x, y) -> ((bvand x y) #x00);
+  computeKnownZeroBits.8(x) -> (bvor x #x00);
+  trunc.8(x) -> (bvor x #x00);
+  sext.8(x) -> (bvor x #x00);
+  zext.8(x) -> (bvor x #x00);
+  WillNotOverflowUnsignedAdd.8(x,y) ->
+    (= (bvadd ((_ zero_extend 1) x) ((_ zero_extend 1) y)) ((_ zero_extend 1) (bvadd x y)));
+  WillNotOverflowSignedAdd.8(x,y) ->
+    (= (bvadd ((_ sign_extend 1) x) ((_ sign_extend 1) y)) ((_ sign_extend 1) (bvadd x y)));
+  WillNotOverflowUnsignedSub.8(x,y) ->
+    (= (bvsub ((_ zero_extend 1) x) ((_ zero_extend 1) y)) ((_ zero_extend 1) (bvsub x y)));
+  WillNotOverflowSignedSub.8(x,y) ->
+    (= (bvsub ((_ sign_extend 1) x) ((_ sign_extend 1) y)) ((_ sign_extend 1) (bvsub x y)));
+  abs.8(x) -> (ite (bvuge x #x00) x (bvnot x));

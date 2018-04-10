@@ -30,10 +30,24 @@ DECLARE
   >>s.32	: (BitVec 32) * (BitVec 32) => (BitVec 32) (r-infix 100);
   >>u.32	: (BitVec 32) * (BitVec 32) => (BitVec 32) (r-infix 100);
 
-  isPowerOf2.32		    :  (BitVec 32) => Bool;
-  isPowerOf2OrZero.32	:  (BitVec 32) => Bool;
-  isSignBit.32	      :  (BitVec 32) => Bool;
-  countLeadingZeros.32:  (BitVec 32) => (BitVec 32);
+  isPowerOf2.32		        :  (BitVec 32) => Bool;
+  isPowerOf2OrZero.32	    :  (BitVec 32) => Bool;
+  isSignBit.32	          :  (BitVec 32) => Bool;
+  MaskedValueIsZero.32    :  (BitVec 32) * (BitVec 32) => Bool;
+  WillNotOverflowSignedAdd.32	 :  (BitVec 32) * (BitVec 32) => Bool;
+  WillNotOverflowUnsignedAdd.32 :  (BitVec 32) * (BitVec 32) => Bool;
+  WillNotOverflowSignedSub.32	 :  (BitVec 32) * (BitVec 32) => Bool;
+  WillNotOverflowUnsignedSub.32 :  (BitVec 32) * (BitVec 32) => Bool;
+  
+  countLeadingZeros.32    :  (BitVec 32) => (BitVec 32);
+  countTrailingZeros.32   :  (BitVec 32) => (BitVec 32);
+  width.32                :  (BitVec 32) => (BitVec 32);
+  log2.32                 :  (BitVec 32) => (BitVec 32);
+  computeKnownZeroBits.32 :  (BitVec 32) => (BitVec 32);
+  sext.32                 :  (BitVec 32) => (BitVec 32);
+  zext.32                 :  (BitVec 32) => (BitVec 32);
+  trunc.32                :  (BitVec 32) => (BitVec 32);
+  abs.32                  :  (BitVec 32) => (BitVec 32);
 
 WELLFOUNDED >s.32, >u.32 ;
 
@@ -66,6 +80,7 @@ SMT-RENAMINGS
 
 SMT-TRANSLATIONS
   !=.32(x, y)	-> (not (= x y));
+  =.32(x, y)	-> (= x y);
   neg.32(x)	-> (bvneg x) ;
   isPowerOf2.32(x) -> (and (= (bvand x (bvsub x #x00000001)) #x00000000) (not (= x #x00000000))) ;
   isPowerOf2OrZero.32(x) -> (= (bvand x (bvsub x #x00000001)) #x00000000) ;
@@ -102,11 +117,87 @@ SMT-TRANSLATIONS
    (ite (bvult x #x10000000) #x00000004
    (ite (bvult x #x20000000) #x00000003
    (ite (bvult x #x40000000) #x00000002
-   (ite (bvult x #x80000000) #x00000001
-     #x00000000
-   ) ) ) ) ) ) ) )
-   ) ) ) ) ) ) ) )
-   ) ) ) ) ) ) ) )
-   ) ) ) ) ) ) ) )
-  ;
-
+   (ite (bvult x #x80000000) #x00000001 #x00000000
+   ))))))))))))))))))))))))))))))));
+  countTrailingZeros.32(x) ->
+    (ite (= ((_ extract 0 0) x) #b1) #x00000000
+    (ite (= ((_ extract 1 1) x) #b1) #x00000001
+    (ite (= ((_ extract 2 2) x) #b1) #x00000002
+    (ite (= ((_ extract 3 3) x) #b1) #x00000003
+    (ite (= ((_ extract 4 4) x) #b1) #x00000004
+    (ite (= ((_ extract 5 5) x) #b1) #x00000005
+    (ite (= ((_ extract 6 6) x) #b1) #x00000006
+    (ite (= ((_ extract 7 7) x) #b1) #x00000007
+    (ite (= ((_ extract 8 8) x) #b1) #x00000008
+    (ite (= ((_ extract 9 9) x) #b1) #x00000009
+    (ite (= ((_ extract 10 10) x) #b1) #x0000000a
+    (ite (= ((_ extract 11 11) x) #b1) #x0000000b
+    (ite (= ((_ extract 12 12) x) #b1) #x0000000c
+    (ite (= ((_ extract 13 13) x) #b1) #x0000000d
+    (ite (= ((_ extract 14 14) x) #b1) #x0000000e
+    (ite (= ((_ extract 15 15) x) #b1) #x0000000f
+    (ite (= ((_ extract 16 16) x) #b1) #x00000010
+    (ite (= ((_ extract 17 17) x) #b1) #x00000011
+    (ite (= ((_ extract 18 18) x) #b1) #x00000012
+    (ite (= ((_ extract 19 19) x) #b1) #x00000013
+    (ite (= ((_ extract 20 20) x) #b1) #x00000014
+    (ite (= ((_ extract 21 21) x) #b1) #x00000015
+    (ite (= ((_ extract 22 22) x) #b1) #x00000016
+    (ite (= ((_ extract 23 23) x) #b1) #x00000017
+    (ite (= ((_ extract 24 24) x) #b1) #x00000018
+    (ite (= ((_ extract 25 25) x) #b1) #x00000019
+    (ite (= ((_ extract 26 26) x) #b1) #x0000001a
+    (ite (= ((_ extract 27 27) x) #b1) #x0000001b
+    (ite (= ((_ extract 28 28) x) #b1) #x0000001c
+    (ite (= ((_ extract 29 29) x) #b1) #x0000001d
+    (ite (= ((_ extract 30 30) x) #b1) #x0000001e
+    (ite (= ((_ extract 31 31) x) #b1) #x0000001f #x00000020)
+    )))))))))))))))))))))))))))))));
+  width.32(x) -> #x00000020 ;
+  log2.32(x) ->
+    (ite (= ((_ extract 31 31) x) #b1) #x0000001f
+    (ite (= ((_ extract 30 30) x) #b1) #x0000001e
+    (ite (= ((_ extract 29 29) x) #b1) #x0000001d
+    (ite (= ((_ extract 28 28) x) #b1) #x0000001c
+    (ite (= ((_ extract 27 27) x) #b1) #x0000001b
+    (ite (= ((_ extract 26 26) x) #b1) #x0000001a
+    (ite (= ((_ extract 25 25) x) #b1) #x00000019
+    (ite (= ((_ extract 24 24) x) #b1) #x00000018
+    (ite (= ((_ extract 23 23) x) #b1) #x00000017
+    (ite (= ((_ extract 22 22) x) #b1) #x00000016
+    (ite (= ((_ extract 21 21) x) #b1) #x00000015
+    (ite (= ((_ extract 20 20) x) #b1) #x00000014
+    (ite (= ((_ extract 19 19) x) #b1) #x00000013
+    (ite (= ((_ extract 18 18) x) #b1) #x00000012
+    (ite (= ((_ extract 17 17) x) #b1) #x00000011
+    (ite (= ((_ extract 16 16) x) #b1) #x00000010
+    (ite (= ((_ extract 15 15) x) #b1) #x0000000f
+    (ite (= ((_ extract 14 14) x) #b1) #x0000000e
+    (ite (= ((_ extract 13 13) x) #b1) #x0000000d
+    (ite (= ((_ extract 12 12) x) #b1) #x0000000c
+    (ite (= ((_ extract 11 11) x) #b1) #x0000000b
+    (ite (= ((_ extract 10 10) x) #b1) #x0000000a
+    (ite (= ((_ extract 9 9) x) #b1) #x00000009
+    (ite (= ((_ extract 8 8) x) #b1) #x00000008
+    (ite (= ((_ extract 7 7) x) #b1) #x00000007
+    (ite (= ((_ extract 6 6) x) #b1) #x00000006
+    (ite (= ((_ extract 5 5) x) #b1) #x00000005
+    (ite (= ((_ extract 4 4) x) #b1) #x00000004
+    (ite (= ((_ extract 3 3) x) #b1) #x00000003
+    (ite (= ((_ extract 2 2) x) #b1) #x00000002
+    (ite (= ((_ extract 1 1) x) #b1) #x00000001 #x00000000)
+    ))))))))))))))))))))))))))))));
+  MaskedValueIsZero.32(x, y) -> (= (bvand x y) #x00000000);
+  computeKnownZeroBits.32(x) -> (bvor x #x00000000);
+  trunc.32(x) -> (bvor x #x00000000);
+  sext.32(x) -> (bvor x #x00000000);
+  zext.32(x) -> (bvor x #x00000000);
+  WillNotOverflowUnsignedAdd.32(x,y) ->
+    (= (bvadd ((_ zero_extend 1) x) ((_ zero_extend 1) y)) ((_ zero_extend 1) (bvadd x y)));
+  WillNotOverflowSignedAdd.32(x,y) ->
+    (= (bvadd ((_ sign_extend 1) x) ((_ sign_extend 1) y)) ((_ sign_extend 1) (bvadd x y)));
+  WillNotOverflowUnsignedSub.32(x,y) ->
+    (= (bvsub ((_ zero_extend 1) x) ((_ zero_extend 1) y)) ((_ zero_extend 1) (bvsub x y)));
+  WillNotOverflowSignedSub.32(x,y) ->
+    (= (bvsub ((_ sign_extend 1) x) ((_ sign_extend 1) y)) ((_ sign_extend 1) (bvsub x y)));
+  abs.32(x) -> (ite (bvuge x #x00000000) x (bvnot x));

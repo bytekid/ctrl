@@ -8,6 +8,7 @@ from pyparsing import Word, alphas, ParseException, Literal, CaselessLiteral \
 # globals
 funapp_modifiers = set()
 logical_terms = {}
+bitwidth = 32
 
 def id(x):
   return x
@@ -42,8 +43,9 @@ class Constant(Expr):
     self.bits = b
   
   def __init__(self, c):
+    global bitwidth
     self.val = c
-    self.bits = 32
+    self.bits = bitwidth
 
   def toString(self):
     return self.val
@@ -58,8 +60,9 @@ class Num(Expr):
     self.bits = b
   
   def __init__(self, c):
+    global bitwidth
     self.val = c
-    self.bits = 32
+    self.bits = bitwidth
 
   def padTo(x,n):
     if len(x) >= 4:
@@ -84,8 +87,9 @@ class Ident(Expr):
     self.bits = b
   
   def __init__(self, c):
+    global bitwidth
     self.val = c
-    self.bits = 32
+    self.bits = bitwidth
 
   def toString(self):
     return self.val
@@ -99,6 +103,7 @@ class Ident(Expr):
 
 class Unop(Expr):
   replace_name = { "-" : "neg", "!" : "not" }
+  boolOps = ["not"]
 
   def __init__(self, op, v):
     assert(isinstance(v, Expr))
@@ -108,7 +113,8 @@ class Unop(Expr):
     self.bits = v.bits
 
   def toString(self):
-    return self.op + "." + str(self.bits) + "(" + self.val.toString() + ")"
+    op = self.op if self.op in self.boolOps else self.op + "." + str(self.bits)
+    return op + "(" + self.val.toString() + ")"
 
   def visit(self, vvar, vfun, vbinop, rec):
     return Unop(self.op, self.val.visit(vvar, vfun, vbinop, rec))
@@ -145,19 +151,25 @@ class Binop(Expr):
 
 class FunApp(Expr):
   replace_name = { "and" : "And",  "xor" : "Xor", "not" : "Not", "or" : "Or", \
-                   "true" : "True", "false" : "False", "abs" : "Abs" }
-  countFuns = ["countTrailingZeros", "countLeadingZeros", "width"]
-  predicates = ["isSignBit"]
+                   "true" : "True", "false" : "False", "not" : "~" }
+  theoryFuns = ["countTrailingZeros", "countLeadingZeros", "width", "log2",\
+                "trunc", "sext", "zext"]
+  theoryPreds = ["isSignBit", "isPowerOf2", "isPowerOf2OrZero", \
+                 "MaskedValueIsZero", "computeKnownZeroBits", \
+                 "WillNotOverflowSignedAdd", "WillNotOverflowSignedMul",\
+                 "WillNotOverflowSignedSub", "WillNotOverflowUnsignedSub",\
+                 "WillNotOverflowUnsignedAdd", "WillNotOverflowUnsignedMul"]
   # hasOneUse tends to have non-logical terms as arguments
   # since we can not faithfully encode it anyway, suppress for now
   suppress_args = { "hasOneUse" : True }
 
   def __init__(self, name, is_term):
+    global bitwidth
     rep = self.replace_name.get(name)
     self.name =  rep if rep else name
     self.args = []
     self.is_term = is_term
-    self.bits = 8 if name in self.countFuns else 32
+    self.bits = bitwidth
 
   def setArgs(self, args):
     self.args = args
@@ -180,7 +192,8 @@ class FunApp(Expr):
            reduce(lambda s, e: s + ("" if len(s) == 0 else ", ") + \
                                e.toString(), self.args, "") + ")"
     name = self.name
-    if name in self.countFuns or name in self.predicates:
+#    if name in self.theoryFuns or name in self.theoryPreds:
+    if not self.is_term:
       name = name + "." + str(self.args[0].bits)
     return name + args
   
@@ -305,17 +318,19 @@ def replaceIdent(id):
     return val
   return id
 
-def replaceTheorySymsPre(funapp):
-  # types are not checked as this function is only applied to precondition
-  replace_names = [ "Abs", "ashr", "log2", "lshr", "sext", "trunc", "zext" ]
+def funsToBinops(e):
+  replace_names = { "ashr":">>s", "lshr":">>u", "shl":"<<" }
   #
-  n = funapp.getName()
-  if n in replace_names:
-    f = FunApp(n + "_th", funapp.isTerm())
-    f.setArgs(funapp.args)
-    return f
+  n = e.getName()
+  if n in replace_names.keys():
+    b = Binop(replace_names[n], e.args[0], e.args[1])
+    return b
   else:
-    return funapp
+    return e
+
+def setTheory(e):
+  e.is_term = False
+  return e
 
 def mkIdent(toks):
   global variables
@@ -357,8 +372,9 @@ def addRule(toks):
   if pre != None:
     # (1) substitute temp vars in precondition
     pre = pre.visit(replaceIdent, id, id, const(True))
-    # (2) replace lshr, ashr by theory counterparts in precondition
-    pre = pre.visit(id, replaceTheorySymsPre, id, const(True))
+    # (2) replace lshr, ashr by binops
+    pre = pre.visit(id, funsToBinops, id, const(True))
+    pre = pre.visit(id, setTheory, id, const(True))
   #
   rule = Rule(toks["name"], lexp, rexp, pre if pre else None)
   if lhs["var"] != rhs["var"]:
