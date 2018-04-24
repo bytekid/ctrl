@@ -224,7 +224,8 @@ end
 (** {2 Module Loop} *)
 
 module Loop : sig
-  val process : bool -> Dpproblem.t -> (Dpproblem.t list * string) option
+  val process : Term.t option -> bool -> Dpproblem.t ->
+    (Dpproblem.t list * string) option
   (* [process verbose prob] applies the loop processor on the given problem *)
 end
 

@@ -36,8 +36,8 @@ let termination_procs = [Dpproblem.graph_proc;
                          Subtermcriterion.process;
                          Valuecriterion.extended_process];;
 
-let nontermination_procs = [(Dpproblem.graph_proc, TERMINATING);
-                            (Subtermcriterion.process, TERMINATING);
+let nontermination_procs = [((fun _ -> Dpproblem.graph_proc), TERMINATING);
+                            ((fun _ -> Subtermcriterion.process), TERMINATING);
                             (Loop.process, NONTERMINATING)];;
 
 let check_dps framework original_rules verbose =
@@ -95,7 +95,7 @@ let check_dps_nonterm framework original_rules topt verbose =
     match lst with
       | [] -> None
       | (processor, a) :: rest -> (
-        match processor verbose problem with
+        match processor topt verbose problem with
           | Some (x, y) -> Some (x, y, a)
           | None -> try_p rest problem
     )

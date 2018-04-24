@@ -469,26 +469,26 @@ let init_seqs = L.map init_seq;;
    to extend sequences. *)
 let generate_loops ctxt init_seqs step = step 1 (check_all ctxt init_seqs)
 
-let max_diff rls = 
-  let m = List.fold_left (fun m rl ->
+(* maximal size increase from left to right hand side *)
+let max_size_inc rls =
+  let maxinc m rl =
     let l,r = Rule.lhs rl, Rule.rhs rl in
-    max m (T.size r - (T.size l))) 0 rls in
-  (*Format.printf "max term size diff is %d\n%!" m;*)
-  m
+    max m (T.size r - (T.size l))
+  in
+  List.fold_left maxinc 0 rls
 ;;
 
 let non_size_dec =
   List.filter (fun rl -> Term.size (Rule.lhs rl) <= Term.size (Rule.rhs rl))
 
 (* Main functionality *)
-let process verbose prob =
+let process topt verbose prob =
   let dps = Dpproblem.get_dps prob in
   let rules = Dpproblem.get_rules prob in
-  max_diff rules;
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
   let maxlen = 7 in
-  let ctxt = mk_ctxt alph env maxlen 25 (max_diff rules) Forward in
+  let ctxt = mk_ctxt alph env maxlen 25 (max_size_inc rules) Forward in
   let dprlseqs = Pair.map init_seqs (dps, rules) in
   let init_seqs = fst dprlseqs @ (snd dprlseqs) in
   let loops = generate_loops ctxt init_seqs (unfold_all ctxt dprlseqs) in
