@@ -90,7 +90,7 @@ let check verbose full trs =
 ;;
 
 
-let check_dps_nonterm framework original_rules verbose =
+let check_dps_nonterm framework original_rules topt verbose =
   let rec try_p lst (problem : Dpproblem.t) =
     match lst with
       | [] -> None
@@ -116,8 +116,8 @@ let check_dps_nonterm framework original_rules verbose =
   else repeat (try_p nontermination_procs) framework "" UNKNOWN
 ;;
 
-let check_nontermination verbose trs =
+let check_nontermination verbose trs topt =
   let framework = Dpframework.generate trs true in
-  check_dps_nonterm framework (Trs.get_rules trs) verbose
+  check_dps_nonterm framework (Trs.get_rules trs) topt verbose
 ;;
 

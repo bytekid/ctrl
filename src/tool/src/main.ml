@@ -79,10 +79,10 @@ let run _ =
       let trs = Trs.get_current () in
       let (ans, comments) = Terminator.check verbose full trs in
       Printf.printf "%s\n%s" (txt_answer ans) (if verbose then "" else comments)
-    | Reader.Nontermination ->
+    | Reader.Nontermination t ->
       let verbose = Util.query_debugging () in
       let trs = Trs.get_current () in
-      let (ans, comments) = Terminator.check_nontermination verbose trs in
+      let (ans, comments) = Terminator.check_nontermination verbose trs t in
       Printf.printf "%s\n%s" (txt_answer ans) (if verbose then "" else comments)
     | Reader.Confluence ->
       let verbose = Util.query_debugging () in

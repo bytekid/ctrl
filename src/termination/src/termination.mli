@@ -251,7 +251,8 @@ module Terminator : sig
                        possible_results
   (* [check_extended verbose trs rules] analyses termination of the
   given trs appended with the additional rules *)
-  val check_nontermination : bool -> Trs.t -> possible_results * string
+  val check_nontermination : bool -> Trs.t -> Term.t option ->
+    possible_results * string
   (* [check verbose full trs] analyses nontermination of [trs] *)
 end
 

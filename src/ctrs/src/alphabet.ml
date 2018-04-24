@@ -602,7 +602,7 @@ let value_alphabet _ =
     let _ = create_fun sd "true" a in
     let _ = create_fun sd "false" a in
     include_integers default_intsort a ;
-    include_arrays default_intsort (Sort.from_string "IntArray") a ;
+    include_arrays default_intsort (Sort.from_string "(Array Int Int)") a ;
     valalf := a ;
     a
   )

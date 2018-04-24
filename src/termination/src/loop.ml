@@ -487,7 +487,7 @@ let process verbose prob =
   max_diff rules;
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let maxlen = 3 in
+  let maxlen = 7 in
   let ctxt = mk_ctxt alph env maxlen 25 (max_diff rules) Forward in
   let dprlseqs = Pair.map init_seqs (dps, rules) in
   let init_seqs = fst dprlseqs @ (snd dprlseqs) in
