@@ -43,6 +43,7 @@ type t = {
   max_length: int;
   max_size: int;
   max_rule_inc: int;
+  max_stem_length: int;
   unfold : t_unfold
 }
 
@@ -61,12 +62,13 @@ let is_forward c = c.unfold = Forward
 let rule (a,_,_) = a
 
 (* Create a context record. *)
-let mk_ctxt a e ml ms inc u = {
+let mk_ctxt a e ml ms inc stem u = {
   alph = a;
   env = e;
   max_length = ml;
   max_size = ms;
   max_rule_inc = inc;
+  max_stem_length = stem;
   unfold = u
 }
 
@@ -487,8 +489,8 @@ let process topt verbose prob =
   let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let maxlen, maxsize = 7,25 in
-  let ctxt = mk_ctxt alph env maxlen maxsize (max_size_inc rules) Forward in
+  let maxlen, maxsize, maxinc, maxstem = 7, 25, max_size_inc rules, 5 in
+  let ctxt = mk_ctxt alph env maxlen maxsize maxinc maxstem Forward in
   let dprlseqs = Pair.map init_seqs (dps, rules) in
   let init_seqs = fst dprlseqs @ (snd dprlseqs) in
   let loops = generate_loops ctxt init_seqs (unfold_all ctxt dprlseqs) in
