@@ -37,6 +37,10 @@ DECLARE
   WillNotOverflowUnsignedAdd.8 :  (BitVec 8) * (BitVec 8) => Bool;
   WillNotOverflowSignedSub.8	 :  (BitVec 8) * (BitVec 8) => Bool;
   WillNotOverflowUnsignedSub.8 :  (BitVec 8) * (BitVec 8) => Bool;
+  WillNotOverflowUnsignedMul.8 :  (BitVec 8) * (BitVec 8) => Bool;
+  WillNotOverflowSignedMul.8 :  (BitVec 8) * (BitVec 8) => Bool;
+  WillNotOverflowUnsignedShl.8 :  (BitVec 8) * (BitVec 8) => Bool;
+  isShiftedMask.8       :  (BitVec 8) => Bool;
 
   countLeadingZeros.8	  :  (BitVec 8) => (BitVec 8);
   countTrailingZeros.8  :  (BitVec 8) => (BitVec 8);
@@ -46,7 +50,14 @@ DECLARE
   trunc.8               :  (BitVec 8) => (BitVec 8);
   sext.8		            :  (BitVec 8) => (BitVec 8);
   zext.8                :  (BitVec 8) => (BitVec 8);
-  abs.32                :  (BitVec 32) => (BitVec 32);
+  abs.8                 :  (BitVec 8) => (BitVec 8);
+  bv2int.8              :  (BitVec 8) => Int;
+
+  umax.8                : (BitVec 8) * (BitVec 8) => (BitVec 8);
+  icmp_slt.8            : (BitVec 8) * (BitVec 8) => (BitVec 8);
+  icmp_ult.8            : (BitVec 8) * (BitVec 8) => (BitVec 8);
+  icmp_eq.8             : (BitVec 8) * (BitVec 8) => (BitVec 8);
+  icmp_eq.8             : (BitVec 8) * (BitVec 8) => (BitVec 8);
 
 WELLFOUNDED >s.8, >u.8 ;
 
@@ -77,6 +88,7 @@ SMT-RENAMINGS
   |.8		-> bvor;
   ^.8		-> bvxor;
 
+  bv2int.8		-> bv2int;
 SMT-TRANSLATIONS
   !=.8(x, y) -> (not (= x y));
   =.8(x, y) -> (= x y);
@@ -116,3 +128,14 @@ SMT-TRANSLATIONS
   WillNotOverflowSignedSub.8(x,y) ->
     (= (bvsub ((_ sign_extend 1) x) ((_ sign_extend 1) y)) ((_ sign_extend 1) (bvsub x y)));
   abs.8(x) -> (ite (bvuge x #x00) x (bvnot x));
+  isShiftedMask.8(x) -> (not (= (bvor (bvsub x #x01) x) #x00));
+  WillNotOverflowUnsignedMul.8(x,y) ->
+    (= (bvadd ((_ zero_extend 8) x) ((_ zero_extend 8) y)) ((_ zero_extend 8) (bvmul x y)));
+  WillNotOverflowSignedMul.8(x,y) ->
+    (= (bvadd ((_ sign_extend 8) x) ((_ sign_extend 8) y)) ((_ sign_extend 8) (bvmul x y)));
+  WillNotOverflowUnsignedShl.8(x,y) -> (= (bvlshr (bvshl x y) y) x);
+  umax.8(x,y) -> (ite (bvuge x y) x y);
+  icmp_slt.8(x,y) -> (ite (bvslt x y) #x01 #x00);
+  icmp_ult.8(x,y) -> (ite (bvult x y) #x01 #x00);
+  icmp_eq.8(x,y) -> (ite (= x y) #x01 #x00);
+  icmp_neq.8(x,y) -> (ite (not (= x y)) #x01 #x00);

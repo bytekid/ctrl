@@ -122,7 +122,9 @@ class Unop(Expr):
 
 class Binop(Expr):
   replace_name = { "&&" : "/\\", "||" : "\\/", "==" : "=", \
-                   "<=" : "i<=", ">=" : "i>=", "<" : "i<", ">" : "i>"}
+                   "<=" : "<=s", ">=" : ">=s", "<" : "<s", ">" : ">s", \
+                   "/" : "/s", "%" : "%s", "u<=" : "<=u", "u>=" : ">=u",\
+                   "u<" : "<u", "u>" : ">u"}
   boolOps = ["/\\", "\\/"]
 
   def __init__(self, op, a, b):
@@ -151,7 +153,8 @@ class Binop(Expr):
 
 class FunApp(Expr):
   replace_name = { "and" : "And",  "xor" : "Xor", "not" : "Not", "or" : "Or", \
-                   "true" : "True", "false" : "False", "not" : "~" }
+                   "true" : "True", "false" : "False", "not" : "~", \
+                   "trunci11" : "trunc", "zexti11" : "zext", "sexti11" : "sext"  }
   theoryFuns = ["countTrailingZeros", "countLeadingZeros", "width", "log2",\
                 "trunc", "sext", "zext"]
   theoryPreds = ["isSignBit", "isPowerOf2", "isPowerOf2OrZero", \

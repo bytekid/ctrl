@@ -1,9 +1,9 @@
 INCLUDE ints ;
 
 DECLARE
-  allocate   : Int * Int => IntArray            ;
-  size       : IntArray => Int                  ;
-  select     : IntArray * Int => Int            ;
-  store      : IntArray * Int * Int => IntArray ;
-  !ARRAY!Int : IntArray                         ;
+  allocate   : Int * Int => (Array Int Int)            ;
+  size       : (Array Int Int) => Int                  ;
+  select     : (Array Int Int) * Int => Int            ;
+  store      : (Array Int Int) * Int * Int => (Array Int Int) ;
+  !ARRAY!Int : (Array Int Int)                         ;
 

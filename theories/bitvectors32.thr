@@ -38,6 +38,10 @@ DECLARE
   WillNotOverflowUnsignedAdd.32 :  (BitVec 32) * (BitVec 32) => Bool;
   WillNotOverflowSignedSub.32	 :  (BitVec 32) * (BitVec 32) => Bool;
   WillNotOverflowUnsignedSub.32 :  (BitVec 32) * (BitVec 32) => Bool;
+  WillNotOverflowUnsignedMul.32 :  (BitVec 32) * (BitVec 32) => Bool;
+  WillNotOverflowSignedMul.32 :  (BitVec 32) * (BitVec 32) => Bool;
+  WillNotOverflowUnsignedShl.32 :  (BitVec 32) * (BitVec 32) => Bool;
+  isShiftedMask.32	      :  (BitVec 32) => Bool;
   
   countLeadingZeros.32    :  (BitVec 32) => (BitVec 32);
   countTrailingZeros.32   :  (BitVec 32) => (BitVec 32);
@@ -48,6 +52,11 @@ DECLARE
   zext.32                 :  (BitVec 32) => (BitVec 32);
   trunc.32                :  (BitVec 32) => (BitVec 32);
   abs.32                  :  (BitVec 32) => (BitVec 32);
+  umax.32	                : (BitVec 32) * (BitVec 32) => (BitVec 32);
+  icmp_slt.32            : (BitVec 32) * (BitVec 32) => (BitVec 32);
+  icmp_ult.32            : (BitVec 32) * (BitVec 32) => (BitVec 32);
+  icmp_eq.32             : (BitVec 32) * (BitVec 32) => (BitVec 32);
+  icmp_eq.32             : (BitVec 32) * (BitVec 32) => (BitVec 32);
 
 WELLFOUNDED >s.32, >u.32 ;
 
@@ -201,3 +210,14 @@ SMT-TRANSLATIONS
   WillNotOverflowSignedSub.32(x,y) ->
     (= (bvsub ((_ sign_extend 1) x) ((_ sign_extend 1) y)) ((_ sign_extend 1) (bvsub x y)));
   abs.32(x) -> (ite (bvuge x #x00000000) x (bvnot x));
+  isShiftedMask.32(x) -> (not (= (bvor (bvsub x #x00000001) x) #x00000000));
+  WillNotOverflowUnsignedMul.32(x,y) ->
+    (= (bvadd ((_ zero_extend 32) x) ((_ zero_extend 32) y)) ((_ zero_extend 32) (bvmul x y)));
+  WillNotOverflowSignedMul.32(x,y) ->
+    (= (bvadd ((_ sign_extend 32) x) ((_ sign_extend 32) y)) ((_ sign_extend 32) (bvmul x y)));
+  WillNotOverflowUnsignedShl.32(x,y) -> (= (bvlshr (bvshl x y) y) x);
+  umax.32(x,y) -> (ite (bvuge x y) x y);
+  icmp_slt.32(x,y) -> (ite (bvslt x y) #x00000001 #x00000000);
+  icmp_ult.32(x,y) -> (ite (bvult x y) #x00000001 #x00000000);
+  icmp_neq.32(x,y) -> (ite (not (= x y)) #x00000001 #x00000000);
+  icmp_eq.32(x,y) -> (ite (= x y) #x00000001 #x00000000);

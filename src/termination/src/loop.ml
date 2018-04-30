@@ -40,6 +40,7 @@ type t_unfold = Forward | Backward
 type t = {
   alph: Alph.t;
   env: Environment.t;
+  use_starting_term: bool;
   max_length: int;
   max_size: int;
   max_rule_inc: int;
@@ -62,9 +63,10 @@ let is_forward c = c.unfold = Forward
 let rule (a,_,_) = a
 
 (* Create a context record. *)
-let mk_ctxt a e ml ms inc stem u = {
+let mk_ctxt a e use_term ml ms inc stem u = {
   alph = a;
   env = e;
+  use_starting_term = use_term;
   max_length = ml;
   max_size = ms;
   max_rule_inc = inc;
@@ -100,11 +102,12 @@ let constraints_to_string = function
 ;;
 
 (* String representation of loop, with explanation. *)
-let explanation ((rl,_) as loop) =
+let explanation ((rl,_) as loop, i) =
   let cs = Rule.constraints rl in
   let cexp = " with side condition " ^ (constraints_to_string cs) in
-  "A loop is given by the sequence \n" ^ (sequence_to_string loop) ^
-  (if cs = [] then "" else cexp ^ " (" ^ (string_of_float !check_time) ^ ")\n" )
+  "A loop ("  ^ (string_of_int i) ^ 
+  ") is given by the sequence \n" ^ (sequence_to_string loop) ^
+  (if cs=[] then "" else cexp ^ " (" ^ (string_of_float !check_time) ^ ")\n")
 ;;
 
 let show loop =
@@ -283,11 +286,14 @@ let check ctxt (rule, rs, sigma) =
       let rs' = if b then subst_terms tau rs else rs in
       let sub_map rho = (Rule.apply_sub rho rule', subst_terms rho rs') in
       let res1 = Option.map sub_map (condition1 ctxt cs sigma') in
-      if Option.is_some res1 then res1
+      if Option.is_some res1 then (Option.map (fun l -> l,1) res1)
       else
         let res2 = refined_condition2 rule ctxt cs sigma' in
-        if Option.is_some res2 then Option.map sub_map res2
-        else Option.map sub_map (refined_condition3 rule ctxt cs sigma')
+        
+        if Option.is_some res2 then (Option.map (fun l -> Format.printf "sub %s\n" (substr l); sub_map l,2) res2)
+        else
+          let res3 = refined_condition3 rule ctxt cs sigma' in
+          Option.map (fun l -> sub_map l, 3) res3
     with Elogic.Not_unifiable | Elogic.Not_matchable -> None
   in
   (* Only return loops starting with a DP symbol to avoid duplicates. *)
@@ -309,7 +315,10 @@ let check_all c seqs =
   let chk (ls,ss) s = match check c s with Some l -> l::ls,ss | _ -> ls,s::ss in
   let seqs = L.filter (seq_has_dp_root c) seqs in
   let loops, seqs = List.fold_left chk ([],[]) seqs in
-  let loops, seqs = L.filter (loop_init_rule_maximal c) loops, seqs in
+  let loops =
+    if c.use_starting_term then loops
+    else L.filter (fun (l,_) -> loop_init_rule_maximal c l) loops
+  in
   if Util.query_debugging () then
     explain_all loops;
   loops, seqs
@@ -402,8 +411,13 @@ let unfold c do_all is_final (rs_root, rs_below) ((st,rs,_) as seq) =
   let term = if is_forward c then Rule.rhs st else Rule.lhs st in
   let ps = L.remove Pos.root (T.funs_pos term) in
   let rlps = rlps_root @ (L.product ps rs_below) in
-  let seqs = L.flat_map (fun (p,rl) -> narrow c seq p rl) rlps in
-  check_all c seqs
+  L.flat_map (fun (p,rl) -> narrow c seq p rl) rlps
+;;
+
+(* If is_final is true then we are only interested in loops where the added
+   step is the final step.  *)
+let unfold_check c do_all is_final rs seq =
+  check_all c (unfold c do_all is_final rs seq)
 ;;
 
 (* Checking whether the sequence does not exceed the maximal term size. *)
@@ -428,13 +442,13 @@ let rec unfold_all c ruleseqs i (loops,seqs) =
   else (
     (* determine whether we can use precomputed result*)
     let seqs, ruleseqs =
-      if len < 5 then seqs, ruleseqs
+      if len < 5 || c.use_starting_term then seqs, ruleseqs
       else
         let j = (len + 1) / 2 in
         let rlseqs = H.find seq_cache (len - j) in
         H.find seq_cache j, L.partition (seq_has_dp_root c) rlseqs
     in
-    let do_all = len <= c.max_length / 2 in
+    let do_all = len <= c.max_length / 2 || c.use_starting_term in
     let is_final = len > (c.max_length + 1) / 2 in
     (* if the currently computed sequences are not required for a computation
        step later on, we can restrict to those starting with a DP symbol *)
@@ -442,7 +456,7 @@ let rec unfold_all c ruleseqs i (loops,seqs) =
     (* Wlog assume that first/last rule is maximal (to avoid duplicates) *)
     let seqs = if do_all then seqs else L.filter (init_rule_maximal c) seqs in
     let fold_unfold (loops', seqs') seq =
-      let lps, sqs = unfold c do_all is_final ruleseqs seq in
+      let lps, sqs = unfold_check c do_all is_final ruleseqs seq in
       L.rev_append lps loops', L.rev_append sqs seqs'
     in
     let rs1, rs2 = ruleseqs in
@@ -456,6 +470,10 @@ let rec unfold_all c ruleseqs i (loops,seqs) =
       else L.filter (within_2_steps c) seqs 
     in
     let loops, seqs' = L.fold_left fold_unfold (loops,[]) seqss in
+    (*List.iter (fun (s,t,_) -> 
+      Format.printf "SEQS': unfold sequence %s\n%!" (sequence_to_string (s,t))) seqs';
+    List.iter (fun (s,t) -> 
+      Format.printf "LOOPS': unfold sequence %s\n%!" (sequence_to_string (s,t))) loops;*)
     let seqs'' = L.filter (small c) seqs' in
     if seqs'' = [] then loops
     else (
@@ -464,8 +482,75 @@ let rec unfold_all c ruleseqs i (loops,seqs) =
 ;;
 
 (* The initial sequence, starting from a rule. *)
-let init_seq rule = (rule, [rule, Position.root, Rule.rhs rule], Sub.empty);;
-let init_seqs = L.map init_seq;;
+let init_seqs = 
+  let init rl = (rl, [rl, Position.root, Rule.rhs rl], Sub.empty) in
+  L.map init
+;;
+
+let hash ctxt dpsort = function
+  Term.Fun (f, ts) ->
+    let sd = match Alphabet.find_sortdec f ctxt.alph with
+      | Left s -> Sortdeclaration.create (Sortdeclaration.input_sorts s) dpsort
+      | Right s -> failwith ("Loop.hash: no sort declaration found")
+    in
+    let name = ((Function.find_name f) ^ "#") in
+    (try
+      let fhash = Alphabet.find_fun name ctxt.alph in
+      Alphabet.set_symbol_kind fhash Alphabet.Terms ctxt.alph;
+      Term.Fun (fhash, ts)
+    with _ -> failwith "Loop.hash: 3 symbol not found")
+  | _ -> failwith "Loop.hash: variable not allowed"
+;;
+
+let init_seqs_from ctxt t dps rlseqs =
+  let dpseqs = init_seqs dps in
+  let match_add cs s rl lst =
+    try
+      let sigma = Elogic.match_term s (Rule.lhs rl) in
+      let rl' = Rule.apply_sub sigma rl in
+      let aux = conjunction ctxt (cs) in
+      let cconj = conjunction ctxt (Rule.constraints rl' @ cs) in
+      if logical_sat ctxt cconj then (
+        (*Format.printf " match add from term %s\n   constraint %s\n   rule %s\n   subst rule %s\n%!"
+         (P.to_string_term s)  (P.to_string_term aux) (P.to_string_rule rl) (P.to_string_rule rl');*)
+        Rule.create (Rule.lhs rl') (Rule.rhs rl') [cconj] :: lst)
+      else
+        lst
+    with Elogic.Not_matchable -> lst 
+  in
+  let dpsrt = T.get_sort ctxt.alph ctxt.env (Rule.lhs (List.hd dps)) in 
+  let t' = hash ctxt dpsrt t in
+  let match_dps_from ?(cs=[]) v =
+    List.fold_left (fun l dp -> match_add cs v dp l) [] dps
+  in
+  let dps0 = match_dps_from t' in
+  (*Format.printf "DPs0:\n%!";
+  List.iter (fun dp -> Format.printf "  %s\n" (P.to_string_rule dp)) dps0;*)
+  let inits = init_seqs dps0 in
+  let rec unfold_rec k (seqs,last) =
+    if k = 0 then last @ seqs
+    else
+      let fold_unfold seq_acc seq =
+        let seqs = unfold ctxt true false (dpseqs, rlseqs) seq in
+        L.rev_append seqs seq_acc
+      in
+      let newseqs = List.fold_left fold_unfold [] last in
+      unfold_rec (k - 1) (last @ seqs, newseqs)
+  in
+  let seqs = unfold_rec 2 ([], inits) in
+  (*Format.printf "unfolded:\n%!";
+  List.iter (fun (dp,_,_) -> Format.printf "  %s\n" (P.to_string_rule dp)) seqs;*)
+  let start_from_final acc (rl, steps, _) =
+    match List.rev steps with
+        [] -> acc
+      | (step_rl,_, _) :: _ ->
+        let cs,r = Rule.constraints rl, Rule.rhs rl in
+        match_dps_from ~cs:cs r @ acc
+  in
+  (*List.iter (fun (s,t,_) -> Format.printf "  %s\n" (sequence_to_string (s,t))) seqs;*)
+  let res = List.fold_left start_from_final [] seqs in
+  init_seqs res
+;;
 
 (* Generates loops, starting from rule set rules and using the step function
    to extend sequences. *)
@@ -484,15 +569,20 @@ let non_size_dec =
   List.filter (fun rl -> Term.size (Rule.lhs rl) <= Term.size (Rule.rhs rl))
 
 (* Main functionality *)
-let process topt verbose prob =
+let process topt all_dps verbose prob =
   let dps = Dpproblem.get_dps prob in
   let rules = Dpproblem.get_rules prob in
   let alph = Dpproblem.get_alphabet prob in
   let env = Dpproblem.get_environment prob in
-  let maxlen, maxsize, maxinc, maxstem = 7, 25, max_size_inc rules, 5 in
-  let ctxt = mk_ctxt alph env maxlen maxsize maxinc maxstem Forward in
+  let maxlen, maxsz, maxi, maxs = 3, 25, max_size_inc rules, 5 in
+  let ctxt = mk_ctxt alph env (topt <> None) maxlen maxsz maxi maxs Forward in
   let dprlseqs = Pair.map init_seqs (dps, rules) in
-  let init_seqs = fst dprlseqs @ (snd dprlseqs) in
+  let init_seqs = match topt with
+    | None -> fst dprlseqs @ (snd dprlseqs)
+    | Some t -> init_seqs_from ctxt t all_dps (snd dprlseqs)
+  in
+  (*Format.printf "initial sequences::\n%!";
+  List.iter (fun (dp,_,_) -> Format.printf "  %s\n" (P.to_string_rule dp)) init_seqs;*)
   let loops = generate_loops ctxt init_seqs (unfold_all ctxt dprlseqs) in
   if loops = [] then None
   else

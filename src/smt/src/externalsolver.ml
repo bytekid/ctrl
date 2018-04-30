@@ -359,7 +359,7 @@ let check_formulas terms get_model (solver, logic) renamings translations a e =
   let print term = print_as_smt term renamings translations e in
   let formulas = List.map print terms in
   let contents = print_file vars formulas logic get_model in
-  if Util.query_debugging () then Format.printf "SMT checks %s\n%!" contents;
+  (*if Util.query_debugging () then Format.printf "SMT checks %s\n%!" contents;*)
   check_smt_file_and_parse contents solver e a
   with Not_found -> failwith "Not_found in check_formulas"
 ;;
