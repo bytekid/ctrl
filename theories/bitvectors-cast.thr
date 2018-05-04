@@ -6,6 +6,9 @@ DECLARE
   8_to_32  : (BitVec 8) => (BitVec 32) ;
   32_to_8  : (BitVec 32) => (BitVec 8) ;
   nth_of_8 : Int * (BitVec 8) => (BitVec 1) ;
+  sexti15.32 : (BitVec 32) => (BitVec 32) ;
+  zexti15.32 : (BitVec 32) => (BitVec 32) ;
+  ZExtOrTrunci11.32 : (BitVec 32) => (BitVec 32) ;
 
 SMT-TRANSLATIONS
 
@@ -13,4 +16,7 @@ SMT-TRANSLATIONS
   8_to_32(x) -> ((_ zero_extend 24) x) ;
   32_to_8(x) -> ((_ extract 7 0) x);
   nth_of_8(n, x) -> ((_ extract n n) x);
+  sexti15.32(x) -> (x);
+  zexti15.32(x) -> (x);
+  ZExtOrTrunci11.32(x) -> (x);
   

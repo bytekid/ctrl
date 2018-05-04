@@ -53,6 +53,7 @@ DECLARE
   trunc.32                :  (BitVec 32) => (BitVec 32);
   abs.32                  :  (BitVec 32) => (BitVec 32);
   umax.32	                : (BitVec 32) * (BitVec 32) => (BitVec 32);
+  max.32	                : (BitVec 32) * (BitVec 32) => (BitVec 32);
   icmp_slt.32            : (BitVec 32) * (BitVec 32) => (BitVec 32);
   icmp_ult.32            : (BitVec 32) * (BitVec 32) => (BitVec 32);
   icmp_eq.32             : (BitVec 32) * (BitVec 32) => (BitVec 32);
@@ -217,6 +218,7 @@ SMT-TRANSLATIONS
     (= (bvadd ((_ sign_extend 32) x) ((_ sign_extend 32) y)) ((_ sign_extend 32) (bvmul x y)));
   WillNotOverflowUnsignedShl.32(x,y) -> (= (bvlshr (bvshl x y) y) x);
   umax.32(x,y) -> (ite (bvuge x y) x y);
+  max.32(x,y) -> (ite (bvsge x y) x y);
   icmp_slt.32(x,y) -> (ite (bvslt x y) #x00000001 #x00000000);
   icmp_ult.32(x,y) -> (ite (bvult x y) #x00000001 #x00000000);
   icmp_neq.32(x,y) -> (ite (not (= x y)) #x00000001 #x00000000);
