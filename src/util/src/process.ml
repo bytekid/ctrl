@@ -32,7 +32,7 @@ let set_signals h = Sys.set_signal Sys.sigterm h; Sys.set_signal Sys.sigalrm h;;
 (* Parallel Evaluations *)
 let child t w f i =
  set_signals Sys.Signal_default;
- ignore (Unix.write w "sync" 0 4);
+ ignore (Unix.write w (Bytes.of_string "sync") 0 4);
  let t = Option.fold (max 0.001 <.> flip (-.) (Unix.gettimeofday ())) 0.0 t in
  if t <= 0.0015 && t >= 0.0005 then exit 0;
  let status = {Unix.it_interval = 0.0; Unix.it_value = t} in

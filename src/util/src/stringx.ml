@@ -25,30 +25,25 @@ include String;;
 
 (*** MODULE TYPES *************************************************************)
 module type STRING = sig
- val blit : string -> int -> string -> int -> int -> unit
- val capitalize : string -> string
+ val capitalize_ascii : string -> string
  val compare: string -> string -> int
  val concat : string -> string list -> string
  val contains : string -> char -> bool
  val contains_from : string -> int -> char -> bool
- val copy : string -> string
- val create : int -> string
  val escaped : string -> string
- val fill : string -> int -> int -> char -> unit
  val get : string -> int -> char
  val index : string -> char -> int
  val index_from : string -> int -> char -> int
  val iter : (char -> unit) -> string -> unit
  val length : string -> int
- val lowercase : string -> string
+ val lowercase_ascii : string -> string
  val make : int -> char -> string
  val rcontains_from : string -> int -> char -> bool
  val rindex : string -> char -> int
  val rindex_from : string -> int -> char -> int
- val set : string -> int -> char -> unit
  val sub : string -> int -> int -> string
- val uppercase : string -> string
- val uncapitalize : string -> string
+ val uppercase_ascii : string -> string
+ val uncapitalize_ascii : string -> string
 end
 
 (*** FUNCTIONS ****************************************************************)

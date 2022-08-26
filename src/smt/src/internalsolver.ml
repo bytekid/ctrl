@@ -226,7 +226,7 @@ let rec parse_iexp tr a e isparam = function
       try List.assoc fname tr
       with Not_found -> fname
     ) in
-    let name = String.lowercase name in
+    let name = String.lowercase_ascii name in
     (* recursion data *)
     let pargs = List.map (parse_exp tr a e isparam) args in
     let all_exps kind maker =
@@ -287,7 +287,7 @@ and parse_aexp tr a e isparam = function
       try List.assoc fname tr
       with Not_found -> fname
     ) in
-    let name = String.lowercase name in
+    let name = String.lowercase_ascii name in
     (* recursion data *)
     let pargs = List.map (parse_exp tr a e isparam) args in
     (* parse values *)
@@ -351,7 +351,7 @@ and parse_formula tr a e isparam = function
       try List.assoc fname tr
       with Not_found -> fname
     ) in
-    let name = String.lowercase name in
+    let name = String.lowercase_ascii name in
     (* recursion data *)
     let pargs = List.map (parse_exp tr a e isparam) args in
     let all_bools kind maker =
@@ -1793,7 +1793,7 @@ let rec translate_int ren tra a e isparam = function
       try List.assoc name ren
       with Not_found -> name
     ) in
-    let name = String.lowercase name in
+    let name = String.lowercase_ascii name in
     let newargs =
       if name = "ite" then []
       else List.map (translate_int ren tra a e isparam) args
