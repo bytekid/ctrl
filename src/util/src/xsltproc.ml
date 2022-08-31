@@ -34,12 +34,12 @@ let write ch s = output_string ch s;flush ch;;
 
 let read ch =
   let loop = ref true in
-  let buff = String.create buff_size in
+  let buff = Bytes.create buff_size in
   let res  = Buffer.create(1024*1024) in
   while !loop do
     let n = input ch buff 0 buff_size in
     if n = 0 then loop := false
-             else Buffer.add_substring res buff 0 n
+             else Buffer.add_subbytes res buff 0 n
   done;
   Buffer.contents res
 ;;

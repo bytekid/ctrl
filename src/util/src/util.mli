@@ -137,6 +137,7 @@ module Arg : sig
    | Tuple of spec list
    | Symbol of string list * (string -> unit)
    | Rest of (string -> unit)
+   | Rest_all of (string list -> unit)
    | Expand of (string -> string array)
   type usage_msg = string
   
@@ -931,8 +932,6 @@ module Index : sig
   (** [compare s t] compares [s] and [t]. It must be guaranteed that
   [compare s t = 0] if [s] and [t] are equal, [compare s t < 0] if [s]
   is smaller than [t], and [compare s t > 0] if [s] is greater than [t]. *)
-  val copy : t -> t
-  (** [copy t] copies the value [t]. *)
   val fprintf : Format.formatter -> t -> unit
   (** [fprintf fmt t] prints [t] using the [OCaml] module [Format]. *)
   val hash : t -> int
@@ -953,8 +952,6 @@ module Index : sig
   (** [compare s t] compares [s] and [t]. It must be guaranteed that
   [compare s t = 0] if [s] and [t] are equal, [compare s t < 0] if [s]
   is smaller than [t], and [compare s t > 0] if [s] is greater than [t]. *)
-  val copy : t -> t
-  (** [copy t] copies the value [t]. *)
   val fprintf : Format.formatter -> t -> unit
   (** [fprintf fmt t] prints [t] using the [OCaml] module [Format]. *)
   val hash : t -> int
@@ -1353,8 +1350,6 @@ module Isomorphism : sig
   (** [compare s t] compares [s] and [t]. It must be guaranteed that
   [compare s t = 0] if [s] and [t] are equal, [compare s t < 0] if [s]
   is smaller than [t], and [compare s t > 0] if [s] is greater than [t]. *)
-  val copy : t -> t
-  (** [copy t] copies the value [t]. *)
   val fprintf : Format.formatter -> t -> unit
   (** [fprintf fmt t] prints [t] using the [OCaml] module [Format]. *)
   val hash : t -> int
@@ -3105,30 +3100,25 @@ module String : sig
  
  (*** MODULE TYPES ************************************************************)
  module type STRING = sig
-  val blit : t -> int -> t -> int -> int -> unit
-  val capitalize : t -> t
+  val capitalize_ascii : t -> t
   val compare: t -> t -> int
   val concat : t -> t list -> t
   val contains : t -> char -> bool
   val contains_from : t -> int -> char -> bool
-  val copy : t -> t
-  val create : int -> t
   val escaped : t -> t
-  val fill : t -> int -> int -> char -> unit
   val get : t -> int -> char
   val index : t -> char -> int
   val index_from : t -> int -> char -> int
   val iter : (char -> unit) -> t -> unit
   val length : t -> int
-  val lowercase : t -> t
+  val lowercase_ascii : t -> t
   val make : int -> char -> t
   val rcontains_from : t -> int -> char -> bool
   val rindex : t -> char -> int
   val rindex_from : t -> int -> char -> int
-  val set : t -> int -> char -> unit
   val sub : t -> int -> int -> t
-  val uppercase : t -> t
-  val uncapitalize : t -> t
+  val uppercase_ascii : t -> t
+  val uncapitalize_ascii : t -> t
  end
  (** This module type contains all standard [OCaml] functions provided by the
  module [String]. *)

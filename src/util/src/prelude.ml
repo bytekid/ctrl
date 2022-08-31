@@ -46,12 +46,12 @@ let swap x f = f x;;
 let read_channel ?(buff_size = 1024*1024) ch =
   let size = 4*1024 in
   let loop = ref true in
-  let buff = String.create size in
+  let buff = Bytes.create size in
   let res  = Buffer.create buff_size in
   while !loop do
     let n = input ch buff 0 size in
     if n = 0 then loop := false
-             else Buffer.add_substring res buff 0 n
+             else Buffer.add_subbytes res buff 0 n
   done;
   Buffer.contents res
 ;;

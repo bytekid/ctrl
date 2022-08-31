@@ -25,7 +25,6 @@ module type DOMAIN = sig
  type t
 
  val compare : t -> t -> int
- val copy : t -> t
  val fprintf : Format.formatter -> t -> unit
  val hash : t -> int
 end
@@ -83,9 +82,9 @@ module Make (D : DOMAIN) (R : RANGE) = struct
  let clear t = {domain = DH.clear_ t.domain; range = RH.clear_ t.range};;
  
  let copy t =
-  let add d r = DH.add_ (D.copy d) (R.copy r) in
+  let add d r = DH.add_ d r in
   let domain = DH.fold add t.domain (DH.create (DH.length t.domain)) in
-  let add r d = RH.add_ (R.copy r) (D.copy d) in
+  let add r d = RH.add_ r d in
   let range = RH.fold add t.range (RH.create (RH.length t.range)) in
   {domain = domain; range = range}
  ;;

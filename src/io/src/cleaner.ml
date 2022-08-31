@@ -830,7 +830,7 @@ let group_symbols alf =
   let arrayable = Alphabet.arraysorts_of alf in
   let arrdata sort =
     let arrsort = Alphabet.array_sort sort alf in
-    let sortstring = String.uppercase (Sort.to_string sort) in
+    let sortstring = String.uppercase_ascii (Sort.to_string sort) in
     (arrsort, "  !ARRAY!" ^ sortstring ^ " : " ^ (Sort.to_string arrsort))
   in
   let extra_sorts = List.map arrdata arrayable in

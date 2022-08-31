@@ -57,7 +57,7 @@ module Set = struct
   else Node (l,v,r,(if hl >= hr then hl + 1 else hr + 1))
  ;;
 
- let rec add ?(c = compare) x = function
+ let rec add ?(c = Stdlib.compare) x = function
   | Empty -> Node (Empty,x,Empty,1)
   | Node (l,v,r,_) as t ->
    let n = c x v in
@@ -66,7 +66,7 @@ module Set = struct
    else bal l v (add ~c:c x r)
  ;;
  
- let rec mem ?(c = compare) x = function
+ let rec mem ?(c = Stdlib.compare) x = function
   | Empty -> false
   | Node (l,v,r,_) ->
    let n = c x v in n = 0 || mem ~c:c x (if n < 0 then l else r)
@@ -189,20 +189,20 @@ let drop_while p = snd <.> spani (const p);;
 let take n = fst <.> split_at n;;
 let take_while p = fst <.> spani (const p);;
 
-let rec group ?(c = compare) xs =
+let rec group ?(c = Stdlib.compare) xs =
  let f (x,xs,ys) y = if c x y = 0 then (x,y::xs,ys) else (y,[y],xs::ys) in
  if xs = [] then []
  else let (_,xs,ys) = foldl f (hd xs,[],[]) xs in rev (xs :: ys)
 ;;
 
-let group_fully ?(c = compare) xs = group ~c:c (sort c xs);;
+let group_fully ?(c = Stdlib.compare) xs = group ~c:c (sort c xs);;
 
 (* Constructors and Destructors *)
 let insert p e xs = let (hd,tl) = rev_split_at p xs in rev_append hd (e::tl);;
-let replace ?(c = compare) x y = map_tl (fun z -> if c x z = 0 then y else z);;
+let replace ?(c = Stdlib.compare) x y = map_tl (fun z -> if c x z = 0 then y else z);;
 let rev_concat xs = foldl (flip rev_append) [] xs;;
 let singleton x = [x];;
-let remove_all ?(c = compare) x = filter (fun y -> c x y <> 0);;
+let remove_all ?(c = Stdlib.compare) x = filter (fun y -> c x y <> 0);;
 
 let collapse ?(n = -1) xs = 
  let chunk_size = if n < 1 then 1 else (length xs + n - 1)/n in
@@ -215,7 +215,7 @@ let collapse ?(n = -1) xs =
  if chunk_size < 1 then [] else chunks xs
 ;;
 
-let remove ?(c = compare) x xs =
+let remove ?(c = Stdlib.compare) x xs =
  let rec remove acc = function
   | [] -> acc
   | y :: xs -> if c x y = 0 then rev_append xs acc else remove (y :: acc) xs
@@ -223,7 +223,7 @@ let remove ?(c = compare) x xs =
  rev (remove [] xs)
 ;;
 
-let rec remove_equal ?(c = compare) xs ys = match (xs, ys) with
+let rec remove_equal ?(c = Stdlib.compare) xs ys = match (xs, ys) with
  | x :: us, y :: vs -> if c x y = 0 then remove_equal ~c:c us vs else (xs, ys)
  | _, _ -> (xs, ys)
 ;;
@@ -238,7 +238,7 @@ let for_alli p =
 ;;
 
 let existsi p = not <.> for_alli (fun i x -> not (p i x));;
-let mem ?(c = compare) x = exists (fun y -> c x y = 0);;
+let mem ?(c = Stdlib.compare) x = exists (fun y -> c x y = 0);;
 
 (* Search Functions *)
 let filteri p =
@@ -286,16 +286,16 @@ let rev_unzip xs = rev_unzip_with id xs;;
 let unzip xs = unzip_with id xs;;
 
 (* Assoctiation Lists *)
-let assoc ?(c = compare) x = snd <.> find (fun (y,_) -> c x y = 0);;
-let mem_assoc ?(c = compare) x = exists (fun (y,_) -> c x y = 0);;
+let assoc ?(c = Stdlib.compare) x = snd <.> find (fun (y,_) -> c x y = 0);;
+let mem_assoc ?(c = Stdlib.compare) x = exists (fun (y,_) -> c x y = 0);;
 
-let rec remove_assoc ?(c = compare) x = function
+let rec remove_assoc ?(c = Stdlib.compare) x = function
  | [] -> []
  | (y, z) :: xs -> if c x y = 0 then xs else (y, z) :: remove_assoc ~c:c x xs
 ;;
 
 (* Lists as Sets *)
-let union ?(c = compare) xs ys =
+let union ?(c = Stdlib.compare) xs ys =
  let (xs,ys) = foldl (fun (xs,ys) x -> (x::xs,remove_all x ys)) ([],ys) xs in
  rev (rev_append ys xs)
 ;;
@@ -319,27 +319,27 @@ let rev_times xs = flat_times (flip cons) [] xs;;
 let times xs = map_tl rev (rev_times xs);;
 let product xs = flat_product P.make xs;;
 let square xs = product xs xs;;
-let diff ?(c = compare) xs ys = filter (fun x -> not (mem ~c:c x ys)) xs;;
-let is_subset ?(c = compare) xs ys = for_all (flip (mem ~c:c) ys) xs;;
-let is_supset ?(c = compare) = flip (is_subset ~c:c);;
-let equal ?(c = compare) xs ys = is_subset ~c:c xs ys && is_subset ~c:c ys xs;;
-let intersect ?(c = compare) xs ys = filter (flip (mem ~c:c) ys) xs;;
+let diff ?(c = Stdlib.compare) xs ys = filter (fun x -> not (mem ~c:c x ys)) xs;;
+let is_subset ?(c = Stdlib.compare) xs ys = for_all (flip (mem ~c:c) ys) xs;;
+let is_supset ?(c = Stdlib.compare) = flip (is_subset ~c:c);;
+let equal ?(c = Stdlib.compare) xs ys = is_subset ~c:c xs ys && is_subset ~c:c ys xs;;
+let intersect ?(c = Stdlib.compare) xs ys = filter (flip (mem ~c:c) ys) xs;;
 
-let is_proper_subset ?(c = compare) xs ys =
+let is_proper_subset ?(c = Stdlib.compare) xs ys =
  is_subset ~c:c xs ys && not (is_subset ~c:c ys xs)
 ;;
 
-let unique ?(c = compare) xs =
+let unique ?(c = Stdlib.compare) xs =
  let mem = Set.mem ~c:c and add = Set.add ~c:c in
  let add (xs,s) x = if mem x s then (xs,s) else (x::xs,add x s) in
  rev (fst (foldl add ([],Set.empty) xs))
 ;;
 
-let sort_unique ?(c = compare) xs =
+let sort_unique ?(c = Stdlib.compare) xs =
   let rec uniquefy = function
     | [] | [_] as lst -> lst
     | x :: y :: lst ->
-      if compare x y = 0 then uniquefy (y :: lst)
+      if c x y = 0 then uniquefy (y :: lst)
       else x :: uniquefy (y :: lst)
   in
   uniquefy (sort c xs)
@@ -399,15 +399,15 @@ let rec implode f d = function
 (* Properties *)
 let is_empty xs = xs = [];;
 let is_singleton = function [_] -> true | _ -> false;;
-let is_prefix ?(c = compare) xs ys = fst (remove_equal ~c:c xs ys) = [];;
-let is_suffix ?(c = compare) xs ys = is_prefix ~c:c (rev xs) (rev ys);;
+let is_prefix ?(c = Stdlib.compare) xs ys = fst (remove_equal ~c:c xs ys) = [];;
+let is_suffix ?(c = Stdlib.compare) xs ys = is_prefix ~c:c (rev xs) (rev ys);;
 
-let is_proper_prefix ?(c = compare) xs ys =
+let is_proper_prefix ?(c = Stdlib.compare) xs ys =
  let (xs,ys) = remove_equal ~c:c xs ys in
  xs = [] && ys <> []
 ;;
 
-let is_proper_suffix ?(c = compare) xs ys =
+let is_proper_suffix ?(c = Stdlib.compare) xs ys =
  is_proper_prefix ~c:c (rev xs) (rev ys)
 ;;
 
