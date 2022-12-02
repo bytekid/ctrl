@@ -252,7 +252,7 @@ module type SORTDECLARATION = sig
   (** [to_string x] returns a string that represents [x]. *)
 end
 
-(** This module deals with sort declarations (combining input- and output sorts. *)
+(** This module deals with sort declarations (combining input- and output sorts). *)
 module Sortdeclaration : SORTDECLARATION with type sort = Sort.t
 
 (** {2 Module Specialdeclaration} *)
@@ -341,7 +341,7 @@ module type SPECIALDECLARATION = sig
   (** [to_string x] returns a string that represents [x]. *)
 end
 
-(** This module deals with polymorphic declarations, and declaratios with
+(** This module deals with polymorphic declarations, and declarations with
 variable arity.  Symbols with such a declaration should always be used in
 a combination with their currently active sort declaration. *)
 module Specialdeclaration : SPECIALDECLARATION
